@@ -12,6 +12,7 @@ Make a distributed social network!
 
 The authors claiming copyright, if they wish to be known, can list their names here...
 
+Harveer Singh Sarao
 
 
 * 
