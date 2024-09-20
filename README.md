@@ -21,3 +21,5 @@ Yihui Yu
 Dhruvil Patel
 
 Khym Nad
+
+Sharon Wong
