@@ -19,3 +19,5 @@ Haoze Sun
 Yihui Yu
 
 Dhruvil Patel
+
+Khym Nad
