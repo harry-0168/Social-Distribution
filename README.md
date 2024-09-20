@@ -17,3 +17,5 @@ Harveer Singh Sarao
 Haoze Sun
 
 Yihui Yu
+
+Dhruvil Patel
