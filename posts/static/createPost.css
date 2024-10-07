@@ -2,7 +2,7 @@
     font-family: Arial;
 }
 body {
-    background-color: #f8eac7; /* Light beige background */
+    background-color: #f8eac7;
     margin: 0;
     padding: 0;
 }
@@ -80,6 +80,12 @@ textarea {
     height: 280px;
 }
 
+#image-upload-container img {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+}
+
 .buttons {
     display: flex;
     justify-content: space-between;
@@ -87,8 +93,9 @@ textarea {
     margin-right: 40px;
 }
 
-button {
-    background-color: #3e305e; /* Dark blue button */
+button,
+.file-upload-label {
+    background-color: #3e305e;
     color: white;
     padding: 10px 20px;
     font-size: 16px;
@@ -97,6 +104,12 @@ button {
     cursor: pointer;
 }
 
+.file-upload-label:hover,
 button:hover {
     background-color: #2d2140;
+}
+
+/* Hide the actual input field */
+input[type="file"] {
+    display: none;
 }

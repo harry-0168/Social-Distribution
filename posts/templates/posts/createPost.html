@@ -31,8 +31,8 @@
                     <label for="visibility">Visibility</label>
                     <select id="visibility" name="visibility">
                         <option value="public">Public</option>
-                        <option value="private">Private</option>
-                        <option value="friends">Friends</option>
+                        <option value="private">Unlisted</option>
+                        <option value="friends">Friends-only</option>
                     </select>
                 </div>
             </div>
@@ -51,16 +51,31 @@
                 </div>
             </div>
             <div class="buttons">
-                <button type="button" onclick="uploadImage()">Upload Image</button>
+                <label for="img" class="file-upload-label">
+                    Upload Image
+                </label>
+                <input type="file" id="img" name="img" accept="image/*" style="display: none;">
                 <button type="submit">Post</button>
             </div>
         </form>
     </div>
 
     <script>
-        function uploadImage() {
-            // Add logic for image upload here
-        }
+        document.getElementById('img').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const container = document.getElementById('image-upload-container');
+                    container.innerHTML = ''; // Clear any existing content
+                    // Create an img element and set the src to the uploaded image's data URL
+                    const imgElement = document.createElement('img');
+                    imgElement.src = e.target.result;
+                    container.appendChild(imgElement);
+                };
+                reader.readAsDataURL(file); // Convert the file to a data URL
+            }
+        });
     </script>
 
 </body>
