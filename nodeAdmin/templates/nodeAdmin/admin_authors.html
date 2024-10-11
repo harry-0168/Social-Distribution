@@ -201,14 +201,20 @@
             return cookieValue;
         }
 
-        // Submit the modify author form with AJAX
         function submitModifyAuthor(authorId) {
-            var formData = $('#modifyAuthorForm-' + authorId).serialize();
+            // Convert form data to a JSON object
+            var formDataArray = $('#modifyAuthorForm-' + authorId).serializeArray();
+            var formData = {};
+            $.each(formDataArray, function(_, field) {
+                formData[field.name] = field.value;  // Populate the form data object
+            });
+        
             $.ajax({
-                url: '/api/authors/' + authorId + '/',  
+                url: '/node/api/authors/' + authorId + '/',  
                 method: 'PUT',
-                data: formData,
-                headers: { 'X-CSRFToken': csrftoken },  
+                contentType: 'application/json',  // Specify JSON content type
+                data: JSON.stringify(formData),   // Convert form data to JSON string
+                headers: { 'X-CSRFToken': csrftoken },  // Pass the CSRF token in the headers
                 success: function() {
                     location.reload(); 
                 },
