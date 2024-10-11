@@ -1,0 +1,83 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../../static/createPost.css">
+    <title>Create New Post</title>
+</head>
+<body>
+    <div class="header">
+        <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
+        <div class="icons">
+            <img src="/static/home.png">
+            <img src="/static/add_post.png">
+            <img src="/static/notifications.png">
+            <img src="/static/edit.png">
+            <img src="/static/inbox.png">
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="form-title">Create New Post</div>
+        <form id="save-form" method="POST" enctype="application/x-www-form-urlencoded" action="/post/create/">
+            {% csrf_token %}
+            <div class="form-field-inline">
+                <div class="form-field">
+                    <label for="title">Title</label>
+                    <input type="text" id="title" name="title">
+                </div>
+                <div class="form-field">
+                    <label for="visibility">Visibility</label>
+                    <select id="visibility" name="visibility">
+                        <option value="public">Public</option>
+                        <option value="private">Unlisted</option>
+                        <option value="friends">Friends-only</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-field-inline">
+                <div class="form-field">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" placeholder="Please input"></textarea>
+                </div>
+
+                <div class="form-field">
+                    <label>Image Upload</label>
+                    <div id="image-upload-container">
+                        <span>No Image Uploaded</span>
+                    </div>
+                </div>
+            </div>
+            <div class="buttons">
+                <label for="img" class="file-upload-label">
+                    Upload Image
+                </label>
+                <input type="file" id="img" name="img" accept="image/*" style="display: none;">
+                <button type="submit">Post</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('img').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const container = document.getElementById('image-upload-container');
+                    container.innerHTML = ''; // Clear any existing content
+                    // Create an img element and set the src to the uploaded image's data URL
+                    const imgElement = document.createElement('img');
+                    imgElement.src = e.target.result;
+                    container.appendChild(imgElement);
+                };
+                reader.readAsDataURL(file); // Convert the file to a data URL
+            }
+        });
+    </script>
+
+</body>
+</html>
