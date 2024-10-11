@@ -21,7 +21,8 @@
 
     <div class="container">
         <div class="form-title">Create New Post</div>
-        <form>
+        <form id="save-form" method="POST" enctype="application/x-www-form-urlencoded" action="/post/create/">
+            {% csrf_token %}
             <div class="form-field-inline">
                 <div class="form-field">
                     <label for="title">Title</label>

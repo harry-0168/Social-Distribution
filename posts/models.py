@@ -1,5 +1,5 @@
 from django.db import models
-from datetime import datetime
+import uuid
 
 VISIBILITY_CHOICES = [
     ('PUBLIC', 'Public'),
@@ -17,11 +17,12 @@ CONTENT_TYPE_CHOICES = [
 ]
 # Create your models here.
 class Post(models.Model):
-    id = models.URLField(primary_key=True)
-    title = models.CharField(max_length=255)
-    description = models.TextField()
-    content_type = models.CharField(max_length=50, choices=CONTENT_TYPE_CHOICES)
+    # id = models.CharField(primary_key=True, unique=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=100)
+    description = models.CharField(max_length=200)
+    content_type = models.CharField(max_length=100, choices=CONTENT_TYPE_CHOICES)
     content = models.TextField()
     # author = models.ForeignKey(Author, related_name='posts', on_delete=models.CASCADE)
-    published = models.DateTimeField(default=datetime.now)
+    published = models.DateTimeField(auto_now_add=True)
     visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES)
