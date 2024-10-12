@@ -34,6 +34,8 @@ INSTALLED_APPS = [
     'author',
     'posts',
     'inbox',
+    'nodeAdmin',
+    'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
