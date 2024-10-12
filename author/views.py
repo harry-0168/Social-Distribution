@@ -1,8 +1,20 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from .models import Author
+from .models import Author  
+from posts.models import Post  
 from .serializers import AuthorSerializer
+from django.shortcuts import render, get_object_or_404
+
+
+def profile_view(request, author_id):
+    author = get_object_or_404(Author, id=author_id)
+    posts = Post.objects.filter(author=author).order_by('-published')
+    return render(request, 'author/author_feed.html', {'author': author, 'posts': posts})
+
+def author_about(request, author_id):
+    author = Author.objects.get(id=author_id)  
+    return render(request, 'author/author_about.html', {'author': author})
 
 class AuthorPagination(PageNumberPagination):
     page_size = 10 

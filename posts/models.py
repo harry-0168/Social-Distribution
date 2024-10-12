@@ -1,4 +1,5 @@
 from django.db import models
+from author.models import Author
 import uuid
 
 VISIBILITY_CHOICES = [
@@ -23,6 +24,9 @@ class Post(models.Model):
     description = models.CharField(max_length=200)
     content_type = models.CharField(max_length=100, choices=CONTENT_TYPE_CHOICES)
     content = models.TextField()
-    # author = models.ForeignKey(Author, related_name='posts', on_delete=models.CASCADE)
+    author = models.ForeignKey(Author, related_name='posts', on_delete=models.CASCADE)
     published = models.DateTimeField(auto_now_add=True)
     visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES)
+    
+    def __str__(self):
+        return self.title
