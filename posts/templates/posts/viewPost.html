@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ post.title }}</title>
+</head>
+<body>
+    <h1>{{ post.title }}</h1>
+    
+    <p><strong>Description:</strong> {{ post.description }}</p>
+
+    <p><strong>Content Type:</strong> {{ post.content_type }}</p>
+
+    <p><strong>Content:</strong></p>
+    <div>
+        {% if is_image %}
+            <img src="{{ post.content }}" alt="{{ post.title }}">
+        {% else %}
+            {{ post.content|safe }}
+        {% endif %}
+    </div>
+
+    <p><strong>Visibility:</strong> {{ post.get_visibility_display }}</p>
+
+    <p><strong>Published On:</strong> {{ post.published }}</p>
+</body>
+</html>
