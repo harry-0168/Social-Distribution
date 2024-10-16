@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Post
+from .models import Post, Comment
 import base64
 
 # Create your views here.
@@ -33,8 +33,21 @@ def create_post(request):
     return redirect('index')
     
 def view_post(request, id):
-    page = get_object_or_404(Post, pk=id)
-    published = page.published
-    title = page.title
-    description = page.description
-    return render(request, "posts/viewPost.html", {"id":id, "published":published, "title":title, "description":description})
+    post = get_object_or_404(Post, pk=id)
+    published = post.published
+    title = post.title
+    description = post.description
+
+    if request.method == 'POST':
+        # Retrieve the form data
+        username = request.POST['username']
+        content = request.POST['content']
+        
+        # Create and save the new comment
+        comment = Comment(username=username, content=content, post=post)
+        comment.save()
+        
+        # Redirect to the same post after adding the comment (prevents form resubmission on refresh)
+        return redirect('view', id=post.id)
+
+    return render(request, "posts/viewPost.html", {"id":id, "published":published, "title":title, "description":description, "post":post})

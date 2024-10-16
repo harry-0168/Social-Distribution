@@ -1,3 +1,4 @@
+from datetime import datetime  # Add this import statement
 from django.db import models
 import uuid
 
@@ -26,3 +27,9 @@ class Post(models.Model):
     # author = models.ForeignKey(Author, related_name='posts', on_delete=models.CASCADE)
     published = models.DateTimeField(auto_now_add=True)
     visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES)
+
+class Comment(models.Model):
+    username = models.CharField(max_length=32) 
+    created_at = models.DateTimeField("date created", default=datetime.now)
+    content =  models.TextField()
+    post = models.ForeignKey(Post, on_delete=models.CASCADE) # all comments belong to a post
