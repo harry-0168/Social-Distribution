@@ -30,7 +30,7 @@ def create_post(request):
         )
         post.save() 
         #TO-DO change redirection
-        return redirect('index')
+        return redirect('home_page')
     
 def edit_post(request):
     post = get_object_or_404(Post, id='dd8e3def6fd54d79ab860bea621bb9a6')
