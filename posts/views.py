@@ -31,3 +31,6 @@ def create_post(request):
         post.save() 
         #TO-DO change redirection
         return redirect('index')
+    
+def view_post(request):
+    return render(request, "posts/viewPost.html")
