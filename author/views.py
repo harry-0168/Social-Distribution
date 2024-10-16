@@ -1,6 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.decorators import api_view
 from .models import Author
 from .serializers import AuthorSerializer
 
@@ -19,3 +20,18 @@ class AuthorViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
+
+##########
+''' Code for Author authentication/ Login to our website '''
+@api_view(['POST'])
+def login(request):
+    return Response({})
+
+@api_view(['POST'])
+def signup(request):
+    return Response({})
+
+@api_view(['GET'])
+def test_token(request):
+    return Response({})
+
