@@ -3,7 +3,7 @@ from .models import Post, Author
 import base64
 
 # Create your views here.
-def index(request):
+def post(request):
     return render(request, "posts/createPost.html")
 
 def create_post(request):
