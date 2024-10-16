@@ -1,14 +1,21 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from . import views
+from .views import AuthorViewSet, profile_view, author_about, login, signup, test_token
+from posts import views as post_views
 
 router = DefaultRouter()
-router.register(r'authors', views.AuthorViewSet, basename='author')
+router.register(r'authors', AuthorViewSet, basename='author')
 
 urlpatterns = [
-    path('api/', include(router.urls)),
-    path('login', views.login, name='login'),
-    path('signup', views.signup, name='signup'),
-    path('test_token', views.test_token, name='test_token')
+    path('api/', include(router.urls)),  
+    path('login', login, name='login'),
+    path('signup', signup, name='signup'),
+    path('test_token', test_token, name='test_token'),
     
+    
+    # Public profile page for an author
+    path('<int:author_id>/', profile_view, name='author_profile'),
+    
+    # About page for an author
+    path('<int:author_id>/about/', author_about, name='author-about'),
 ]
