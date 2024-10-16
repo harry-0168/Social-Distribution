@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../../static/viewPost.css">
+    <link rel="stylesheet" href="{% static 'viewPost.css' %}">
     <title>View Post</title>
 </head>
 <header>
@@ -27,19 +27,13 @@
                 <img class="profileImage" src="{% static 'avatar.png' %}">
                 <div class="username_DatePosted">
                     <a class="username">Username</a> <!-- TODO: make the username clickable to go to userProfile-->
-                    <h3 class="postDate">DatePosted</h3>
+                    <h3 class="postDate">{{published}}</h3>
                 </div>
                 <button class="followButton">Follow</button>
             </div>
-            <p class="postMain">
-                Lorem Ipsum is simply dummy text of the printing and typesetting industry. 
-                Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, 
-                when an unknown printer took a galley of type and scrambled it to make a type 
-                specimen book. It has survived not only five centuries, but also the leap into 
-                electronic typesetting, remaining essentially unchanged. It was popularised in 
-                the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, 
-                and more recently with desktop publishing software like Aldus PageMaker including 
-                versions of Lorem Ipsum
+            <h1 class="postTitle">{{title}}</h1>
+            <p class="postDescription">
+                {{description}}
             </p>
             <section class="likeCommentShare">
                 <img src="/static/heart.png">

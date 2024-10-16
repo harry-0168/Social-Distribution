@@ -77,6 +77,8 @@ html, body {
     font-size: 20px;
     margin: 0;
     margin-left: 8px;
+    font-weight: 100;
+    color: #9C9B9B;
 }
 .userInfo .followButton{
     height: 40px;
@@ -88,12 +90,16 @@ html, body {
     color: #3e305e;
 }
 
-.gridItemUser .postMain{
+.gridItemUser .postTitle{
     background-color: #f8eac7;
-    margin-top: 10px;
+    color:#000;
+    margin: 10px;
+}
+
+.gridItemUser .postDescription{
+    background-color: #f8eac7;
+    margin: 0;
     margin-bottom: 10px;
-    margin-left: 0;
-    margin-right: 0;
     padding: 10px;
     font-size: 26px;
 }

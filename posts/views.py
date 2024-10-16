@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from .models import Post
 import base64
 
@@ -30,7 +30,11 @@ def create_post(request):
         )
         post.save() 
         #TO-DO change redirection
-        return redirect('index')
+    return redirect('index')
     
-def view_post(request):
-    return render(request, "posts/viewPost.html")
+def view_post(request, id):
+    page = get_object_or_404(Post, pk=id)
+    published = page.published
+    title = page.title
+    description = page.description
+    return render(request, "posts/viewPost.html", {"id":id, "published":published, "title":title, "description":description})
