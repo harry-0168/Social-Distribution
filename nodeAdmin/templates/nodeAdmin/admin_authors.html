@@ -1,0 +1,248 @@
+{% extends 'nodeAdmin/admin_base.html' %}
+
+{% block content %}
+    <div class="d-flex align-items-center">
+        <h1 class="mb-0">Manage Authors</h1>
+        
+        <!-- Current Host -->
+        <div class="ml-3 alert alert-info mb-0" style="display: inline-block;">
+            <strong>Current Host:</strong> {{ current_host }}
+        </div>
+    </div>
+
+    <!-- Add new author button -->
+    <div style="text-align: right; margin-bottom: 20px;">
+        <button class="btn btn-primary" data-toggle="modal" data-target="#addAuthorModal">Add New Author</button>
+    </div>
+
+    <!-- Author List Table -->
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Display Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for author in authors %}
+            <tr>
+                <td>{{ author.id }}</td> 
+                <td>{{ author.display_name }}</td>
+                <td>
+                    <button class="btn btn-info" onclick="toggleDetails('{{ author.id }}')">Details</button>
+                    <button class="btn btn-danger" data-toggle="modal" data-target="#deleteAuthorModal" onclick="openDeleteModal('{{ author.id }}')">Delete</button>
+                </td>
+            </tr>
+
+            <!-- Editable details row -->
+            <tr id="details-{{ author.id }}" style="display: none;">
+                <td colspan="4">
+                    <form id="modifyAuthorForm-{{ author.id }}">
+                        <div class="form-group">
+                            <label for="display_name-{{ author.id }}">Display Name:</label>
+                            <input type="text" class="form-control" id="display_name-{{ author.id }}" name="display_name" value="{{ author.display_name }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="host-{{ author.id }}">Host:</label>
+                            <input type="text" class="form-control" id="host-{{ author.id }}" name="host" value="{{ author.host }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="github-{{ author.id }}">GitHub:</label>
+                            <input type="text" class="form-control" id="github-{{ author.id }}" name="github" value="{{ author.github }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="page-{{ author.id }}">Page:</label>
+                            <input type="text" class="form-control" id="page-{{ author.id }}" name="page" value="{{ author.page }}">
+                        </div>
+
+                        <!-- Profile Image (Editable) -->
+                        <div class="form-group">
+                            <label for="profile_image-{{ author.id }}">Profile Image URL:</label>
+                            <input type="text" class="form-control" id="profile_image-{{ author.id }}" name="profile_image" value="{{ author.profile_image }}">
+                        </div>
+
+                        <button type="button" class="btn btn-primary" onclick="submitModifyAuthor('{{ author.id }}')">Save Changes</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3">No authors found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Add Author Modal -->
+    <div class="modal fade" id="addAuthorModal" tabindex="-1" aria-labelledby="addAuthorModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addAuthorModalLabel">Add New Author</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="addAuthorForm">
+                        {% csrf_token %}
+                        
+                        <!-- Host (Uneditable) -->
+                        <div class="form-group">
+                            <label for="host">Host</label>
+                            <input type="text" class="form-control" id="host" name="host" value="{{ current_host }}" disabled>
+                        </div>
+
+                        <!-- Display Name (Required) -->
+                        <div class="form-group">
+                            <label for="display_name">Display Name</label>
+                            <input type="text" class="form-control" id="display_name" name="display_name" required>
+                        </div>
+
+                        <!-- GitHub (Optional) -->
+                        <div class="form-group">
+                            <label for="github">GitHub (optional)</label>
+                            <input type="text" class="form-control" id="github" name="github">
+                        </div>
+
+                        <!-- Profile Image (Optional) -->
+                        <div class="form-group">
+                            <label for="profile_image">Profile Image (optional)</label>
+                            <input type="text" class="form-control" id="profile_image" name="profile_image">
+                        </div>
+
+                        <!-- Page (Optional) -->
+                        <div class="form-group">
+                            <label for="page">Page (optional)</label>
+                            <input type="text" class="form-control" id="page" name="page">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="submitAddAuthor()">Add Author</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Author Modal -->
+    <div class="modal fade" id="deleteAuthorModal" tabindex="-1" aria-labelledby="deleteAuthorModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteAuthorModalLabel">Delete Author</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this author?</p>
+                    <input type="hidden" id="delete_author_id">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-danger" onclick="submitDeleteAuthor()">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+
+        // Open the delete modal and store the author ID
+        function openDeleteModal(authorId) {
+            $('#delete_author_id').val(authorId);
+        }
+
+        function toggleDetails(authorId) {
+            var detailsRow = document.getElementById("details-" + authorId);
+            if (detailsRow.style.display === "none" || detailsRow.style.display === "") {
+                detailsRow.style.display = "table-row";
+            } else {
+                detailsRow.style.display = "none";
+            }
+        }
+
+        // Submit the add author form with AJAX
+        function submitAddAuthor() {
+            var formData = $('#addAuthorForm').serialize();
+            $.ajax({
+                url: '/node/api/authors/add/',  
+                method: 'POST',
+                data: formData,
+                success: function() {
+                    location.reload(); 
+                },
+                error: function() {
+                    alert('Error adding author');
+                }
+            });
+        }
+        
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (const element of cookies) {
+                    const cookie = element.trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function submitModifyAuthor(authorId) {
+            // Convert form data to a JSON object
+            var formDataArray = $('#modifyAuthorForm-' + authorId).serializeArray();
+            var formData = {};
+            $.each(formDataArray, function(_, field) {
+                formData[field.name] = field.value;  // Populate the form data object
+            });
+        
+            $.ajax({
+                url: '/node/api/authors/' + authorId + '/',  
+                method: 'PUT',
+                contentType: 'application/json',  // Specify JSON content type
+                data: JSON.stringify(formData),   // Convert form data to JSON string
+                headers: { 'X-CSRFToken': csrftoken },  // Pass the CSRF token in the headers
+                success: function() {
+                    location.reload(); 
+                },
+                error: function() {
+                    alert('Error modifying author');
+                }
+            });
+        }
+        
+        // Get the CSRF token
+        const csrftoken = getCookie('csrftoken');
+
+        // Submit the delete author form with AJAX
+        function submitDeleteAuthor() {
+            const authorId = $('#delete_author_id').val();
+            $.ajax({
+                url: '/node/api/authors/' + authorId + '/delete/',
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': csrftoken }, 
+                success: function() {
+                    location.reload();  
+                },
+                error: function() {
+                    alert('Error deleting author');
+                }
+            });
+        }
+
+    </script>
+
+{% endblock content %}

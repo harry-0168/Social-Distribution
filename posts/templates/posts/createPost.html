@@ -9,12 +9,17 @@
 </head>
 <body>
     <div class="header">
-        <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
+        <a href="{% url 'author_profile' 1%}"> <!-- TO-DO replace with actual author id-->
+            <img style="padding-left: 90px;" src="/static/avatar.png">
+        </a>
         <div class="icons">
-            <img src="/static/home.png">
-            <img src="/static/add_post.png">
+            <a href="{% url 'home_page' %}">
+                <img src="{% static 'home.png' %}">
+            </a>
+            <a href="{% url 'create_post' %}">
+                <img src="/static/add_post.png">
+            </a>
             <img src="/static/notifications.png">
-            <img src="/static/edit.png">
             <img src="/static/inbox.png">
         </div>
     </div>
@@ -36,7 +41,7 @@
                     <label for="visibility">Visibility</label>
                     <select id="visibility" name="visibility">
                         <option value="public">Public</option>
-                        <option value="private">Unlisted</option>
+                        <option value="unlisted">Unlisted</option>
                         <option value="friends">Friends-only</option>
                     </select>
                 </div>
@@ -46,7 +51,7 @@
                 <div class="form-field">
                     <label for="content-type">Content Type</label>
                     <select id="content-type" name="content_type">
-                        <option value="text/plain">Text</option>
+                        <option value="text/plain">Plain Text</option>
                         <option value="text/markdown">Markdown</option>
                         <option value="image/jpeg;base64">Image (JPEG)</option>
                         <option value="image/png;base64">Image (PNG)</option>
