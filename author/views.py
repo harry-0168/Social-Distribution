@@ -2,11 +2,13 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import api_view
-from rest_framework.authtoken.models import Token
 from .models import Author  
 from posts.models import Post  
 from .serializers import AuthorSerializer
 from django.shortcuts import render, get_object_or_404
+import jwt
+from datetime import datetime, timedelta
+from rest_framework.exceptions import AuthenticationFailed  
 
 
 def profile_view(request, author_id):
@@ -39,34 +41,56 @@ class AuthorViewSet(viewsets.ModelViewSet):
 @api_view(['POST'])
 def login(request):
     author = get_object_or_404(Author, display_name = request.data['display_name'])
+    if not author.isVerified:
+        return Response({"detail":"Not Verified by admin"}, status= status.HTTP_401_UNAUTHORIZED)
     if not author.check_password(request.data['password']):
         return Response({"detail":"Not found"}, status= status.HTTP_404_NOT_FOUND)
-    token, created = Token.objects.get_or_create(user = author)
+    # token, created = Token.objects.get_or_create(user = author)
+    payload = {
+        'id': author.display_name,
+        'exp': datetime.now() + timedelta(days=1),
+        'iat': datetime.now()
+    }
+    SECRET_KEY = 'django-in'
+    token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
     serializer = AuthorSerializer(instance = author)
-    return Response({"token":token.key,"author":serializer.data})
+    response = Response()
+    response.set_cookie(key='jwt', value=token, httponly=True)  
+    response.data= {"jwt":token,"author":serializer.data}
+    
+    return response
 
 @api_view(['POST'])
 def signup(request):
     serializer = AuthorSerializer(data = request.data, partial= True)
     if serializer.is_valid():
         serializer.save()
-        author = Author.objects.get(display_name=request.data['display_name'])
-        author.set_password(request.data['password'])
-        author.save()
-        token = Token.objects.create(user = author)
-        return Response({"token":token.key,"author":serializer.data})
+        return Response(serializer.data, status= status.HTTP_201_CREATED)
 
     return Response(serializer.errors, status= status.HTTP_400_BAD_REQUEST)
 
-from rest_framework.decorators import authentication_classes, permission_classes
-from rest_framework.authentication import SessionAuthentication, TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
-
 @api_view(['GET'])
-@authentication_classes([SessionAuthentication, TokenAuthentication])
-@permission_classes(IsAuthenticated)
-def test_token(request):
-    ''' This function is to verify if forbidden routes work with the auth token'''
+def get_author_from_cookie(request):
+    token = request.COOKIES.get('jwt')
+    if not token:
+        return AuthenticationFailed("Unauthenticated")
+    
+    try:
+        payload = jwt.decode(token, 'django-in', algorithms=['HS256'])
+    except jwt.ExpiredSignatureError:
+        return AuthenticationFailed("Unauthenticated")
+    
+    author = Author.objects.filter(display_name = payload['id']).first()
+    serializer = AuthorSerializer(instance = author)
+    return Response(serializer.data)
 
-    return Response(request.user)
+@api_view(['POST'])
+def logout(request):
+    response = Response()
+    response.delete_cookie('jwt')
+    response.data = {
+        "message": "success"
+    }
+    return response
+
 
