@@ -122,6 +122,12 @@ body {
     align-self: center;
     margin-left: auto; /* Center align horizontally */
     margin-right: auto;
+    overflow: hidden; /* Ensures no content spills out */
+}
+
+.post-image img {
+    width: 100%; /* Ensures image takes up all available width */
+    height: auto; /* Keeps the image proportionate */
 }
 
 .post-header {
@@ -173,7 +179,7 @@ body {
 }
 
 .action-buttons .delete-button {
-    background-color: rgb(116, 179, 95);
+    background-color: rgb(219, 94, 77);
 }
 
 .action-buttons .delete-button:hover {
