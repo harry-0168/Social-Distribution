@@ -61,6 +61,11 @@ def edit_post(request, id):
     
 def view_post(request, id):
     post = get_object_or_404(Post, pk=id)
+
+    if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
+        # Non-admin users should not see deleted posts
+        return redirect('index')  # Redirect to index or a 404 page
+
     published = post.published
     title = post.title
     description = post.description
@@ -81,6 +86,11 @@ def view_post(request, id):
 
 def view_postLikes(request, id):
     post = get_object_or_404(Post, pk=id)
+
+    if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
+        # Non-admin users should not see deleted posts
+        return redirect('index')  # Redirect to index or a 404 page
+
     published = post.published
     title = post.title
     description = post.description
@@ -98,3 +108,13 @@ def like_post(request, id):
     # Redirect back to the previous page using the HTTP_REFERER header
     previous_url = request.META.get('HTTP_REFERER', 'view')  # 'view' is the fallback URL
     return redirect(previous_url)
+
+def delete_post(request, id):
+    post = get_object_or_404(Post, pk=id)
+
+    # Mark post as "DELETED"
+    post.visibility = 'DELETED'
+    post.save()
+
+    # Redirect to the index page or any other page
+    return redirect('index')

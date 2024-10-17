@@ -2,85 +2,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'viewPost.css' %}">
-    <title>View Post</title>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="stylesheet" href="{% static 'viewPost.css' %}">
+   <title>View Post</title>
 </head>
 <body>
-    <div class="header">
-        <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
-        <div class="icons">
-            <img src="/static/home.png">
-            <img src="/static/add_post.png">
-            <img src="/static/notifications.png">
-            <img src="/static/edit.png">
-            <img src="/static/inbox.png">
-        </div>
-    </div>
-    <section class="gridContainer">
-        <section class="gridItemUser">
-            <div class="userInfo">
-                <img class="profileImage" src="{% static 'avatar.png' %}">
-                <div class="username_DatePosted">
-                    <a class="username">Username</a> <!-- TODO: make the username clickable to go to userProfile-->
-                    <h3 class="postDate">{{published}}</h3>
-                </div>
-                <button class="followButton">Follow</button>
-            </div>
-            <h1 class="postTitle">{{title}}</h1>
-            <p class="postDescription">
-                {% if post.content_type == "text/markdown" or post.content_type == "text/plain" %}
-                    {{ post.content }}
-                {% elif post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
-                    <img src="{{ post.content }}" alt="Post Image" class="postImage">
-                {% else %}
-                    {{ post.content }}
-                {% endif %}        
-            </p>
-            <section class="likeCommentShare">
-                <form action="{% url 'like_post' post.id %}" method="POST">
-                    {% csrf_token %}
-                    <button type="submit" class="like-button">
-                        <img class="heart" src="{% static 'heart.png' %}" alt="Like">
-                    </button>
-                </form>
-                <h3>{{ post.like_set.count }} like(s)</h3>
-                <a type="submit" class="comment-button" href="#comment-input">
-                    <img class="commentBubble"src="/static/messageCircle.png">
-                </a>
-                <h3>{{ post.comment_set.count }} comment(s)</h3>
-                <img src="/static/share.png">
-                <h3>share</h3>
-            </section>
-            <section class="viewLikesComments">
-                <a href="{% url 'likes' id=post.id %}" class="viewLikes">view likes</a>
-                <a class="viewComments">view comments</a>
-            </section>
-        </section>
-    
-        <section class="gridItemComments">
-            <div class="carousel">
-                <ol class="carousel-container">
-                    {% for comment in post.comment_set.all %}
-                        <div class="comment">
-                            <img class="commentProfileImage" src="{% static 'avatar.png' %}">
-                            <h5 class="commentUsername">{{ comment.username }}<div class="commentContent">{{ comment.content }}</div></h5> 
-                        </div>
-                    {% endfor %}
-                </ol>
-            </div>
-            <section class="commentInput">
-                <form method="POST"> 
-                    {% csrf_token %}
-                    <div class="commentInputWrapper">
-                        <input class="commentInputNameTextbox" type="text" name="username" placeholder="Your name" required>
-                        <input id="comment-input" class="commentInputTextbox" type="text" name="content" placeholder="Add a comment ..." required>
-                        <input class="commentInputSubmit" type="submit" value="Add Comment">
-                    </div>            
-                </form>
-            </section>
-        </section>
-    </section>
+   <div class="header">
+       <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
+       <div class="icons">
+           <img src="/static/home.png">
+           <img src="/static/add_post.png">
+           <img src="/static/notifications.png">
+           <img src="/static/edit.png">
+           <img src="/static/inbox.png">
+       </div>
+   </div>
+   <section class="gridContainer">
+       <section class="gridItemUser">
+           <div class="userInfo">
+               <img class="profileImage" src="{% static 'avatar.png' %}">
+               <div class="username_DatePosted">
+                   <a class="username">Username</a> <!-- TODO: make the username clickable to go to userProfile-->
+                   <h3 class="postDate">{{published}}</h3>
+               </div>
+               <button class="followButton">Follow</button>
+               <form action="{% url 'delete_post' post.id %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="delete-button">
+                    <div class="trash"></div>
+                </button>
+            </form>
+           </div>
+           <h1 class="postTitle">{{title}}</h1>
+           <p class="postDescription">
+               {% if post.content_type == "text/markdown" or post.content_type == "text/plain" %}
+                   {{ post.content }}
+               {% elif post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
+                   <img src="{{ post.content }}" alt="Post Image" class="postImage">
+               {% else %}
+                   {{ post.content }}
+               {% endif %}       
+           </p>
+           <section class="likeCommentShare">
+               <form action="{% url 'like_post' post.id %}" method="POST">
+                   {% csrf_token %}
+                   <button type="submit" class="like-button">
+                       <img class="heart" src="{% static 'heart.png' %}" alt="Like">
+                   </button>
+               </form>
+               <h3>{{ post.like_set.count }} like(s)</h3>
+               <a type="submit" class="comment-button" href="#comment-input">
+                   <img class="commentBubble"src="/static/messageCircle.png">
+               </a>
+               <h3>{{ post.comment_set.count }} comment(s)</h3>
+               <img src="/static/share.png">
+               <h3>share</h3>
+           </section>
+           <section class="viewLikesComments">
+               <a href="{% url 'likes' id=post.id %}" class="viewLikes">view likes</a>
+               <a class="viewComments">view comments</a>
+           </section>
+       </section>
+  
+       <section class="gridItemComments">
+           <div class="carousel">
+               <ol class="carousel-container">
+                   {% for comment in post.comment_set.all %}
+                       <div class="comment">
+                           <img class="commentProfileImage" src="{% static 'avatar.png' %}">
+                           <h5 class="commentUsername">{{ comment.username }}<div class="commentContent">{{ comment.content }}</div></h5>
+                       </div>
+                   {% endfor %}
+               </ol>
+           </div>
+           <section class="commentInput">
+               <form method="POST">
+                   {% csrf_token %}
+                   <div class="commentInputWrapper">
+                       <input class="commentInputNameTextbox" type="text" name="username" placeholder="Your name" required>
+                       <input id="comment-input" class="commentInputTextbox" type="text" name="content" placeholder="Add a comment ..." required>
+                       <input class="commentInputSubmit" type="submit" value="Add Comment">
+                   </div>           
+               </form>
+           </section>
+       </section>
+   </section>
+
 
 </body>
