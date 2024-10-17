@@ -37,4 +37,4 @@ class Comment(models.Model):
 
 class Like(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE) # all likes belong to a post
-    like_date = models.DateTimeField(default=timezone.now)
+    like_date = models.DateTimeField(default=datetime.now)

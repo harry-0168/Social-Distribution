@@ -31,7 +31,19 @@
             </div>
             <section class="likesArea">
                 <h3 class="likesAreaTitle">Likes</h3>
-
+                <div class="carousel">
+                    <div class="carousel-container">
+                        {% for like in post.like_set.all %}
+                            <div class="like">
+                                <img class="likeProfileImage" src="{% static 'avatar.png' %}">
+                                <div class="likeUsernameDate">
+                                    <h5 class="likeProfileUsername">Username</h5> <!--TODO: add the username of the profile that liked -->
+                                    <h5 class="likeDate">{{ like.like_date }}</h5> 
+                                </div>
+                            </div>
+                        {% endfor %} 
+                    </div>
+                </div>
             </section>
         </section>
 

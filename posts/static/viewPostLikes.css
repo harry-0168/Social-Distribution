@@ -86,13 +86,67 @@ html, body {
     background-color: #D9D9D9;
     margin-top: 20px;
     padding: 20px;
-    height: 100vh;
+    height: 800px;
     border-radius: 10px;
+    display: flex;
+    flex-direction: column;
 }
 .likesArea .likesAreaTitle{
     color: #3e305e;
     margin: 10px;
+    width: 100%;
 }
+.carousel {
+    height: 800px;
+    width: auto;
+    overflow-y: auto; /* Allow vertical scrolling */
+    padding: 10px; /* Optional padding */
+    border-radius: 5px; /* Rounded corners */
+    margin-top: 10px;
+}
+
+.carousel-container {
+    display: flex;
+    flex-direction: column; /* Stack likes vertically */
+    margin: 0;
+    padding: 0;
+}
+.like {
+    background-color: #D9D9D9; /* Background color for likes */
+    padding: 10px; /* Padding for likes */
+    margin: 5px 0; /* Space between likes */
+    border-radius: 5px; /* Rounded corners */
+    display: flex;
+    flex-direction: row;
+}
+.like .likeProfileImage {
+    margin: 6px;
+    height: 40px;
+    width: 40px;
+}
+.like .likeUsernameDate {
+    height: fit-content;
+    margin-left: 10px;
+}
+.like .likeProfileUsername {
+    margin: 0;
+    color: #000;
+    text-align: left;
+    width: fit-content;
+    max-width: 500px;
+    word-wrap: break-word;
+    font-weight: 100;
+}
+.like .likeDate {
+    margin: 0;
+    color: #9C9B9B;
+    text-align: left;
+    width: fit-content;
+    max-width: 500px;
+    word-wrap: break-word;
+    font-weight: 100;
+}
+
 
 .gridItemRight {
     background-color: #f8eac7;
