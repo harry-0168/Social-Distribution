@@ -31,11 +31,6 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'home',
-    'author',
-    'posts',
-    'inbox',
-    'nodeAdmin',
     'rest_framework',
     'rest_framework.authtoken',
     'django.contrib.admin',
@@ -44,6 +39,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'home',
+    'author',
+    'posts',
+    'inbox',
+    'nodeAdmin',
 ]
 
 MIDDLEWARE = [
