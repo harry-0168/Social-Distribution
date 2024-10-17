@@ -9,10 +9,16 @@
 </head>
 <body>
     <div class="header">
-        <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
+        <a href="{% url 'author_profile' 1%}"> <!-- TO-DO replace with actual author id-->
+            <img style="padding-left: 90px;" src="/static/avatar.png">
+        </a>
         <div class="icons">
-            <img src="/static/home.png">
-            <img src="/static/add_post.png">
+            <a href="{% url 'home_page' %}">
+                <img src="/static/home.png">
+            </a>
+            <a href="{% url 'create_post' %}">
+                <img src="/static/add_post.png">
+            </a>
             <img src="/static/notifications.png">
             <img src="/static/inbox.png">
         </div>
@@ -20,7 +26,7 @@
 
     <div class="container">
         <div class="form-title">Edit Post</div>
-        <form id="save-form" method="PUT" enctype="multipart/form-data" action="/post/create/">
+        <form id="save-form" method="POST" enctype="multipart/form-data" action="/post/create/">
             {% csrf_token %}
             <div class="form-field-inline">
                 <div class="form-field">
