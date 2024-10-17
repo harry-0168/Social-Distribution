@@ -1,5 +1,6 @@
-from datetime import datetime  # Add this import statement
+from datetime import datetime
 from django.db import models
+from django.utils import timezone
 import uuid
 
 VISIBILITY_CHOICES = [
@@ -33,3 +34,7 @@ class Comment(models.Model):
     created_at = models.DateTimeField("date created", default=datetime.now)
     content =  models.TextField()
     post = models.ForeignKey(Post, on_delete=models.CASCADE) # all comments belong to a post
+
+class Like(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE) # all likes belong to a post
+    like_date = models.DateTimeField(default=timezone.now)

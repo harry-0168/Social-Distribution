@@ -27,14 +27,14 @@ html, body {
 .gridContainer {
     display: grid;  /* enables the grid display */
     grid-template-rows: 1fr;          /* One row */
-    grid-template-columns: 1fr 1fr;   /* Two columns of equal size */
+    grid-template-columns: 1fr 2fr;   /* Two columns of equal size */
     padding: 10px;
     height: calc(100vh - 60px);  /* 100% height minus the header */
     border-radius: 10px; 
     
 }
-/* User Section */
-.gridItemUser{
+
+.gridItemLeft{
     background-color: #f8eac7; /* #f8eac7 */
     padding: 20px;
     font-size: 30px;
@@ -45,13 +45,13 @@ html, body {
     flex-direction: column;
     border-radius: 10px;
 }
-.gridItemUser .userInfo{
+.gridItemLeft .userInfo{
     background-color: #f8eac7;
     display: flex;
     flex-direction: row;
     justify-content: left;
     margin-bottom: 10px;
-    
+    margin-left: 20px;
 }
 .userInfo .profileImage{
     height: 50px;
@@ -82,14 +82,39 @@ html, body {
     font-size: medium;
     color: #3e305e;
 }
+.likesArea{
+    background-color: #D9D9D9;
+    margin-top: 20px;
+    padding: 20px;
+    height: 100vh;
+    border-radius: 10px;
+}
+.likesArea .likesAreaTitle{
+    color: #3e305e;
+    margin: 10px;
+}
 
-.gridItemUser .postTitle{
+.gridItemRight {
+    background-color: #f8eac7;
+    padding: 20px;
+    font-size: 30px;
+    display: flex; 
+    flex-direction: column; 
+    justify-content: flex-start; /* Align items to the top */
+    align-items: center; 
+    text-align: center;
+    border-radius: 5px;
+    margin: 40px;
+    /* height: 650px; */
+    height: 100vh;
+}
+.gridItemRight .postTitle{
     background-color: #f8eac7;
     color:#000;
     margin: 10px;
 }
 
-.gridItemUser .postDescription{
+.gridItemRight .postDescription{
     background-color: #f8eac7;
     margin: 0;
     margin-bottom: 10px;
@@ -103,7 +128,7 @@ html, body {
     display: block; /* Avoid inline elements from having extra margins */
     margin: 0 auto; /* Center the image if needed */
 }
-.gridItemUser .likeCommentShare{
+.gridItemRight .likeCommentShare{
     background-color: #f8eac7;
     margin: 10px;
     display: flex;
@@ -132,138 +157,34 @@ html, body {
     font-weight: 100;
     color: #9C9B9B;
 }
+.likeCommentShare .like-button{
+    background-color: #f8eac7;
+    border-color: #f8eac7;
+    border-style: none;
+}
 
-.gridItemUser .viewLikesComments{
+.gridItemRight .viewLikesComments{
     background-color: #f8eac7;
     margin: 10px;
     display: flex;
     flex-direction: row;
 }
 .viewLikesComments .viewComments{
-    color: #9C9B9B;
+    color: #4F378A;
     font-weight: 100;
     font-size: 25px;
     margin: 10px;
 }
-.viewLikesComments .viewLikes{
-    color:#4F378A;
-    font-weight: 100;
-    font-size: 25px;
-    margin: 10px;
-}
-.viewLikesComments .viewLikes:hover{
+.viewLikesComments .viewComments:hover{
     color:#8F72D9;
     font-weight: 100;
     font-size: 25px;
     text-decoration: underline;
     margin: 10px;
 }
-
-/* Comment Section */
-.gridItemComments {
-    background-color: #D9D9D9;
-    padding: 20px;
-    font-size: 30px;
-    display: flex; 
-    flex-direction: column; 
-    justify-content: flex-start; /* Align items to the top */
-    align-items: center; 
-    text-align: center;
-    border-radius: 5px;
-    margin: 40px;
-    /* height: 650px; */
-    height: 100vh;
-}
-
-.carousel {
-    height: calc(100% - 120px); /* Fill the height of the comments section */
-    width: 100%;
-    overflow-y: auto; /* Allow vertical scrolling */
-    padding: 10px; /* Optional padding */
-    border-radius: 5px; /* Rounded corners */
-    margin-bottom: 10px;
-}
-
-.carousel-container {
-    display: flex;
-    flex-direction: column; /* Stack comments vertically */
-}
-
-.comment {
-    background-color: #D9D9D9; /* Background color for comments */
-    padding: 10px; /* Padding for comments */
-    margin: 5px 0; /* Space between comments */
-    border-radius: 5px; /* Rounded corners */
-    display: flex;
-    flex-direction: row;
-}
-.commentProfileImage{
-    margin: 6px;
-    height: 40px;
-    width: 40px;
-}
-.commentUsername{
-    margin: 4px;
+.viewLikesComments .viewLikes{
+    color:#9C9B9B;
     font-weight: 100;
-    text-align: left;
-}
-.commentContent{
-    margin-left: 4px;
-    color: #9C9B9B;
-    text-align: left;
-    width: fit-content;
-    max-width: 500px;
-    word-wrap: break-word;
-}
-
-.commentInput {
-    margin: 10px;
-    display: flex;
-    flex-direction: column;
-    justify-content: left;
-}
-/* Flexbox for aligning input fields and button */
-.commentInputWrapper {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px; /* Adds some space between input fields */
+    font-size: 25px;
     margin: 10px;
 }
-.commentInputNameTextbox, 
-.commentInputTextbox {
-    background-color: #D9D9D9;
-    border-color: #D9D9D9;
-    border-style: none;
-    height: 30px;
-    margin: 0;
-    padding: 5px;
-    border-radius: 5px;
-    font-size: 16px;
-}
-.commentInputNameTextbox {
-    width: 200px; /* Adjust this value as needed */
-}
-
-.commentInputTextbox {
-    width: 300px; /* Adjust this value as needed */
-}
-.commentInputSubmit{
-    height: 30px;
-    background-color: #4F378A;
-    border-color: #D9D9D9;
-    border-style: none;
-    color: white;
-    padding: 8px;
-    border-radius: 8px;
-}
-.commentInputSubmit:hover{
-    height: 30px;
-    background-color: #8F72D9;
-    border-color: #D9D9D9;
-    border-style: none;
-    color: #4F378A;
-    padding: 8px;
-    border-radius: 8px;
-}
-

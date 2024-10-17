@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="header">
-        <img style="padding-left: 90px; height: 30px;" src="{% static 'avatar.png' %}">
+        <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
         <div class="icons">
             <img src="/static/home.png">
             <img src="/static/add_post.png">
@@ -31,11 +31,11 @@
             <h1 class="postTitle">{{title}}</h1>
             <p class="postDescription">
                 {% if post.content_type == "text/markdown" or post.content_type == "text/plain" %}
-                    {{ post.description }}
+                    {{ post.content }}
                 {% elif post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
                     <img src="{{ post.content }}" alt="Post Image" class="postImage">
                 {% else %}
-                    {{ post.description }}
+                    {{ post.content }}
                 {% endif %}        
             </p>
             <section class="likeCommentShare">

@@ -1,5 +1,5 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Post, Comment
+from django.shortcuts import render, redirect, get_object_or_404, reverse
+from .models import Post, Comment, Like
 import base64
 
 # Create your views here.
@@ -51,3 +51,22 @@ def view_post(request, id):
         return redirect('view', id=post.id)
 
     return render(request, "posts/viewPost.html", {"id":id, "published":published, "title":title, "description":description, "post":post})
+
+def view_postLikes(request, id):
+    post = get_object_or_404(Post, pk=id)
+    published = post.published
+    title = post.title
+    description = post.description
+
+    return render(request, "posts/viewPostLikes.html", {"id":id, "published":published, "title":title, "description":description, "post":post})
+
+def like_post(request, id):
+    post = get_object_or_404(Post, pk=id)
+    
+    if request.method == 'POST':
+        # Create and save the like
+        like = Like(post=post)
+        like.save()
+    
+    # Redirect back to the same post page using 'reverse'
+    return redirect('likes', id=post.id)
