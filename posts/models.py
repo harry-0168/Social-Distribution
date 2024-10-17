@@ -1,5 +1,7 @@
+from datetime import datetime
 from django.db import models
 from author.models import Author
+from django.utils import timezone
 import uuid
 
 VISIBILITY_CHOICES = [
@@ -30,3 +32,13 @@ class Post(models.Model):
     
     def __str__(self):
         return self.title
+
+class Comment(models.Model):
+    username = models.CharField(max_length=32) 
+    created_at = models.DateTimeField("date created", default=timezone.now)
+    content =  models.TextField()
+    post = models.ForeignKey(Post, on_delete=models.CASCADE) # all comments belong to a post
+
+class Like(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE) # all likes belong to a post
+    like_date = models.DateTimeField(default=timezone.now)

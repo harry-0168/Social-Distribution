@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../../static/createPost.css">
-    <title>Create New Post</title>
+    <link rel="stylesheet" href="{% static 'createPost.css' %}">
+    <title>Edit Post</title>
 </head>
 <body>
     <div class="header">
@@ -14,7 +14,7 @@
         </a>
         <div class="icons">
             <a href="{% url 'home_page' %}">
-                <img src="{% static 'home.png' %}">
+                <img src="/static/home.png">
             </a>
             <a href="{% url 'create_post' %}">
                 <img src="/static/add_post.png">
@@ -25,24 +25,24 @@
     </div>
 
     <div class="container">
-        <div class="form-title">Create New Post</div>
+        <div class="form-title">Edit Post</div>
         <form id="save-form" method="POST" enctype="multipart/form-data" action="/post/create/">
             {% csrf_token %}
             <div class="form-field-inline">
                 <div class="form-field">
                     <label for="title">Title</label>
-                    <input type="text" id="title" name="title" placeholder="Enter the title of the post" required>
+                    <input type="text" id="title" name="title" value="{{ post.title }}">
                 </div>
                 <div class="form-field">
                     <label for="description">Description</label>
-                    <input type="text" id="description" name="description" placeholder="Enter the description of the post">
+                    <input type="text" id="description" name="description" value="{{ post.description }}">
                 </div>
                 <div class="form-field">
                     <label for="visibility">Visibility</label>
                     <select id="visibility" name="visibility">
-                        <option value="public">Public</option>
-                        <option value="unlisted">Unlisted</option>
-                        <option value="friends">Friends-only</option>
+                        <option value="public" {% if post.visibility == 'PUBLIC' %}selected{% endif %}>Public</option>
+                        <option value="unlisted" {% if post.visibility == 'UNLISTED' %}selected{% endif %}>Unlisted</option>
+                        <option value="friends" {% if post.visibility == 'FRIENDS' %}selected{% endif %}>Friends-only</option>
                     </select>
                 </div>
             </div>
@@ -51,21 +51,29 @@
                 <div class="form-field">
                     <label for="content-type">Content Type</label>
                     <select id="content-type" name="content_type">
-                        <option value="text/plain">Plain Text</option>
-                        <option value="text/markdown">Markdown</option>
-                        <option value="image/jpeg;base64">Image (JPEG)</option>
-                        <option value="image/png;base64">Image (PNG)</option>
+                        <option value="text/plain" {% if post.content_type == 'text/plain' %}selected{% endif %}>Plain Text</option>
+                        <option value="text/markdown" {% if post.content_type == 'text/markdown' %}selected{% endif %}>Markdown</option>
+                        <option value="image/jpeg;base64" {% if post.content_type == 'image/jpeg;base64' %}selected{% endif %}>Image (JPEG)</option>
+                        <option value="image/png;base64" {% if post.content_type == 'image/png;base64' %}selected{% endif %}>Image (PNG)</option>
                     </select>
                 </div>
             </div>
             <div class="form-field" id="text-content-field">
                 <label for="content">Content</label>
-                <textarea id="content" name="content" placeholder="Enter the content of the post"></textarea>
+                {% if post.content_type != "image/png;base64" and post.content_type != "image/jpeg;base64" %}
+                    <textarea id="content" name="content">{{ post.content }}</textarea>
+                {% else %}
+                    <textarea id="content" name="content"></textarea>
+                {% endif %}
             </div>
             <div class="form-field" id="image-upload-field" style="display: none;">
                 <label>Image Upload</label>
                 <div id="image-upload-container">
-                    <span>No Image Uploaded</span>
+                    {% if post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
+                        <img src="{{ post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
+                    {% else %}
+                        <span>No Image Uploaded</span>
+                    {% endif %}
                 </div>
             </div>
 
@@ -74,7 +82,7 @@
                     Upload Image
                 </label>
                 <input type="file" id="img" name="img" accept="image/*" style="display: none;">
-                <button type="submit">Post</button>
+                <button type="submit">Update</button>
             </div>
         </form>
     </div>

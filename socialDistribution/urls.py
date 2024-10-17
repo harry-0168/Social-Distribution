@@ -24,4 +24,6 @@ urlpatterns = [
     path("post/", include("posts.urls")),
     path('node/', include('nodeAdmin.urls')),
     path('author/', include('author.urls')),
+    path('', include('home.urls')),
+
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
