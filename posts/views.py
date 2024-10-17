@@ -1,5 +1,5 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Post, Author
+from django.shortcuts import render, redirect, get_object_or_404, reverse, get_object_or_404
+from .models import Post, Comment, Like, Author
 import base64
 
 # Create your views here.
@@ -56,3 +56,45 @@ def edit_post(request):
         return redirect('edit_post')
 
     return render(request, 'posts/editPost.html', {'post': post})
+
+    return redirect('index')
+    
+def view_post(request, id):
+    post = get_object_or_404(Post, pk=id)
+    published = post.published
+    title = post.title
+    description = post.description
+
+    if request.method == 'POST':
+        # Retrieve the form data
+        username = request.POST['username']
+        content = request.POST['content']
+        
+        # Create and save the new comment
+        comment = Comment(username=username, content=content, post=post)
+        comment.save()
+        
+        # Redirect to the same post after adding the comment (prevents form resubmission on refresh)
+        return redirect('view', id=post.id)
+
+    return render(request, "posts/viewPost.html", {"id":id, "published":published, "title":title, "description":description, "post":post})
+
+def view_postLikes(request, id):
+    post = get_object_or_404(Post, pk=id)
+    published = post.published
+    title = post.title
+    description = post.description
+
+    return render(request, "posts/viewPostLikes.html", {"id":id, "published":published, "title":title, "description":description, "post":post})
+
+def like_post(request, id):
+    post = get_object_or_404(Post, pk=id)
+    
+    if request.method == 'POST':
+        # Create and save the like
+        like = Like(post=post)
+        like.save()
+    
+    # Redirect back to the previous page using the HTTP_REFERER header
+    previous_url = request.META.get('HTTP_REFERER', 'view')  # 'view' is the fallback URL
+    return redirect(previous_url)
