@@ -31,10 +31,10 @@ class Post(models.Model):
 
 class Comment(models.Model):
     username = models.CharField(max_length=32) 
-    created_at = models.DateTimeField("date created", default=datetime.now)
+    created_at = models.DateTimeField("date created", default=timezone.now)
     content =  models.TextField()
     post = models.ForeignKey(Post, on_delete=models.CASCADE) # all comments belong to a post
 
 class Like(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE) # all likes belong to a post
-    like_date = models.DateTimeField(default=datetime.now)
+    like_date = models.DateTimeField(default=timezone.now)
