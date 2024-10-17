@@ -1,0 +1,36 @@
+{% extends 'author/author_base.html' %}
+{% load static %}
+{% block content %}
+<!-- Block to display messages -->
+{% if messages %}
+    <div class="message-container">
+        {% for message in messages %}
+            <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    <script>
+        //Show a popup window with the message
+        window.onload = function() {
+            let messages = document.querySelectorAll('.message');
+            if (messages.length > 0) {
+                let messageText = messages[0].innerText;
+                alert(messageText); //Show an alert popup with the message
+
+                //Redirect after displaying the popup
+                setTimeout(function() {
+                    window.location.href = "{{ redirect_url }}";
+                }, 1000); //Time 1 second
+            }
+        }
+    </script>
+{% endif %}
+
+<div class="settings-container">
+    <h2>Edit Profile Info</h2>
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Save Changes</button>
+    </form>
+</div>
+{% endblock %}

@@ -6,7 +6,7 @@ class Author(models.Model):
     host = models.CharField(max_length=255, null=False)
     display_name = models.CharField(max_length=100)
     github = models.CharField(max_length=255, blank=True, null=True)
-    profile_image = models.CharField(max_length=255, blank=True, null=True)
+    profile_image = models.ImageField(upload_to='profile_images/', blank=True, null=True)
     page = models.CharField(max_length=255, blank=True, null=True)
     
     def __str__(self):

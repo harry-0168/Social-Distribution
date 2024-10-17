@@ -4,7 +4,10 @@ from rest_framework.pagination import PageNumberPagination
 from .models import Author  
 from posts.models import Post  
 from .serializers import AuthorSerializer
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404,redirect
+from .serializers import UserSettingsForm
+from django.contrib import messages
+
 
 
 def profile_view(request, author_id):
@@ -31,3 +34,25 @@ class AuthorViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
+
+def user_settings(request, author_id):
+    author = get_object_or_404(Author, id=author_id)
+
+    if request.method == 'POST':
+        form = UserSettingsForm(request.POST, request.FILES, instance=author)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profile changes saved successfully!')
+            # Pass the redirect URL to the template
+            return render(request, 'author/user_settings.html', {
+                'form': form,
+                'author': author,
+                'redirect_url': request.build_absolute_uri(
+                    redirect('author_profile', author_id=author.id).url
+                )
+            })
+
+    else:
+        form = UserSettingsForm(instance=author)
+
+    return render(request, 'author/user_settings.html', {'form': form, 'author': author})
