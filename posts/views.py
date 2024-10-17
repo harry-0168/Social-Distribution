@@ -68,5 +68,6 @@ def like_post(request, id):
         like = Like(post=post)
         like.save()
     
-    # Redirect back to the same post page using 'reverse'
-    return redirect('likes', id=post.id)
+    # Redirect back to the previous page using the HTTP_REFERER header
+    previous_url = request.META.get('HTTP_REFERER', 'view')  # 'view' is the fallback URL
+    return redirect(previous_url)
