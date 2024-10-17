@@ -22,23 +22,22 @@
                     </div>
                 </div>
 
-                 <!-- Title of the post -->
-                 <div class="post-title">
+                <!-- Title of the post -->
+                <div class="post-title">
                     <h3>{{ post.title }}</h3>
                 </div>
-
 
                 <!-- 2nd row: Image if exists -->
                 {% if post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
                 <div class="post-image">
-                    <img src="data:{{ post.content_type }};base64,{{ post.content }}" alt="Post Image">
+                    <img src="{{ post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
                 </div>
-                {% endif %}
-
+                {% else %}
                 <!-- 3rd row: Content of the post -->
                 <div class="post-content">
                     <p>{{ post.content }}</p>
                 </div>
+                {% endif %}
 
                 <!-- 4th row: Like, comment, share buttons -->
                 <div class="post-actions">
