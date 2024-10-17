@@ -8,13 +8,19 @@
                 <!-- 1st row: Profile image, name, and date posted -->
                 <div class="post-header">
                     <div class="profile-info">
-                        <img src="{{ author.profile_image|default_if_none:'default_profile.png' }}" alt="Picture" class="profile-pic-small">
                         <div class="author-name-date">
                             <h4>{{ author.display_name }}</h4>
                             <p>{{ post.published|date:"F j, Y, g:i a" }}</p>
                         </div>
                     </div>
-                    <div class="edit-btn">
+                    <div class="action-buttons">
+                        <!-- Delete button -->
+                        <form method="POST" action="{% url 'delete_post' post.id %}" class="delete-form">
+                            {% csrf_token %}
+                            <button type="submit" class="delete-button">Delete</button>
+                        </form>
+
+                        <!-- Edit button -->
                         <a href="#" class="edit-button">Edit</a>
                     </div>
                 </div>

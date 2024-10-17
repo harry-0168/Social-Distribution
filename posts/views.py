@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import get_object_or_404, redirect
 from .models import Post
 import base64
 
@@ -31,3 +31,15 @@ def create_post(request):
         post.save() 
         #TO-DO change redirection
         return redirect('index')
+    
+def delete_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+
+    # Ensure that only the author of the post or an admin can delete the post
+    if post.author == request.user or request.user.is_superuser:
+        post.visibility = 'DELETED'  # Mark the post as 'DELETED'
+        post.save()
+        return redirect('author_profile', author_id=post.author.id)  # Redirect to the author's profile page
+    else:
+        # If the user is not the author, they are redirected back
+        return redirect('author_profile', author_id=post.author.id)
