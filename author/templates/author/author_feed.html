@@ -5,7 +5,7 @@
     {% if posts %}
         {% for post in posts %}
             <div class="post-box">
-                <!-- 1st row: Profile image, name, and date posted -->
+                <!-- 1st row: Profile info and action buttons -->
                 <div class="post-header">
                     <div class="profile-info">
                         <div class="author-name-date">
@@ -14,31 +14,30 @@
                         </div>
                     </div>
                     <div class="action-buttons">
-                        <!-- Delete button -->
                         <form method="POST" action="{% url 'delete_post' post.id %}" class="delete-form">
                             {% csrf_token %}
                             <button type="submit" class="delete-button">Delete</button>
                         </form>
-
-                        <!-- Edit button -->
-                        <div class="edit-btn">
-                          <a href="{% url 'edit_post' %}" class="edit-button">Edit</a>  
-                        </div>
+                        <a href="{% url 'edit_post' %}" class="edit-button">Edit</a>  
                     </div>
-                
+                </div>
 
-                <!-- 2nd row: Image (if exists) -->
+                 <!-- Title of the post -->
+                 <div class="post-title">
+                    <h3>{{ post.title }}</h3>
+                </div>
+
+
+                <!-- 2nd row: Image if exists -->
                 {% if post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
-                    <div class="post-image">
-                        <img src="data:{{ post.content_type }};base64,{{ post.content }}" alt="Post Image">
-                    </div>
+                <div class="post-image">
+                    <img src="data:{{ post.content_type }};base64,{{ post.content }}" alt="Post Image">
+                </div>
                 {% endif %}
 
                 <!-- 3rd row: Content of the post -->
                 <div class="post-content">
-                    {% if post.content_type == "text/markdown" or post.content_type == "text/plain" %}
-                        <p>{{ post.content }}</p>
-                    {% endif %}
+                    <p>{{ post.content }}</p>
                 </div>
 
                 <!-- 4th row: Like, comment, share buttons -->
@@ -50,7 +49,7 @@
 
                 <!-- 5th row: Likes count and view comments -->
                 <div class="post-footer">
-                    <p>likes</p>
+                    <p>{{ post.likes_count|default_if_none:"0" }} likes</p>
                     <a href="#">View all comments</a>
                 </div>
             </div>
@@ -59,4 +58,5 @@
         <p>{{ author.display_name }} hasn't posted anything yet.</p>
     {% endif %}
 </div>
+
 {% endblock %}
