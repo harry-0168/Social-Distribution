@@ -1,0 +1,134 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'createPost.css' %}">
+    <title>Edit Post</title>
+</head>
+<body>
+    <div class="header">
+        <a href="{% url 'author_profile' 1%}"> <!-- TO-DO replace with actual author id-->
+            <img style="padding-left: 90px;" src="/static/avatar.png">
+        </a>
+        <div class="icons">
+            <a href="{% url 'home_page' %}">
+                <img src="/static/home.png">
+            </a>
+            <a href="{% url 'create_post' %}">
+                <img src="/static/add_post.png">
+            </a>
+            <img src="/static/notifications.png">
+            <img src="/static/inbox.png">
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="form-title">Edit Post</div>
+        <form id="save-form" method="POST" enctype="multipart/form-data" action="/post/create/">
+            {% csrf_token %}
+            <div class="form-field-inline">
+                <div class="form-field">
+                    <label for="title">Title</label>
+                    <input type="text" id="title" name="title" value="{{ post.title }}">
+                </div>
+                <div class="form-field">
+                    <label for="description">Description</label>
+                    <input type="text" id="description" name="description" value="{{ post.description }}">
+                </div>
+                <div class="form-field">
+                    <label for="visibility">Visibility</label>
+                    <select id="visibility" name="visibility">
+                        <option value="public" {% if post.visibility == 'PUBLIC' %}selected{% endif %}>Public</option>
+                        <option value="unlisted" {% if post.visibility == 'UNLISTED' %}selected{% endif %}>Unlisted</option>
+                        <option value="friends" {% if post.visibility == 'FRIENDS' %}selected{% endif %}>Friends-only</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-field-inline">
+                <div class="form-field">
+                    <label for="content-type">Content Type</label>
+                    <select id="content-type" name="content_type">
+                        <option value="text/plain" {% if post.content_type == 'text/plain' %}selected{% endif %}>Plain Text</option>
+                        <option value="text/markdown" {% if post.content_type == 'text/markdown' %}selected{% endif %}>Markdown</option>
+                        <option value="image/jpeg;base64" {% if post.content_type == 'image/jpeg;base64' %}selected{% endif %}>Image (JPEG)</option>
+                        <option value="image/png;base64" {% if post.content_type == 'image/png;base64' %}selected{% endif %}>Image (PNG)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-field" id="text-content-field">
+                <label for="content">Content</label>
+                {% if post.content_type != "image/png;base64" and post.content_type != "image/jpeg;base64" %}
+                    <textarea id="content" name="content">{{ post.content }}</textarea>
+                {% else %}
+                    <textarea id="content" name="content"></textarea>
+                {% endif %}
+            </div>
+            <div class="form-field" id="image-upload-field" style="display: none;">
+                <label>Image Upload</label>
+                <div id="image-upload-container">
+                    {% if post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
+                        <img src="{{ post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
+                    {% else %}
+                        <span>No Image Uploaded</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="buttons">
+                <label for="img" id="file-upload-label" class="file-upload-label" style="display: none;">
+                    Upload Image
+                </label>
+                <input type="file" id="img" name="img" accept="image/*" style="display: none;">
+                <button type="submit">Update</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // toggle between content types and display elements accordingly
+        function toggleContentFields(contentType) {
+            const textContentField = document.getElementById('text-content-field');
+            const imageUploadField = document.getElementById('image-upload-field');
+            const fileUploadLabel = document.getElementById('file-upload-label');
+
+            if (contentType.startsWith('image/')) {
+                textContentField.style.display = 'none';
+                imageUploadField.style.display = 'block';
+                fileUploadLabel.style.display = 'inline-block';
+            } else if (contentType.startsWith('text/')) {
+                imageUploadField.style.display = 'none';
+                textContentField.style.display = 'block';
+                fileUploadLabel.style.display = 'none';
+            }
+        }
+
+        // Event listener for content type select
+        document.getElementById('content-type').addEventListener('change', function(event) {
+            const contentType = event.target.value;
+            toggleContentFields(contentType);
+        });
+
+        toggleContentFields(document.getElementById('content-type').value);
+
+        // Image preview
+        document.getElementById('img').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const container = document.getElementById('image-upload-container');
+                    container.innerHTML = ''; // Clear any existing content
+                    const imgElement = document.createElement('img');
+                    imgElement.src = e.target.result;
+                    container.appendChild(imgElement);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+
+</body>
+</html>

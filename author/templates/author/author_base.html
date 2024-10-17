@@ -1,0 +1,54 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'profile.css' %}">
+    <title>{{ author.display_name }}'s Profile</title>
+</head>
+<body>
+    <div class="header">
+        <a href="{% url 'author_profile' 1%}"> <!-- TO-DO replace with actual author id-->
+            <img style="padding-left: 90px;" src="/static/avatar.png">
+        </a>
+        <div class="icons">
+            <a href="{% url 'home_page' %}">
+                <img src="{% static 'home.png' %}">
+            </a>
+            <a href="{% url 'create_post' %}">
+                <img src="{% static 'add_post.png' %}">
+            </a>
+            <img src="{% static 'notifications.png' %}">
+            <img src="{% static 'inbox.png' %}">
+        </div>
+    </div>
+
+    <div class="icon-links">
+        <a href="#">Page</a>
+        <a href="#">Notification</a>
+        <a href="#">More</a>
+    </div>
+
+    <div class="container">
+ 
+        <div class="profile-area">
+            <img class="profile-pic" src="{% static 'avatar.png' %}" alt="Profile Picture">
+            <h2 class="profile-name">{{ author.display_name }}</h2>
+            <ul class="profile-menu">
+                <li><a href="{% url 'author_profile' author.id %}">Home</a></li>
+                <li><a href="{% url 'author-about' author.id %}">About</a></li>
+                <li><a href="#">Photo</a></li>
+                <li><a href="#">Video</a></li>
+                <li><a href="#">Settings</a></li>
+            </ul>
+        </div>
+
+        <!-- Main content area-->
+        <div class="main-content">
+            {% block content %}
+            {% endblock content %}
+        </div>
+    </div>
+</body>
+</html>
