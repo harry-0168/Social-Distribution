@@ -1,3 +1,4 @@
+/* General Reset */
 * {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -5,12 +6,19 @@
     box-sizing: border-box;
 }
 
+/* Body and Container Layout */
 body {
     background-color: #f8eac7;
-    height: 100vh; 
-    overflow: hidden; 
+    height: 100vh;
+    overflow: hidden;
 }
 
+.container {
+    display: flex;
+    height: calc(100vh - 60px);
+}
+
+/* Header */
 .header {
     background-color: #3e305e;
     padding: 15px;
@@ -25,6 +33,7 @@ body {
     padding-right: 90px;
 }
 
+/* Icon Links */
 .icon-links {
     display: flex;
     justify-content: left;
@@ -46,11 +55,7 @@ body {
     color: #f8eac7;
 }
 
-.container {
-    display: flex;
-    height: calc(100vh - 60px); 
-}
-
+/* Profile Area */
 .profile-area {
     width: 20%;
     padding: 20px;
@@ -61,7 +66,7 @@ body {
     position: sticky;
     top: 0;
     height: 100%;
-    overflow-y: auto; 
+    overflow-y: auto;
 }
 
 .profile-area .profile-pic {
@@ -97,100 +102,38 @@ body {
     color: #6d4f8d;
 }
 
-
+/* Main Content */
 .main-content {
     flex-grow: 1;
     padding: 20px;
-    overflow-y: auto; 
+    overflow-y: auto;
 }
 
-
+/* Post Box */
 .post-box {
-    background-color: #f8f8f8;
-    padding: 20px;
+    background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     border: 1px solid #e0e0e0;
     margin-bottom: 20px;
-    width: 60%;
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.post-box h3 a {
-    color: #3e305e;
-    text-decoration: none;
-}
-
-.post-box h3 a:hover {
-    text-decoration: underline;
-    color: #6d4f8d;
-}
-
-.post-box p {
-    color: #333;
-    margin: 10px 0;
-}
-
-.post-content img {
-    max-width: 100%;
-    border-radius: 5px;
-    margin-top: 15px;
-}
-
-.post-content p {
-    font-size: 1.1em;
-    line-height: 1.6;
-}
-
-
-.author-details {
     padding: 20px;
-    background-color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 80%;
     max-width: 800px;
-    margin: 0 auto; 
-    margin-bottom: 20px;
+    align-self: center;
+    margin-left: auto; /* Center align horizontally */
+    margin-right: auto;
+    overflow: hidden; /* Ensures no content spills out */
 }
 
-.author-profile-image {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.profile-pic-large {
-    width: 150px;
-    height: 150px;
-
-
-}
-
-.author-info {
-    text-align: left;
-}
-
-.author-info p {
-    margin: 10px 0;
-    font-size: 1.2em;
-    color: #333;
-}
-
-.author-info a {
-    color: #3e305e;
-    text-decoration: none;
-}
-
-.author-info a:hover {
-    text-decoration: underline;
-    color: #6d4f8d;
+.post-image img {
+    width: 100%; /* Ensures image takes up all available width */
+    height: auto; /* Keeps the image proportionate */
 }
 
 .post-header {
     display: flex;
-    justify-content: space-between; 
-    align-items: center; 
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 10px;
 }
 
@@ -200,57 +143,77 @@ body {
 }
 
 .profile-pic-small {
-    width: 40px;
-    height: 40px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
     margin-right: 10px;
 }
 
-.author-name-date h4 {
-    margin: 0;
-    font-size: 1.1em;
-}
-
+.author-name-date h4,
 .author-name-date p {
     margin: 0;
-    font-size: 0.9em;
     color: #666;
 }
 
-.edit-btn {
-    
+/* Post Actions */
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
 }
 
-.edit-button {
+.action-buttons .delete-button,
+.action-buttons .edit-button {
     background-color: #3e305e;
     color: white;
-    padding: 5px 10px;
-    text-decoration: none;
+    padding: 10px 20px;
     border-radius: 5px;
+    text-align: center;
+    width: 100px;
+    border: none;
+    cursor: pointer;
+    display: inline-block;
+    text-decoration: none;
+    height: 37px;
+    font-size: 15px;
 }
 
-.edit-button:hover {
+.action-buttons .delete-button {
+    background-color: rgb(219, 94, 77);
+}
+
+.action-buttons .delete-button:hover {
+    background-color: darkred;
+}
+
+.action-buttons .edit-button:hover {
     background-color: #6d4f8d;
 }
 
-
-.post-footer {
-    display: flex;
-    justify-content: space-between; 
-    align-items: center; 
-    margin-top: 10px; 
+/* Post Content */
+.post-content img {
+    max-width: 100%;
+    border-radius: 5px;
+    margin-top: 15px;
 }
 
-.post-footer p {
-    margin: 0;
-    font-size: 1em;
+.post-content p {
+    font-size: 1.1em;
+    line-height: 1.6;
     color: #333;
+}
+
+/* Post Footer */
+.post-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
 }
 
 .post-footer a {
     text-decoration: none;
     color: #3e305e;
-    font-size: 1em;
 }
 
 .post-footer a:hover {
@@ -258,3 +221,7 @@ body {
     color: #6d4f8d;
 }
 
+.post-title h3 {
+    color: #3e305e; /* Matching the theme color */
+    margin-bottom: 10px; /* Spacing before the image or content */
+}

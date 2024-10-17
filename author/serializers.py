@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Author
+from .models import Author, FollowRequest
 
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,3 +23,11 @@ class AuthorSerializer(serializers.ModelSerializer):
     #     return instance
 
 
+
+class FollowRequestSerializer(serializers.ModelSerializer):
+    actor = AuthorSerializer(read_only=True)
+    object_author = AuthorSerializer(read_only=True)
+
+    class Meta:
+        model = FollowRequest
+        fields = ['id', 'actor', 'object_author', 'summary', 'status']

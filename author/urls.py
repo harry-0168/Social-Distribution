@@ -4,9 +4,10 @@ from .views import AuthorViewSet, profile_view, author_about, login, signup, get
 from posts import views as post_views
 
 router = DefaultRouter()
-router.register(r'authors', AuthorViewSet, basename='author')
+router.register(r'authors', AuthorViewSet, basename='author')  # Registers /authors/ endpoint
 
 urlpatterns = [
+
     path('api/', include(router.urls)),  
     path('login', login, name='login'),
     path('signup', signup, name='signup'),
@@ -19,4 +20,6 @@ urlpatterns = [
     
     # About page for an author
     path('<int:author_id>/about/', author_about, name='author-about'),
+    path('authors/<int:pk>/inbox/', AuthorViewSet.as_view({'post': 'send_follow_request', 'get': 'list_inbox'})),  # Added GET for viewing inbox
+
 ]
