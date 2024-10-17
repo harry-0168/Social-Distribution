@@ -66,14 +66,16 @@
                     </button>
                 </form>
                 <h3>{{ post.like_set.count }} like(s)</h3>
-                <img src="/static/messageCircle.png">
-                <h3>comment</h3>
+                <a type="submit" class="comment-button" href="{% url 'view' id=post.id %}">
+                    <img class="commentBubble"src="/static/messageCircle.png">
+                </a>
+                <h3>{{ post.comment_set.count }} comment(s)</h3>
                 <img src="/static/share.png">
                 <h3>share</h3>
             </section>
             <section class="viewLikesComments">
                 <a class="viewLikes">view likes</a>
-                <a class="viewComments">view comments</a>
+                <a class="viewComments" href="{% url 'view' id=post.id %}">view comments</a>
             </section>
         </section>
     </section>

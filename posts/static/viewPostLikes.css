@@ -195,6 +195,16 @@ html, body {
     width: 30px;
     margin: 10px;
 }
+.likeCommentShare img.commentBubble{
+    height: 30px;
+    width: 30px;
+    margin: 10px;
+    transition: transform 0.3s ease, background-color 0.3s ease; /* Smooth transition */
+}
+.likeCommentShare img.commentBubble:hover {
+    transform: scale(1.1); /* Slightly enlarges the icon on hover */
+    content: url("../../static/messageCircleFilled.png"); /* Changes the image to the filled version */
+}
 .likeCommentShare img.heart {
     height: 30px;
     width: 30px;
@@ -212,6 +222,11 @@ html, body {
     color: #9C9B9B;
 }
 .likeCommentShare .like-button{
+    background-color: #f8eac7;
+    border-color: #f8eac7;
+    border-style: none;
+}
+.comment-button {
     background-color: #f8eac7;
     border-color: #f8eac7;
     border-style: none;

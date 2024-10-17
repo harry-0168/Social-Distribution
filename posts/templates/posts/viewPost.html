@@ -39,15 +39,22 @@
                 {% endif %}        
             </p>
             <section class="likeCommentShare">
-                <img class="heart" src="/static/heart.png">
-                <h3>like</h3>
-                <img src="/static/messageCircle.png">
-                <h3>comment</h3>
+                <form action="{% url 'like_post' post.id %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="like-button">
+                        <img class="heart" src="{% static 'heart.png' %}" alt="Like">
+                    </button>
+                </form>
+                <h3>{{ post.like_set.count }} like(s)</h3>
+                <a type="submit" class="comment-button" href="#comment-input">
+                    <img class="commentBubble"src="/static/messageCircle.png">
+                </a>
+                <h3>{{ post.comment_set.count }} comment(s)</h3>
                 <img src="/static/share.png">
                 <h3>share</h3>
             </section>
             <section class="viewLikesComments">
-                <a class="viewLikes">view likes</a>
+                <a href="{% url 'likes' id=post.id %}" class="viewLikes">view likes</a>
                 <a class="viewComments">view comments</a>
             </section>
         </section>
@@ -68,7 +75,7 @@
                     {% csrf_token %}
                     <div class="commentInputWrapper">
                         <input class="commentInputNameTextbox" type="text" name="username" placeholder="Your name" required>
-                        <input class="commentInputTextbox" type="text" name="content" placeholder="Add a comment ..." required>
+                        <input id="comment-input" class="commentInputTextbox" type="text" name="content" placeholder="Add a comment ..." required>
                         <input class="commentInputSubmit" type="submit" value="Add Comment">
                     </div>            
                 </form>
