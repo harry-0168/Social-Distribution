@@ -43,8 +43,8 @@ def delete_post(request, post_id):
         # If the user is not the author, they are redirected back
         return redirect('author_profile', author_id=post.author.id)
     
-def edit_post(request):
-    post = get_object_or_404(Post, id='dd8e3def6fd54d79ab860bea621bb9a6')
+def edit_post(request, id):
+    post = get_object_or_404(Post, id=id)
 
     if request.method == 'POST':
         post.title = request.POST.get('title')
@@ -56,8 +56,6 @@ def edit_post(request):
         return redirect('edit_post')
 
     return render(request, 'posts/editPost.html', {'post': post})
-
-    return redirect('index')
     
 def view_post(request, id):
     post = get_object_or_404(Post, pk=id)

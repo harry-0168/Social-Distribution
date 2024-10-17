@@ -18,7 +18,7 @@
                             {% csrf_token %}
                             <button type="submit" class="delete-button">Delete</button>
                         </form>
-                        <a href="{% url 'edit_post' %}" class="edit-button">Edit</a>  
+                        <a href="{% url 'edit_post' post.id %}" class="edit-button">Edit</a>  
                     </div>
                 </div>
 

@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,11 +9,15 @@
 </head>
 <body>
     <div class="header">
-        <img style="padding-left: 90px;" src="/static/avatar.png">
+        <a href="{% url 'author_profile' 1%}"> <!-- TO-DO replace with actual author id-->
+            <img style="padding-left: 90px;" src="/static/avatar.png">
+        </a>
         <div class="icons">
-            <img src="/static/home.png">
+            <a href="{% url 'home_page' %}">
+                <img src="{% static 'home.png' %}">
+            </a>
             <a href="{% url 'create_post' %}">
-                <img src="/static/add_post.png" alt="Add Post">
+                <img src="/static/add_post.png">
             </a>
             <img src="/static/notifications.png">
             <img src="/static/inbox.png">
