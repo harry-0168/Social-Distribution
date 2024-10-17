@@ -10,6 +10,7 @@ Django==5.1.1
 djangorestframework==3.15.2
 greenlet==3.1.1
 gunicorn==23.0.0
+Markdown==3.7
 idna==3.10
 packaging==24.1
 psycopg2-binary==2.9.9
@@ -20,6 +21,7 @@ requests==2.32.3
 six==1.16.0
 sqlparse==0.5.1
 typing_extensions==4.12.2
+tzdata==2024.2
 urllib3==2.2.3
 wcwidth==0.2.13
 whitenoise==6.7.0
