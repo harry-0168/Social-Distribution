@@ -217,21 +217,45 @@ body {
     color: #666;
 }
 
-.edit-btn {
-    
+.action-buttons {
+    display: flex;
+    gap: 10px;  /* Adds space between the buttons */
+    justify-content: flex-end;  /* Aligns buttons to the right */
+
 }
 
-.edit-button {
+
+.action-buttons .delete-button, .action-buttons .edit-button {
     background-color: #3e305e;
     color: white;
-    padding: 5px 10px;
-    text-decoration: none;
+    padding: 10px 20px;
     border-radius: 5px;
+    text-align: center;
+    width: 100px;  /* Ensure both buttons have the same width */
+    border: none;
+    cursor: pointer;
+    display: inline-block;
+    text-decoration: none;
+    height: 37px;
+    font-size: 15px;
 }
 
-.edit-button:hover {
-    background-color: #6d4f8d;
+.action-buttons .delete-button {
+    background-color: red;  /* Red color for the delete button */
 }
+
+.action-buttons .delete-button:hover {
+    background-color: darkred;  /* Darker red on hover */
+}
+
+.action-buttons .edit-button {
+    background-color: #462446;  /* Original color for the edit button */
+}
+
+.action-buttons .edit-button:hover {
+    background-color: #6d4f8d;  /* Darker shade for edit button hover */
+}
+
 
 
 .post-footer {

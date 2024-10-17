@@ -29,8 +29,19 @@ def create_post(request):
             author=author,
         )
         post.save() 
-        #TO-DO change redirection
         return redirect('home_page')
+    
+def delete_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+
+    # Ensure that only the author of the post or an admin can delete the post
+    if post.author == request.user or request.user.is_superuser:
+        post.visibility = 'DELETED'  # Mark the post as 'DELETED'
+        post.save()
+        return redirect('author_profile', author_id=post.author.id)  # Redirect to the author's profile page
+    else:
+        # If the user is not the author, they are redirected back
+        return redirect('author_profile', author_id=post.author.id)
     
 def edit_post(request):
     post = get_object_or_404(Post, id='dd8e3def6fd54d79ab860bea621bb9a6')
@@ -42,6 +53,6 @@ def edit_post(request):
         post.content_type = request.POST.get('content_type')
         post.content = request.POST.get('content')
         post.save()
-        return redirect('post_list')  # Redirect to post list or detail page
+        return redirect('edit_post')
 
     return render(request, 'posts/editPost.html', {'post': post})
