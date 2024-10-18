@@ -23,6 +23,13 @@ urlpatterns = [
     path('<uuid:author_id>/about/', author_about, name='author-about'),
     path('authors/<int:pk>/inbox/', AuthorViewSet.as_view({'post': 'send_follow_request', 'get': 'list_inbox'})),  # Added GET for viewing inbox
 
+    # Endpoint to handle follow requests
+    path('authors/<int:author_id>/follow/', follow_author, name='follow-author'),
+    path('authors/<int:author_id>/unfollow/', unfollow_author, name='unfollow-author'),
+    
+    # Routes for viewing lists of followers and following
+    path('<int:author_id>/followers/', followers_list, name='followers_list'),
+    path('<int:author_id>/following/', following_list, name='following_list'),
 
     path('<uuid:author_id>/settings', user_settings, name= 'user-settings' )
 ]

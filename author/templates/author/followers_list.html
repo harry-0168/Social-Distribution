@@ -1,0 +1,10 @@
+{% extends 'author/author_base.html' %}
+
+{% block content %}
+<h1>Followers ({{ followers_count }})</h1>
+<ul>
+    {% for follower in followers %}
+    <li>{{ follower.actor.display_name }}</li>
+    {% endfor %}
+</ul>
+{% endblock %}
