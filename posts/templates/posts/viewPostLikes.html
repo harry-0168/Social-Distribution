@@ -45,7 +45,7 @@
                <button class="followButton">Follow</button>
                <form action="{% url 'delete_post' post.id %}" method="POST">
                     {% csrf_token %}
-                    <button style="background-color: #f8eac7; border-color: #f8eac7; border-style: none; " type="submit" class="delete-button">
+                    <button style=" margin-top: 20px; background-color: #f8eac7; border-color: #f8eac7; border-style: none; " type="submit" class="delete-button">
                         <img style="width: 30px; height: 30px;" class="trash" src="{% static 'trash.png' %}">
                     </button>
                 </form>

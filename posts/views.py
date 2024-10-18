@@ -37,7 +37,7 @@ def view_post(request, id):
 
     if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
         # Non-admin users should not see deleted posts
-        return redirect('index')  # Redirect to index or a 404 page
+        return redirect('home_page')  # Redirect to index or a 404 page
 
     published = post.published
     title = post.title
@@ -62,7 +62,7 @@ def view_postLikes(request, id):
 
     if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
         # Non-admin users should not see deleted posts
-        return redirect('index')  # Redirect to index or a 404 page
+        return redirect('home_page')  # Redirect to index or a 404 page
 
     published = post.published
     title = post.title
@@ -90,4 +90,4 @@ def delete_post(request, id):
     post.save()
 
     # Redirect to the index page or any other page
-    return redirect('index')
+    return redirect('home_page')
