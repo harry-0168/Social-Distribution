@@ -51,7 +51,9 @@
         <div class="notification">
             <img style="padding: 0px 20px;" src="{% static 'avatar.png' %}">
             <div class="content">
-                <p class="description">{{notification.author.display_name}} wants to follow you</p>
+
+                <p class="description">{{notification}} </p>
+
                 <div class="action-buttons">
                     <button class="accept">Accept</button>
                     <button class="decline">Decline</button>

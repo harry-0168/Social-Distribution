@@ -4,7 +4,7 @@ import jwt
 from .models import Notification
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
-from author.models import Author
+from author.models import Author, FollowRequest
 from django.conf import settings
 
 @api_view(['GET'])
@@ -16,7 +16,7 @@ def inbox(request):
     try:
         payload = jwt.decode(token, 'django-in', algorithms=['HS256'])
         author = get_object_or_404(Author, display_name=payload['id'])
-        notifications = Notification.objects.filter(author=author)
+        notifications = FollowRequest.objects.filter(object_author=author, status='pending')
         return render(request, 'inbox/inbox.html', {'notifications': notifications})
 
     except jwt.ExpiredSignatureError:
