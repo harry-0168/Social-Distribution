@@ -32,7 +32,10 @@
                     <p class="username">{{ post.author.display_name }}</p>
                     <p class="date-posted">{{ post.published|date:"F d, Y" }}</p>
                 </div>
-                <a href="#" class="follow-btn">Follow</a>
+                <form action="{% url 'follow-author' post.author.id %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">Follow</button>
+                </form>
             </div>
             <div class="post-content">
                 <h2 class="title">{{ post.title }}</h2>
