@@ -22,8 +22,9 @@ urlpatterns = [
     
     # About page for an author
     path('<uuid:author_id>/about/', author_about, name='author-about'),
-    path('authors/<int:pk>/inbox/', AuthorViewSet.as_view({'post': 'send_follow_request', 'get': 'list_inbox'})),  # Added GET for viewing inbox
-
+    #path('authors/<int:pk>/inbox/', AuthorViewSet.as_view({'post': 'send_follow_request', 'get': 'list_inbox'})),  # Added GET for viewing inbox
+    path('send_req/', AuthorViewSet.as_view({'post': 'send_follow_request'}), name='send-follow-request'),  # Added for sending follow request
+    
     # Endpoint to handle follow requests
     path('authors/<int:author_id>/follow/', follow_author, name='follow-author'),
     path('authors/<int:author_id>/unfollow/', unfollow_author, name='unfollow-author'),

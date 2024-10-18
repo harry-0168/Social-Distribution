@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404, reverse, get_object_or_404
 from .models import Post, Comment, Like, Author
 import base64
+import jwt
 import markdown
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
@@ -15,39 +16,53 @@ class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
 
-@api_view(('POST',))
+@api_view(['POST'])
 def create_post(request):
     if request.method == 'POST':
+        # Extract the author from the JWT token
+        token = request.COOKIES.get('jwt')
+        if not token:
+            return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        try:
+            payload = jwt.decode(token, 'django-in', algorithms=['HS256'])
+            author = get_object_or_404(Author, display_name=payload['id'])
+        except jwt.ExpiredSignatureError:
+            return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+        except Author.DoesNotExist:
+            return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Extract post data from request
         title = request.POST['title']
         description = request.POST['description']
         content_type = request.POST['content_type']
         visibility = request.POST['visibility']
         content = request.POST.get('content', '')
         image = request.FILES.get('img')
-        author = get_object_or_404(Author, id='3ce0a623-da81-45d7-80f5-4f7b3de2c174') #TO-DO replace with actual author id
+        
         if content_type.startswith('image/') and image:
             # Read the image file and encode it as base64
             image_data = image.read()
             encoded_image = base64.b64encode(image_data).decode('utf-8')
             content = f"data:{image.content_type};base64,{encoded_image}"
         
+        # Create a new post associated with the current author
         post = Post(
             title=title,
             description=description,
             content_type=content_type,
             content=content,
             visibility=visibility,
-            author=author,
+            author=author,  # Use the author from the token
         )
         post.save()
 
-        # Serialize the post
+        # Serialize the post and return the response
         serializer = PostSerializer(post)
-        
-        # Return serialized data as JSON response
-        return Response({"detail": "success"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     return Response({"error": "Invalid request method"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 
