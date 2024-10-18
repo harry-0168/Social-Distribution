@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home</title>
     <link rel="stylesheet" href="../../static/home_page.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
     <div class="header">
@@ -43,6 +44,8 @@
                 </div> -->
                 {% if post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
                 <img src="{{ post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
+                {% elif post.content_type == "text/markdown" %}
+                <div class="content markdown-content" data-content="{{ post.content|escapejs }}" id="markdown-content-{{ post.id }}"></div>
                 {% else %}
                 <p class="content">{{post.content}}</p>
                 {% endif %}
@@ -63,6 +66,17 @@
             </div>
         </div>
         {% endfor %}
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                document.querySelectorAll('.markdown-content').forEach(function (element) {
+                    const markdownContent = element.getAttribute('data-content');
+                    if (markdownContent) {
+                        element.innerHTML = marked.parse(markdownContent);
+                    }
+                });
+            });
+        </script>
     </div>
 </body>
 </html>

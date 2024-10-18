@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Author, FollowRequest
+from django import forms
 
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -31,3 +32,10 @@ class FollowRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = FollowRequest
         fields = ['id', 'actor', 'object_author', 'summary', 'status']
+class UserSettingsForm(forms.ModelForm):
+    class Meta:
+        model = Author
+        fields = ['display_name', 'github', 'profile_image']
+        widgets = {
+            'profile_image': forms.FileInput(),
+        }

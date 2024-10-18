@@ -10,7 +10,7 @@ class Author(AbstractUser):
     host = models.CharField(max_length=255, null=False)
     display_name = models.CharField(_("display_name"),max_length=100, unique=True)
     github = models.CharField(max_length=255, blank=True, null=True)
-    profile_image = models.CharField(max_length=255, blank=True, null=True)
+    profile_image = models.ImageField(upload_to='profile_images/', blank=True, null=True)
     page = models.CharField(max_length=255, blank=True, null=True)
     isVerified = models.BooleanField(default=False)
     username = None
