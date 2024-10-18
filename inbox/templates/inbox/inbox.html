@@ -1,0 +1,67 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inbox</title>
+    <link rel="stylesheet" href="{% static 'inbox.css' %}">
+</head>
+<body>
+    <div class="header">
+        <a href="{% url 'author_profile' 1%}"> <!-- TO-DO replace with actual author id-->
+            <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
+        </a>
+        <div class="icons">
+            <a href="{% url 'home_page' %}">
+                <img src="{% static 'home.png' %}">
+            </a>
+            <a href="{% url 'create_post' %}">
+                <img src="/static/add_post.png">
+            </a>
+            <a href="{% url 'inbox' %}">
+                <img src="{% static 'inbox.png' %}">
+            </a>
+        </div>
+    </div>
+    <div class="form-title">Inbox</div>
+    <div class="container">
+        {% for notification in notifications %}
+        {% if notification.type in "shared_post like comment" %}
+        <div class="notification">
+            <img style="padding: 0px 20px;" src="{% static 'avatar.png' %}">
+            <div class="content">
+                {% if notification.type == "shared_post" %}
+                <p class="description">{{notification.author.display_name}} shared a post with you</p>
+                {% elif notification.type == "comment" %}
+                <p class="description">{{notification.author.display_name}} comments on your post</p>
+                {% elif notification.type == "like" %}
+                <p class="description">{{notification.author.display_name}} likes your post</p>
+                {% endif %}
+                <div class="action-buttons">
+                    <a href="{% url 'view' notification.post_id %}">
+                        <button class="accept">Go to the post</button>
+                    </a>
+                </div>
+            </div>
+            <span class="date">{{notification.received_at|date:"Y-m-d H:i:s"}}</span>
+            <img style="padding: 0px 20px;" src="{% static 'close.png' %}">
+        </div>
+        {% else %}
+        <div class="notification">
+            <img style="padding: 0px 20px;" src="{% static 'avatar.png' %}">
+            <div class="content">
+                <p class="description">{{notification.author.display_name}} wants to follow you</p>
+                <div class="action-buttons">
+                    <button class="accept">Accept</button>
+                    <button class="decline">Decline</button>
+                </div>
+            </div>
+            <span class="date">{{notification.received_at|date:"Y-m-d H:i:s"}}</span>
+            <img style="padding: 0px 20px;" src="{% static 'close.png' %}">
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</body>
+</html>

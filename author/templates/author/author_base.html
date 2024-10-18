@@ -19,8 +19,9 @@
             <a href="{% url 'create_post' %}">
                 <img src="{% static 'add_post.png' %}">
             </a>
-            <img src="{% static 'notifications.png' %}">
-            <img src="{% static 'inbox.png' %}">
+            <a href="{% url 'inbox' %}">
+                <img src="{% static 'inbox.png' %}">
+            </a>
         </div>
     </div>
 
