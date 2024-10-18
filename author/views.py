@@ -128,6 +128,7 @@ def login(request):
     # token, created = Token.objects.get_or_create(user = author)
     payload = {
         'id': author.display_name,
+        'author_id': str(author.id),
         'exp': datetime.now() + timedelta(days=1),
         'iat': datetime.now()
     }
