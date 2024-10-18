@@ -100,6 +100,8 @@ class AuthorViewSet(viewsets.ModelViewSet):
         )
         
         follow_request.save()
+        """
+
         # Step 6: Create a notification for the target author
         notification = Notification(
             author=object_author,
@@ -108,6 +110,8 @@ class AuthorViewSet(viewsets.ModelViewSet):
             received_at=timezone.now()
         )
         notification.save()
+        """
+        
 
 
         # Step 6: Return the created follow request
