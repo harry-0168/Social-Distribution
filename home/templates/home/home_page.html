@@ -6,10 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home</title>
     <link rel="stylesheet" href="../../static/home_page.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'author_profile' 1%}"> <!-- TO-DO replace with actual author id-->
+        <a href="{% url 'author_profile' 'c5946fde-d4e3-4f71-a56e-1d5f6b1fbd38' %}"> <!-- TO-DO replace with actual author id-->
             <img style="padding-left: 90px;" src="/static/avatar.png">
         </a>
         <div class="icons">
@@ -17,10 +18,11 @@
                 <img src="{% static 'home.png' %}">
             </a>
             <a href="{% url 'create_post' %}">
-                <img src="/static/add_post.png">
+                <img src="{% static 'add_post.png' %}">
             </a>
-            <img src="/static/notifications.png">
-            <img src="/static/inbox.png">
+            <a href="{% url 'inbox' %}">
+                <img src="{% static 'inbox.png' %}">
+            </a>
         </div>
     </div>
     <div class="post-container">
@@ -32,7 +34,10 @@
                     <p class="username">{{ post.author.display_name }}</p>
                     <p class="date-posted">{{ post.published|date:"F d, Y" }}</p>
                 </div>
-                <a href="#" class="follow-btn">Follow</a>
+                <form action="{% url 'follow-author' post.author.id %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">Follow</button>
+                </form>
             </div>
             <div class="post-content">
                 <h2 class="title">{{ post.title }}</h2>
@@ -43,6 +48,8 @@
                 </div> -->
                 {% if post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
                 <img src="{{ post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
+                {% elif post.content_type == "text/markdown" %}
+                <div class="content markdown-content" data-content="{{ post.content|escapejs }}" id="markdown-content-{{ post.id }}"></div>
                 {% else %}
                 <p class="content">{{post.content}}</p>
                 {% endif %}
@@ -63,6 +70,17 @@
             </div>
         </div>
         {% endfor %}
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                document.querySelectorAll('.markdown-content').forEach(function (element) {
+                    const markdownContent = element.getAttribute('data-content');
+                    if (markdownContent) {
+                        element.innerHTML = marked.parse(markdownContent);
+                    }
+                });
+            });
+        </script>
     </div>
 </body>
 </html>

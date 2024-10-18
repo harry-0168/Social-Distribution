@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404, reverse, get_object_or_404
 from .models import Post, Comment, Like, Author
 import base64
+import markdown
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import viewsets
@@ -16,23 +17,22 @@ def create_post(request):
     if request.method == 'POST':
         title = request.POST['title']
         description = request.POST['description']
-        contentType = request.POST['content_type']
+        content_type = request.POST['content_type']
         visibility = request.POST['visibility']
         content = request.POST.get('content', '')
         image = request.FILES.get('img')
-
-        author = get_object_or_404(Author, id=1)  # Get the author object
-        
-        if contentType.startswith('image/') and image:
+        author = get_object_or_404(Author, id='c5946fde-d4e3-4f71-a56e-1d5f6b1fbd38') #TO-DO replace with actual author id
+        if content_type.startswith('image/') and image:
             # Read the image file and encode it as base64
             image_data = image.read()
             encoded_image = base64.b64encode(image_data).decode('utf-8')
             content = f"data:{image.content_type};base64,{encoded_image}"
+        
 
         post = Post(
             title=title,
             description=description,
-            content_type=contentType,
+            content_type=content_type,
             content=content,
             visibility=visibility,
             author=author,
@@ -78,6 +78,11 @@ def edit_post(request, id):
     
 def view_post(request, id):
     post = get_object_or_404(Post, pk=id)
+
+    if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
+        # Non-admin users should not see deleted posts
+        return redirect('home_page')  # Redirect to index or a 404 page
+
     published = post.published
     title = post.title
     description = post.description
@@ -98,6 +103,11 @@ def view_post(request, id):
 
 def view_postLikes(request, id):
     post = get_object_or_404(Post, pk=id)
+
+    if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
+        # Non-admin users should not see deleted posts
+        return redirect('home_page')  # Redirect to index or a 404 page
+
     published = post.published
     title = post.title
     description = post.description
@@ -115,3 +125,13 @@ def like_post(request, id):
     # Redirect back to the previous page using the HTTP_REFERER header
     previous_url = request.META.get('HTTP_REFERER', 'view')  # 'view' is the fallback URL
     return redirect(previous_url)
+
+def delete_post(request, id):
+    post = get_object_or_404(Post, pk=id)
+
+    # Mark post as "DELETED"
+    post.visibility = 'DELETED'
+    post.save()
+
+    # Redirect to the index page or any other page
+    return redirect('home_page')

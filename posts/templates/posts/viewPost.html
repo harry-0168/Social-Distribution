@@ -6,16 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{% static 'viewPost.css' %}">
     <title>View Post</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
 </head>
 <body>
     <div class="header">
         <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
         <div class="icons">
-            <img src="/static/home.png">
-            <img src="/static/add_post.png">
-            <img src="/static/notifications.png">
-            <img src="/static/edit.png">
-            <img src="/static/inbox.png">
+            <a href="{% url 'home_page' %}">
+                <img src="{% static 'home.png' %}">
+            </a>
+            <a href="{% url 'create_post' %}">
+                <img src="{% static 'add_post.png' %}">
+            </a>
+            <a href="{% url 'inbox' %}">
+                <img src="{% static 'inbox.png' %}">
+            </a>
         </div>
     </div>
     <section class="gridContainer">
@@ -27,11 +33,19 @@
                     <h3 class="postDate">{{published}}</h3>
                 </div>
                 <button class="followButton">Follow</button>
+                <form action="{% url 'delete_post' post.id %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="delete-button">
+                        <div class="trash"></div>
+                    </button>
+                  </form>
             </div>
             <h1 class="postTitle">{{title}}</h1>
             <p class="postDescription">
-                {% if post.content_type == "text/markdown" or post.content_type == "text/plain" %}
+                {% if post.content_type == "text/plain" %}
                     {{ post.content }}
+                {% elif post.content_type == "text/markdown" %}
+                <div id="markdown-content-{{ post.id }}" class="markdown-content" data-content="{{ post.content|escapejs }}"></div>
                 {% elif post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
                     <img src="{{ post.content }}" alt="Post Image" class="postImage">
                 {% else %}
@@ -82,5 +96,15 @@
             </section>
         </section>
     </section>
-
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.markdown-content').forEach(function (element) {
+                const markdownContent = element.getAttribute('data-content');
+                if (markdownContent) {
+                    element.innerHTML = marked.parse(markdownContent);
+                }
+            });
+        });
+    </script>
 </body>
