@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404, reverse, get_o
 from .models import Post, Comment, Like, Author
 import base64
 import markdown
+from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import viewsets
@@ -13,6 +15,7 @@ class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
 
+@api_view(('POST',))
 def create_post(request):
     if request.method == 'POST':
         title = request.POST['title']
@@ -21,14 +24,13 @@ def create_post(request):
         visibility = request.POST['visibility']
         content = request.POST.get('content', '')
         image = request.FILES.get('img')
-        author = get_object_or_404(Author, id='c5946fde-d4e3-4f71-a56e-1d5f6b1fbd38') #TO-DO replace with actual author id
+        author = get_object_or_404(Author, id='3ce0a623-da81-45d7-80f5-4f7b3de2c174') #TO-DO replace with actual author id
         if content_type.startswith('image/') and image:
             # Read the image file and encode it as base64
             image_data = image.read()
             encoded_image = base64.b64encode(image_data).decode('utf-8')
             content = f"data:{image.content_type};base64,{encoded_image}"
         
-
         post = Post(
             title=title,
             description=description,
@@ -43,7 +45,7 @@ def create_post(request):
         serializer = PostSerializer(post)
         
         # Return serialized data as JSON response
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response({"detail": "success"}, status=status.HTTP_201_CREATED)
 
     return Response({"error": "Invalid request method"}, status=status.HTTP_400_BAD_REQUEST)
 

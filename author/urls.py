@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import AuthorViewSet, profile_view, author_about, login, signup, get_author_from_cookie, logout, user_settings
+from .views import AuthorViewSet, profile_view, author_about, login, signup, get_author_from_cookie, logout, user_settings, follow_author,followers_list,following_list,unfollow_author
 from posts.views import PostViewSet
 
 
