@@ -31,7 +31,8 @@ class FollowRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = FollowRequest
-        fields = ['id', 'actor', 'object_author', 'summary', 'status']
+        fields = ['actor', 'object_author', 'summary', 'status']
+        depth = 1
 class UserSettingsForm(forms.ModelForm):
     class Meta:
         model = Author

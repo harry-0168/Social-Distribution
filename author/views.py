@@ -1,9 +1,10 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.decorators import api_view
-
+from rest_framework.decorators import api_view, action
 from .models import Author, FollowRequest
+from django.utils import timezone
+from inbox.models import Notification 
 from posts.models import Post  
 from .serializers import AuthorSerializer, FollowRequestSerializer
 from django.shortcuts import render, get_object_or_404, redirect
@@ -69,46 +70,51 @@ class AuthorViewSet(viewsets.ModelViewSet):
     serializer_class = AuthorSerializer
     pagination_class = AuthorPagination
 
-    def send_follow_request(self, request, pk=None):
-        # Manually get the object_author using the 'pk' from URL
+    @action(detail=False, methods=['POST'], url_path='send-follow-request')
+    def send_follow_request(self, request):
+        # Step 1: Get the author UUID from the request data
+        actor_author_uuid = request.data.get('actor_uuid')
+        target_author_uuid = request.data.get('author_uuid')
+
+        # Step 2: Validate the presence of both UUIDs
+        if not actor_author_uuid or not target_author_uuid:
+            return Response({"detail": "Missing author UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Step 3: Fetch the authors by UUID
         try:
-            object_author = Author.objects.get(pk=pk)
+            actor_author = Author.objects.get(id=actor_author_uuid)
+            object_author = Author.objects.get(id=target_author_uuid)
         except Author.DoesNotExist:
-            return Response({"detail": "Object author not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "One or both authors not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        actor_author_data = request.data.get("actor")
-        if not actor_author_data:
-            return Response({"detail": "Missing actor data."}, status=status.HTTP_400_BAD_REQUEST)
+        # Step 4: Check if a follow request already exists
+        if FollowRequest.objects.filter(actor=actor_author, object_author=object_author).exists():
+            return Response({"detail": "Follow request already sent."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Find the actor author
-        try:
-            actor_author = Author.objects.get(id=actor_author_data['id'])
-        except Author.DoesNotExist:
-            return Response({"detail": "Actor author not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        # Create a follow request object
+        # Step 5: Create a new follow request
         follow_request = FollowRequest(
             actor=actor_author,
             object_author=object_author,
-            summary=f"{actor_author.display_name} wants to follow {object_author.display_name}"
+            summary=f"{actor_author.display_name} wants to follow {object_author.display_name}",
+            status='pending'  # Initial status set to 'pending'
         )
+        
         follow_request.save()
+        # Step 6: Create a notification for the target author
+        notification = Notification(
+            author=object_author,
+            type='follow',  # Set type to 'follow' for follow requests
+            post=None,  # No post associated with this notification
+            received_at=timezone.now()
+        )
+        notification.save()
 
+
+        # Step 6: Return the created follow request
         serializer = FollowRequestSerializer(follow_request)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
-    def list_inbox(self, request, pk=None):
-        # Get the author (object_author) whose inbox we are fetching
-        try:
-            object_author = Author.objects.get(pk=pk)
-        except Author.DoesNotExist:
-            return Response({"detail": "Author not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Get all follow requests where the current author is the object_author
-        follow_requests = FollowRequest.objects.filter(object_author=object_author)
-        serializer = FollowRequestSerializer(follow_requests, many=True)
-        
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 ##########
 ''' Code for Author authentication/ Login to our website '''
@@ -132,7 +138,7 @@ def login(request):
     response = Response()
     response.set_cookie(key='jwt', value=token, httponly=True)  
     response.data= {"jwt":token,"author":serializer.data}
-    
+    this_user=author.id
     return response
 
 @api_view(['POST'])
