@@ -29,6 +29,12 @@
                     <h3 class="postDate">{{published}}</h3>
                 </div>
                 <button class="followButton">Follow</button>
+                <form action="{% url 'delete_post' post.id %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="delete-button">
+                        <div class="trash"></div>
+                    </button>
+                  </form>
             </div>
             <h1 class="postTitle">{{title}}</h1>
             <p class="postDescription">
