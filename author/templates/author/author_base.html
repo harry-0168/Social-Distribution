@@ -28,19 +28,17 @@
     <div class="container">
  
         <div class="profile-area">
-            <h2 class="welcome-message">Welcome, {{ author.display_name }}!</h2>
-            <img class="profile-pic" src="{% static 'avatar.png' %}" alt="Profile Picture">
-            <h2 class="profile-name">{{ author.display_name }}</h2>
-            <p class="follow-stats">
-                <a href="{% url 'following_list' author.id %}">View Following</a> |
-                <a href="{% url 'followers_list' author.id %}">View Followers</a>
-            </p>
+            {% if author.profile_image %}
+            <img class="profile-pic" src="{{ author.profile_image.url }}" alt="Profile Picture">
+            {% else %}
+            <img class="profile-pic" src="{% static 'avatar.png' %}" alt="Default Profile Picture">
+        {% endif %}            <h2 class="profile-name">{{ author.display_name }}</h2>
             <ul class="profile-menu">
                 <li><a href="{% url 'author_profile' author.id %}">Home</a></li>
                 <li><a href="{% url 'author-about' author.id %}">About</a></li>
                 <li><a href="#">Photo</a></li>
                 <li><a href="#">Video</a></li>
-                <li><a href="#">Settings</a></li>
+                <li><a href="{% url 'user-settings' author.id %}">Settings</a></li>
             </ul>
         </div>
 
