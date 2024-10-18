@@ -8,7 +8,8 @@ from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import viewsets
-from .serializers import PostSerializer 
+from .serializers import PostSerializer
+from author.views import get_author_from_cookie
 # Create your views here.
 def post(request):
     return render(request, "posts/createPost.html")
@@ -62,10 +63,6 @@ def create_post(request):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     return Response({"error": "Invalid request method"}, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
     
 def delete_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
@@ -81,17 +78,29 @@ def delete_post(request, post_id):
     
 def edit_post(request, id):
     post = get_object_or_404(Post, id=id)
-
+    author_id = get_author_from_cookie(request).data.get('id')
     if request.method == 'POST':
         post.title = request.POST.get('title')
         post.description = request.POST.get('description')
         post.visibility = request.POST.get('visibility')
         post.content_type = request.POST.get('content_type')
-        post.content = request.POST.get('content')
+        
+        # Check if the content type is text
+        if not request.POST.get('content_type').startswith('image/'):
+            # Only update text content if the content type is not an image
+            post.content = request.POST.get('content')
+        
+        # Check if a new image is uploaded
+        image = request.FILES.get('img')
+        if request.POST.get('content_type').startswith('image/') and image:
+            # Read the image file and encode it as base64
+            image_data = image.read()
+            encoded_image = base64.b64encode(image_data).decode('utf-8')
+            post.content = f"data:{image.content_type};base64,{encoded_image}"
         post.save()
-        return redirect('edit_post')
+        return redirect(reverse('author_profile', args=[post.author.id]))
 
-    return render(request, 'posts/editPost.html', {'post': post})
+    return render(request, 'posts/editPost.html', {'post': post, 'author_id': author_id})
     
 def view_post(request, id):
     post = get_object_or_404(Post, pk=id)
