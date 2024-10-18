@@ -1,5 +1,5 @@
 {% extends 'author/author_base.html' %}
-
+{% load static %}
 {% block content %}
 <div class="posts-container">
     {% if posts %}
@@ -8,6 +8,11 @@
                 <!-- 1st row: Profile info and action buttons -->
                 <div class="post-header">
                     <div class="profile-info">
+                        {% if author.profile_image %}
+                            <img src="{{ author.profile_image.url }}" alt="Profile Picture" class="profile-pic-small">
+                        {% else %}
+                            <img src="{% static 'default_profile.png' %}" alt="Default Profile Picture" class="profile-pic-small">
+                        {% endif %}
                         <div class="author-name-date">
                             <h4>{{ author.display_name }}</h4>
                             <p>{{ post.published|date:"F j, Y, g:i a" }}</p>
@@ -22,23 +27,22 @@
                     </div>
                 </div>
 
-                 <!-- Title of the post -->
-                 <div class="post-title">
+                <!-- Title of the post -->
+                <div class="post-title">
                     <h3>{{ post.title }}</h3>
                 </div>
-
 
                 <!-- 2nd row: Image if exists -->
                 {% if post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
                 <div class="post-image">
-                    <img src="data:{{ post.content_type }};base64,{{ post.content }}" alt="Post Image">
+                    <img src="{{ post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
                 </div>
-                {% endif %}
-
+                {% else %}
                 <!-- 3rd row: Content of the post -->
                 <div class="post-content">
                     <p>{{ post.content }}</p>
                 </div>
+                {% endif %}
 
                 <!-- 4th row: Like, comment, share buttons -->
                 <div class="post-actions">

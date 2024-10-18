@@ -6,6 +6,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{% static 'viewPostLikes.css' %}">
     <title>View Post</title>
+
+    <style>
+        /* Add hover style for the trash button */
+        .delete-button img.trash {
+            width: 30px;
+            height: 30px;
+            transition: transform 0.3s ease, content 0.3s ease;
+        }
+  
+  
+  
+  
+        .delete-button:hover img.trash {
+            transform: scale(1.1); /* Scale effect on hover */
+            content: url("{% static 'trashFilled.png' %}"); /* Change the image on hover */
+        }
+    </style>
+
 </head>
 <body>
     <div class="header">
@@ -32,6 +50,12 @@
                     <h3 class="postDate">{{published|default:"NApublished"}}</h3>
                 </div>
                 <button class="followButton">Follow</button>
+                <form action="{% url 'delete_post' post.id %}" method="POST">
+                    {% csrf_token %}
+                    <button style=" margin-top: 20px; background-color: #f8eac7; border-color: #f8eac7; border-style: none; " type="submit" class="delete-button">
+                        <img style="width: 30px; height: 30px;" class="trash" src="{% static 'trash.png' %}">
+                    </button>
+                </form>
             </div>
             <section class="likesArea">
                 <h3 class="likesAreaTitle">Likes</h3>
