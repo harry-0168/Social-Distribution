@@ -26,7 +26,4 @@ def home_page(request):
         return redirect('login')
 
     posts = Post.objects.filter(visibility='PUBLIC').order_by('-published')
-    print("Posts is: ")
-    print(author_id)
-    print(posts)
     return render(request, 'home/home_page.html', {'posts': posts, 'author_id': author_id})
