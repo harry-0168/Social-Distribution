@@ -17,12 +17,12 @@ urlpatterns = [
     
     
     # Public profile page for an author
-    path('<int:author_id>/', profile_view, name='author_profile'),
+    path('<uuid:author_id>/', profile_view, name='author_profile'),
     
     # About page for an author
-    path('<int:author_id>/about/', author_about, name='author-about'),
+    path('<uuid:author_id>/about/', author_about, name='author-about'),
     path('authors/<int:pk>/inbox/', AuthorViewSet.as_view({'post': 'send_follow_request', 'get': 'list_inbox'})),  # Added GET for viewing inbox
 
 
-    path('<int:author_id>/settings', user_settings, name= 'user-settings' )
+    path('<uuid:author_id>/settings', user_settings, name= 'user-settings' )
 ]
