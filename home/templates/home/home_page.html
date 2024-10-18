@@ -36,7 +36,7 @@
                 </div>
                 <form action="{% url 'follow-author' post.author.id %}" method="post">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-primary">Follow</button>
+                    <button type="submit" class="follow-btn">Follow</button>
                 </form>
             </div>
             <div class="post-content">
