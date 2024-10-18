@@ -6,7 +6,7 @@ from .models import Author, FollowRequest
 from posts.models import Post  
 from .serializers import AuthorSerializer, FollowRequestSerializer
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import Http404
+from django.http import Http404, JsonResponse
 
 
 def profile_view(request, author_id):
@@ -25,6 +25,33 @@ def author_about(request, author_id):
     author = Author.objects.get(id=author_id)  
     return render(request, 'author/author_about.html', {'author': author})
 
+def follow_author(request, author_id):
+    if request.method == 'POST':
+        user = request.user
+        target_author = get_object_or_404(Author, pk=author_id)
+        # Check if already following
+        if not FollowRequest.objects.filter(actor=user, object_author=target_author).exists():
+            FollowRequest.objects.create(actor=user, object_author=target_author, summary=f"{user.display_name} wants to follow {target_author.display_name}", status='accepted')
+        return redirect('author_profile', author_id=author_id)
+
+def unfollow_author(request, author_id):
+    if request.method == 'DELETE':
+        target_author = get_object_or_404(Author, pk=author_id)
+        FollowRequest.objects.filter(actor=request.user.author, object_author=target_author).delete()
+        return JsonResponse({'message': 'Unfollowed successfully'}, status=204)
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+def following_list(request, author_id):
+    author = get_object_or_404(Author, pk=author_id)
+    following = FollowRequest.objects.filter(actor=author, status='accepted').select_related('object_author')
+    following_count = following.count()
+    return render(request, 'author/following_list.html', {'author': author, 'following': following, 'following_count': following_count})
+
+def followers_list(request, author_id):
+    author = get_object_or_404(Author, pk=author_id)
+    followers = FollowRequest.objects.filter(object_author=author, status='accepted').select_related('actor')
+    followers_count = followers.count()
+    return render(request, 'author/followers_list.html', {'author': author, 'followers': followers, 'followers_count': followers_count})
 
 class AuthorPagination(PageNumberPagination):
     page_size = 10
@@ -63,6 +90,7 @@ class AuthorViewSet(viewsets.ModelViewSet):
 
         serializer = FollowRequestSerializer(follow_request)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
     def list_inbox(self, request, pk=None):
         # Get the author (object_author) whose inbox we are fetching
         try:

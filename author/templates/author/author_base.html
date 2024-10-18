@@ -24,17 +24,17 @@
         </div>
     </div>
 
-    <div class="icon-links">
-        <a href="#">Page</a>
-        <a href="#">Notification</a>
-        <a href="#">More</a>
-    </div>
 
     <div class="container">
  
         <div class="profile-area">
+            <h2 class="welcome-message">Welcome, {{ author.display_name }}!</h2>
             <img class="profile-pic" src="{% static 'avatar.png' %}" alt="Profile Picture">
             <h2 class="profile-name">{{ author.display_name }}</h2>
+            <p class="follow-stats">
+                <a href="{% url 'following_list' author.id %}">View Following</a> |
+                <a href="{% url 'followers_list' author.id %}">View Followers</a>
+            </p>
             <ul class="profile-menu">
                 <li><a href="{% url 'author_profile' author.id %}">Home</a></li>
                 <li><a href="{% url 'author-about' author.id %}">About</a></li>
