@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import AuthorViewSet, profile_view, author_about, login, signup, get_author_from_cookie, logout, user_settings
+from .views import AuthorViewSet, profile_view, author_about, login, signup, get_author_from_cookie, logout, user_settings, follow_author, unfollow_author, followers_list,following_list
 from posts import views as post_views
 
 
@@ -24,12 +24,12 @@ urlpatterns = [
     path('authors/<int:pk>/inbox/', AuthorViewSet.as_view({'post': 'send_follow_request', 'get': 'list_inbox'})),  # Added GET for viewing inbox
 
     # Endpoint to handle follow requests
-    path('authors/<int:author_id>/follow/', follow_author, name='follow-author'),
-    path('authors/<int:author_id>/unfollow/', unfollow_author, name='unfollow-author'),
+    path('authors/<uuid:author_id>/follow/', follow_author, name='follow-author'),
+    path('authors/<uuid:author_id>/unfollow/', unfollow_author, name='unfollow-author'),
     
     # Routes for viewing lists of followers and following
-    path('<int:author_id>/followers/', followers_list, name='followers_list'),
-    path('<int:author_id>/following/', following_list, name='following_list'),
+    path('<uuid:author_id>/followers/', followers_list, name='followers_list'),
+    path('<uuid:author_id>/following/', following_list, name='following_list'),
 
     path('<uuid:author_id>/settings', user_settings, name= 'user-settings' )
 ]
