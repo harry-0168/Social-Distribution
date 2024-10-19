@@ -2,10 +2,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'viewPostLikes.css' %}">
-    <title>View Post</title>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="stylesheet" href="{% static 'viewPostLikes.css' %}">
+   <title>View Post</title>
+   <style>
+       /* Add hover style for the trash button */
+       .delete-button img.trash {
+           width: 30px;
+           height: 30px;
+           transition: transform 0.3s ease, content 0.3s ease;
+       }
+
+
+       .delete-button:hover img.trash {
+           transform: scale(1.1); /* Scale effect on hover */
+           content: url("{% static 'trashFilled.png' %}"); /* Change the image on hover */
+       }
+   </style>
 </head>
 <body>
     <div class="header">
@@ -18,66 +32,76 @@
         </div>
     </div>
 
-    <section class="gridContainer">
-        <section class="gridItemLeft">
-            <div class="userInfo">
-                <img class="profileImage" src="{% static 'avatar.png' %}">
-                <div class="username_DatePosted">
-                    <a class="username">Username</a> <!-- TODO: make the username clickable to go to userProfile-->
-                    <h3 class="postDate">{{published|default:"NApublished"}}</h3>
-                </div>
-                <button class="followButton">Follow</button>
-            </div>
-            <section class="likesArea">
-                <h3 class="likesAreaTitle">Likes</h3>
-                <div class="carousel">
-                    <div class="carousel-container">
-                        {% for like in post.like_set.all %}
-                            <div class="like">
-                                <img class="likeProfileImage" src="{% static 'avatar.png' %}">
-                                <div class="likeUsernameDate">
-                                    <h5 class="likeProfileUsername">Username</h5> <!--TODO: add the username of the profile that liked -->
-                                    <h5 class="likeDate">{{ like.like_date }}</h5> 
-                                </div>
-                            </div>
-                        {% endfor %} 
-                    </div>
-                </div>
-            </section>
-        </section>
 
-        <section class="gridItemRight">
-            <h1 class="postTitle">{{title|default:"NAtitle"}}</h1>
-            <p class="postDescription">
-                {% if post.content_type == "text/markdown" or post.content_type == "text/plain" %}
-                    {{ post.content|default:"NAcontent" }}
-                {% elif post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
-                    <img src="{{ post.content }}" alt="Post Image" class="postImage">
-                {% else %}
-                    {{ post.content|default:"NAcontent" }}
-                {% endif %}        
-            </p>
-            <section class="likeCommentShare">
-                <form action="{% url 'like_post' post.id %}" method="POST">
+   <section class="gridContainer">
+       <section class="gridItemLeft">
+           <div class="userInfo">
+               <img class="profileImage" src="{% static 'avatar.png' %}">
+               <div class="username_DatePosted">
+                   <a class="username">Username</a> <!-- TODO: make the username clickable to go to userProfile-->
+                   <h3 class="postDate">{{published|default:"NApublished"}}</h3>
+               </div>
+               <button class="followButton">Follow</button>
+               <form action="{% url 'delete_post' post.id %}" method="POST">
                     {% csrf_token %}
-                    <button type="submit" class="like-button">
-                        <img class="heart" src="{% static 'heart.png' %}" alt="Like">
+                    <button style="background-color: #f8eac7; border-color: #f8eac7; border-style: none; " type="submit" class="delete-button">
+                        <img style="width: 30px; height: 30px;" class="trash" src="{% static 'trash.png' %}">
                     </button>
                 </form>
-                <h3>{{ post.like_set.count }} like(s)</h3>
-                <a type="submit" class="comment-button" href="{% url 'view' id=post.id %}">
-                    <img class="commentBubble"src="/static/messageCircle.png">
-                </a>
-                <h3>{{ post.comment_set.count }} comment(s)</h3>
-                <img src="/static/share.png">
-                <h3>share</h3>
-            </section>
-            <section class="viewLikesComments">
-                <a class="viewLikes">view likes</a>
-                <a class="viewComments" href="{% url 'view' id=post.id %}">view comments</a>
-            </section>
-        </section>
-    </section>
+           </div>
+           <section class="likesArea">
+               <h3 class="likesAreaTitle">Likes</h3>
+               <div class="carousel">
+                   <div class="carousel-container">
+                       {% for like in post.like_set.all %}
+                           <div class="like">
+                               <img class="likeProfileImage" src="{% static 'avatar.png' %}">
+                               <div class="likeUsernameDate">
+                                   <h5 class="likeProfileUsername">Username</h5> <!--TODO: add the username of the profile that liked -->
+                                   <h5 class="likeDate">{{ like.like_date }}</h5>
+                               </div>
+                           </div>
+                       {% endfor %}
+                   </div>
+               </div>
+           </section>
+       </section>
+
+
+       <section class="gridItemRight">
+           <h1 class="postTitle">{{title|default:"NAtitle"}}</h1>
+           <p class="postDescription">
+               {% if post.content_type == "text/markdown" or post.content_type == "text/plain" %}
+                   {{ post.content|default:"NAcontent" }}
+               {% elif post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
+                   <img src="{{ post.content }}" alt="Post Image" class="postImage">
+               {% else %}
+                   {{ post.content|default:"NAcontent" }}
+               {% endif %}       
+           </p>
+           <section class="likeCommentShare">
+               <form action="{% url 'like_post' post.id %}" method="POST">
+                   {% csrf_token %}
+                   <button type="submit" class="like-button">
+                       <img class="heart" src="{% static 'heart.png' %}" alt="Like">
+                   </button>
+               </form>
+               <h3>{{ post.like_set.count }} like(s)</h3>
+               <a type="submit" class="comment-button" href="{% url 'view' id=post.id %}">
+                   <img class="commentBubble"src="/static/messageCircle.png">
+               </a>
+               <h3>{{ post.comment_set.count }} comment(s)</h3>
+               <img src="/static/share.png">
+               <h3>share</h3>
+           </section>
+           <section class="viewLikesComments">
+               <a class="viewLikes">view likes</a>
+               <a class="viewComments" href="{% url 'view' id=post.id %}">view comments</a>
+           </section>
+       </section>
+   </section>
+
+
 
 
 </body>
