@@ -142,15 +142,31 @@ def view_postLikes(request, id):
 
 def like_post(request, id):
     post = get_object_or_404(Post, pk=id)
-    
+
+    # Extract the author from the JWT token
+    token = request.COOKIES.get('jwt')
+    if not token:
+        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    try:
+        # Decode the JWT token and get the author's display name
+        payload = jwt.decode(token, 'django-in', algorithms=['HS256'])
+        display_name = payload['id']  # Assuming 'id' is the display_name or can be replaced by actual key
+    except jwt.ExpiredSignatureError:
+        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+    except Author.DoesNotExist:
+        return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
+
     if request.method == 'POST':
-        # Create and save the like
-        like = Like(post=post)
+        # Create and save the like, using the author's display name as the username
+        like = Like(username=display_name, post=post)
         like.save()
-    
+
     # Redirect back to the previous page using the HTTP_REFERER header
     previous_url = request.META.get('HTTP_REFERER', 'view')  # 'view' is the fallback URL
     return redirect(previous_url)
+
+
 
 def delete_post(request, id):
     post = get_object_or_404(Post, pk=id)

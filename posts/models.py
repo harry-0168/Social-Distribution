@@ -18,6 +18,7 @@ CONTENT_TYPE_CHOICES = [
     ('image/png;base64', 'PNG Image'),
     ('image/jpeg;base64', 'JPEG Image')
 ]
+
 # Create your models here.
 class Post(models.Model):
     # id = models.CharField(primary_key=True, unique=True)
@@ -40,5 +41,9 @@ class Comment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE) # all comments belong to a post
 
 class Like(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE) # all likes belong to a post
+    username = models.CharField(max_length=255,default="1")  # Store the display name instead of Author object
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)  # All likes belong to a post
     like_date = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.username} liked {self.post.title}"
