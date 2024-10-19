@@ -34,19 +34,21 @@
                 </div>
                 <a href="#" class="follow-btn">Follow</a>
             </div>
-            <div class="post-content">
-                <h2 class="title">{{ post.title }}</h2>
-                <p class="description">{{ post.description }}</p>
-                <hr class="description">
-                <!-- <div class="image-placeholder">
-                    <img src="{% if post.content_type == 'image' %}{{ post.content }}{% endif %}" alt="Post Image">
-                </div> -->
-                {% if post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
-                <img src="{{ post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
-                {% else %}
-                <p class="content">{{post.content}}</p>
-                {% endif %}
-            </div>
+            <a href="{% url 'view' post.id %}" style="text-decoration: none; color: inherit;">
+                <div class="post-content">
+                    <h2 class="title">{{ post.title }}</h2>
+                    <p class="description">{{ post.description }}</p>
+                    <hr class="description">
+                    <!-- <div class="image-placeholder">
+                        <img src="{% if post.content_type == 'image' %}{{ post.content }}{% endif %}" alt="Post Image">
+                    </div> -->
+                    {% if post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
+                    <img src="{{ post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
+                    {% else %}
+                    <p class="content">{{post.content}}</p>
+                    {% endif %}
+                </div>
+            </a>
             <div class="post-footer">
                 <div class="interactions">
                     <img class="icon" src="/static/like.png">
@@ -57,8 +59,8 @@
                     <span class="interactions-text">Share</span>
                 </div>
                 <div class="stats">
-                    <span>300 Likes</span>
-                    <a href="#">View all 26 comments</a>
+                    <span>{{post.like_set.count}} like(s)</span>
+                    <a href="#">{{post.like_set.count}} comment(s)</a>
                 </div>
             </div>
         </div>

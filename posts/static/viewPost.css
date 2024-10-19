@@ -3,7 +3,7 @@
 }
 
 html, body {
-    background-color: #f8eac7;
+    background-color: #f7e8d4;
     margin: 0;
     padding: 0;
     height: 100%;
@@ -35,7 +35,7 @@ html, body {
 }
 /* User Section */
 .gridItemUser{
-    background-color: #f8eac7; /* #f8eac7 */
+    background-color: #f7e8d4; /* #f8eac7 */
     padding: 20px;
     font-size: 30px;
     /*display: grid; /* enable flexbox */
@@ -46,7 +46,7 @@ html, body {
     border-radius: 10px;
 }
 .gridItemUser .userInfo{
-    background-color: #f8eac7;
+    background-color: #f7e8d4;
     display: flex;
     flex-direction: row;
     justify-content: left;
@@ -77,20 +77,20 @@ html, body {
     height: 40px;
     margin: 10px;
     margin-left: 20px;
-    background-color: #f8eac7;
-    border: #f8eac7;
+    background-color: #f7e8d4;
+    border: #f7e8d4;
     font-size: medium;
     color: #3e305e;
 }
 
 .gridItemUser .postTitle{
-    background-color: #f8eac7;
+    background-color: #f7e8d4;
     color:#000;
     margin: 10px;
 }
 
 .gridItemUser .postDescription{
-    background-color: #f8eac7;
+    background-color: #f7e8d4;
     margin: 0;
     margin-bottom: 10px;
     padding: 10px;
@@ -104,7 +104,7 @@ html, body {
     margin: 0 auto; /* Center the image if needed */
 }
 .gridItemUser .likeCommentShare{
-    background-color: #f8eac7;
+    background-color: #f7e8d4;
     margin: 10px;
     display: flex;
     flex-direction: row;
@@ -143,18 +143,18 @@ html, body {
     color: #9C9B9B;
 }
 .like-button{
-    background-color: #f8eac7;
-    border-color: #f8eac7;
+    background-color: #f7e8d4;
+    border-color: #f7e8d4;
     border-style: none;
 }
 .comment-button {
-    background-color: #f8eac7;
-    border-color: #f8eac7;
+    background-color: #f7e8d4;
+    border-color: #f7e8d4;
     border-style: none;
 }
 
 .gridItemUser .viewLikesComments{
-    background-color: #f8eac7;
+    background-color: #f7e8d4;
     margin: 10px;
     display: flex;
     flex-direction: row;

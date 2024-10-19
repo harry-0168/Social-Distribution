@@ -11,10 +11,9 @@
     <div class="header">
         <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
         <div class="icons">
-            <img src="/static/home.png">
+            <a href="{% url 'home_page' %}"><img src="/static/home.png"></a>
             <img src="/static/add_post.png">
             <img src="/static/notifications.png">
-            <img src="/static/edit.png">
             <img src="/static/inbox.png">
         </div>
     </div>

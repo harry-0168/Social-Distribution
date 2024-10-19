@@ -15,7 +15,7 @@ def create_post(request):
         visibility = request.POST['visibility']
         content = request.POST.get('content', '')
         image = request.FILES.get('img')
-        author = get_object_or_404(Author, id=1)
+        author = get_object_or_404(Author, id='67d4c836-99a1-4460-87b7-03d2b2375a07')
         if content_type.startswith('image/') and image:
             # Read the image file and encode it as base64
             image_data = image.read()
