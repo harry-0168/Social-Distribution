@@ -178,7 +178,9 @@ class AuthorViewSet(viewsets.ModelViewSet):
 
 
 ##########
-''' Code for Author authentication/ Login to our website '''
+''' Code for Author authentication/ Login to our website 
+    https://www.youtube.com/watch?v=PUzgZrS_piQ
+'''
 @api_view(['POST'])
 def login(request):
     author = get_object_or_404(Author, display_name=request.data['display_name'])
