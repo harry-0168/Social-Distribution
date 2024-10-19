@@ -1,68 +1,37 @@
 from django.shortcuts import render, redirect, get_object_or_404, reverse, get_object_or_404
 from .models import Post, Comment, Like, Author
 import base64
-import jwt
 import markdown
-from rest_framework.decorators import api_view, renderer_classes
-from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework import viewsets
-from .serializers import PostSerializer
-from author.views import get_author_from_cookie
+
 # Create your views here.
 def post(request):
     return render(request, "posts/createPost.html")
-class PostViewSet(viewsets.ModelViewSet):
-    queryset = Post.objects.all()
-    serializer_class = PostSerializer
 
-@api_view(['POST'])
 def create_post(request):
     if request.method == 'POST':
-        # Extract the author from the JWT token
-        token = request.COOKIES.get('jwt')
-        if not token:
-            return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
-        
-        try:
-            payload = jwt.decode(token, 'django-in', algorithms=['HS256'])
-            author = get_object_or_404(Author, display_name=payload['id'])
-        except jwt.ExpiredSignatureError:
-            return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
-        except Author.DoesNotExist:
-            return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        # Extract post data from request
         title = request.POST['title']
         description = request.POST['description']
         content_type = request.POST['content_type']
         visibility = request.POST['visibility']
         content = request.POST.get('content', '')
         image = request.FILES.get('img')
-        
+        author = get_object_or_404(Author, id=1)
         if content_type.startswith('image/') and image:
             # Read the image file and encode it as base64
             image_data = image.read()
             encoded_image = base64.b64encode(image_data).decode('utf-8')
             content = f"data:{image.content_type};base64,{encoded_image}"
         
-        # Create a new post associated with the current author
         post = Post(
             title=title,
             description=description,
             content_type=content_type,
             content=content,
             visibility=visibility,
-            author=author,  # Use the author from the token
+            author=author,
         )
-        post.save()
-
-        # Serialize the post and return the response
-        serializer = PostSerializer(post)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    return Response({"error": "Invalid request method"}, status=status.HTTP_400_BAD_REQUEST)
+        post.save() 
+        return redirect('home_page')
     
 def delete_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
@@ -78,36 +47,24 @@ def delete_post(request, post_id):
     
 def edit_post(request, id):
     post = get_object_or_404(Post, id=id)
-    author_id = get_author_from_cookie(request).data.get('id')
+
     if request.method == 'POST':
         post.title = request.POST.get('title')
         post.description = request.POST.get('description')
         post.visibility = request.POST.get('visibility')
         post.content_type = request.POST.get('content_type')
-        
-        # Check if the content type is text
-        if not request.POST.get('content_type').startswith('image/'):
-            # Only update text content if the content type is not an image
-            post.content = request.POST.get('content')
-        
-        # Check if a new image is uploaded
-        image = request.FILES.get('img')
-        if request.POST.get('content_type').startswith('image/') and image:
-            # Read the image file and encode it as base64
-            image_data = image.read()
-            encoded_image = base64.b64encode(image_data).decode('utf-8')
-            post.content = f"data:{image.content_type};base64,{encoded_image}"
+        post.content = request.POST.get('content')
         post.save()
-        return redirect(reverse('author_profile', args=[post.author.id]))
+        return redirect('edit_post')
 
-    return render(request, 'posts/editPost.html', {'post': post, 'author_id': author_id})
+    return render(request, 'posts/editPost.html', {'post': post})
     
 def view_post(request, id):
     post = get_object_or_404(Post, pk=id)
 
     if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
         # Non-admin users should not see deleted posts
-        return redirect('home_page')  # Redirect to index or a 404 page
+        return redirect('index')  # Redirect to index or a 404 page
 
     published = post.published
     title = post.title
@@ -132,7 +89,7 @@ def view_postLikes(request, id):
 
     if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
         # Non-admin users should not see deleted posts
-        return redirect('home_page')  # Redirect to index or a 404 page
+        return redirect('index')  # Redirect to index or a 404 page
 
     published = post.published
     title = post.title
@@ -142,31 +99,15 @@ def view_postLikes(request, id):
 
 def like_post(request, id):
     post = get_object_or_404(Post, pk=id)
-
-    # Extract the author from the JWT token
-    token = request.COOKIES.get('jwt')
-    if not token:
-        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
-
-    try:
-        # Decode the JWT token and get the author's display name
-        payload = jwt.decode(token, 'django-in', algorithms=['HS256'])
-        display_name = payload['id']  # Assuming 'id' is the display_name or can be replaced by actual key
-    except jwt.ExpiredSignatureError:
-        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
-    except Author.DoesNotExist:
-        return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
-
+    
     if request.method == 'POST':
-        # Create and save the like, using the author's display name as the username
-        like = Like(username=display_name, post=post)
+        # Create and save the like
+        like = Like(post=post)
         like.save()
-
+    
     # Redirect back to the previous page using the HTTP_REFERER header
     previous_url = request.META.get('HTTP_REFERER', 'view')  # 'view' is the fallback URL
     return redirect(previous_url)
-
-
 
 def delete_post(request, id):
     post = get_object_or_404(Post, pk=id)
@@ -176,4 +117,4 @@ def delete_post(request, id):
     post.save()
 
     # Redirect to the index page or any other page
-    return redirect('home_page')
+    return redirect('index')

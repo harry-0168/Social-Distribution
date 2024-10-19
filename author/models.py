@@ -14,8 +14,6 @@ class Author(AbstractUser):
     page = models.CharField(max_length=255, blank=True, null=True)
     isVerified = models.BooleanField(default=False)
     username = None
-    followers = models.ManyToManyField('self', symmetrical=False, related_name='following', blank=True)
-
 
     USERNAME_FIELD = 'display_name'
     REQUIRED_FIELDS = []
@@ -40,16 +38,3 @@ class FollowRequest(models.Model):
 
     def __str__(self):
         return f"{self.actor.display_name} wants to follow {self.object_author.display_name}"
-    
-class following(models.Model):
-    '''Model to store following relationship between authors. author1 is following author2
-    this table represents following which is a many to many relationship btw author (author1, author2)
-    Exist (a,b) a is following b AND Exist(b,a) b is following a --> friend;  
-    Exist(a,b) AND not exist (b,a) --> a is follower of b or b is followed by a
-    This is all we need to fetch the relation between authors'''
-
-    author1 = models.ForeignKey(Author, related_name='author', on_delete=models.CASCADE)
-    author2 = models.ForeignKey(Author, related_name='following', on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.author1.display_name} is following {self.author2.display_name}"
