@@ -14,51 +14,108 @@ from datetime import datetime, timedelta
 from rest_framework.exceptions import AuthenticationFailed  
 from .serializers import UserSettingsForm
 from django.contrib import messages
+from django.conf import settings
 
 
 def profile_view(request, author_id):
     # Fetch the author by ID
     author = get_object_or_404(Author, id=author_id)
     
+    # Get the follower count and following count
+    followers_count = author.followers.count()  # Count of followers
+    following_count = author.following.count()  # Count of people this author is following (reverse relation)
+    
+    # Fetch the author's posts
     posts = Post.objects.filter(author=author).exclude(visibility='DELETED').order_by('-published')
 
-    # Render the template with the author and posts
+    # Check if the logged-in user is following the author (if user is authenticated)
+    is_following = False
+    if request.user.is_authenticated:
+        is_following = author.followers.filter(id=request.user.id).exists()
+
+    # Render the template with the author, posts, follower count, and if the user is following
     return render(request, 'author/author_feed.html', {
         'author': author,
-        'posts': posts
+        'posts': posts,
+        'followers_count': followers_count,
+        'following_count': following_count,
+        'is_following': is_following,  # Add this flag to the context
+        'logged_in_user': request.user,  # Pass the logged-in user to the template
     })
+
 
 def author_about(request, author_id):
     author = Author.objects.get(id=author_id)  
     return render(request, 'author/author_about.html', {'author': author})
 
-def follow_author(request, author_id):
-    if request.method == 'POST':
-        user = request.user
-        target_author = get_object_or_404(Author, pk=author_id)
-        # Check if already following
-        if not FollowRequest.objects.filter(actor=user, object_author=target_author).exists():
-            FollowRequest.objects.create(actor=user, object_author=target_author, summary=f"{user.display_name} wants to follow {target_author.display_name}", status='accepted')
-        return redirect('author_profile', author_id=author_id)
 
-def unfollow_author(request, author_id):
-    if request.method == 'DELETE':
-        target_author = get_object_or_404(Author, pk=author_id)
-        FollowRequest.objects.filter(actor=request.user.author, object_author=target_author).delete()
-        return JsonResponse({'message': 'Unfollowed successfully'}, status=204)
-    return JsonResponse({'error': 'Invalid request'}, status=400)
+def follow_author(request, object_author_id):
+    actor = request.user  # The currently logged-in user
+    target_author = get_object_or_404(Author, id=object_author_id)
+
+    if target_author != actor:
+        if target_author.followers.filter(id=actor.id).exists():
+            # Unfollow the author if already following
+            target_author.followers.remove(actor)
+        else:
+            # Follow the author if not already following
+            target_author.followers.add(actor)
+
+    # Redirect back to the same page (referer)
+    return redirect(request.META.get('HTTP_REFERER', '/'))
+
+
+def unfollow_author(request, object_author_id):
+    if request.method == 'POST':
+        actor = request.user  # The logged-in user (actor)
+        target_author = get_object_or_404(Author, pk=object_author_id)  # The author to be unfollowed
+        
+        # Remove the logged-in user from the target's followers
+        if actor in target_author.followers.all():
+            target_author.followers.remove(actor)
+        return redirect('author_profile', author_id=object_author_id)  # Redirect to the author's profile or home
+
+    return redirect('home_page')
 
 def following_list(request, author_id):
-    author = get_object_or_404(Author, pk=author_id)
-    following = FollowRequest.objects.filter(actor=author, status='accepted').select_related('object_author')
-    following_count = following.count()
-    return render(request, 'author/following_list.html', {'author': author, 'following': following, 'following_count': following_count})
+    author = get_object_or_404(Author, id=author_id)
+    following = author.following.all()  # Get all following
+    followers_count = author.followers.count()  # Count the followers
+    following_count = following.count()  # Count the following
+    
+    context = {
+        'author': author,
+        'following': following,
+        'followers_count': followers_count,
+        'following_count': following_count,
+    }
+    
+    return render(request, 'author/following_list.html', context)
 
+# View to get the list of followers of the given author
 def followers_list(request, author_id):
-    author = get_object_or_404(Author, pk=author_id)
-    followers = FollowRequest.objects.filter(object_author=author, status='accepted').select_related('actor')
+    # Get the target author (author whose followers we want to list)
+    author = get_object_or_404(Author, id=author_id)
+    
+    # Get the followers (authors who follow this author)
+    followers = author.followers.all()  # This gives you all the users who follow the author
+
+    # Get the number of followers and following for the current author
     followers_count = followers.count()
-    return render(request, 'author/followers_list.html', {'author': author, 'followers': followers, 'followers_count': followers_count})
+    following_count = author.following.count()  # Number of people this author is following
+
+    context = {
+        'author': author,
+        'followers': followers,
+        'followers_count': followers_count,
+        'following_count': following_count,
+    }
+
+    return render(request, 'author/followers_list.html', context)
+
+
+
+
 
 class AuthorPagination(PageNumberPagination):
     page_size = 10
@@ -124,25 +181,25 @@ class AuthorViewSet(viewsets.ModelViewSet):
 ''' Code for Author authentication/ Login to our website '''
 @api_view(['POST'])
 def login(request):
-    author = get_object_or_404(Author, display_name = request.data['display_name'])
+    author = get_object_or_404(Author, display_name=request.data['display_name'])
     if not author.isVerified:
-        return Response({"detail":"Not Verified by admin"}, status= status.HTTP_401_UNAUTHORIZED)
+        return Response({"detail": "Not Verified by admin"}, status=status.HTTP_401_UNAUTHORIZED)
     if not author.check_password(request.data['password']):
-        return Response({"detail":"Not found"}, status= status.HTTP_404_NOT_FOUND)
-    # token, created = Token.objects.get_or_create(user = author)
+        return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    # Generate the JWT token
     payload = {
         'id': author.display_name,
         'author_id': str(author.id),
-        'exp': datetime.now() + timedelta(days=1),
+        'exp': datetime.now() + timedelta(days=1),  # Token expiration
         'iat': datetime.now()
     }
-    SECRET_KEY = 'django-in'
-    token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
-    serializer = AuthorSerializer(instance = author)
-    response = Response()
-    response.set_cookie(key='jwt', value=token, httponly=True)  
-    response.data= {"jwt":token,"author":serializer.data}
-    this_user=author.id
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+
+    # Set the JWT token in a cookie
+    response = Response({"detail": "Login successful"})
+    response.set_cookie(key=settings.JWT_AUTH_COOKIE, value=token, httponly=True)
+    
     return response
 
 @api_view(['POST'])

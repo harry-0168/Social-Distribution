@@ -7,6 +7,7 @@
     <title>Home</title>
     <link rel="stylesheet" href="../../static/home_page.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
     <div class="header">
@@ -26,6 +27,7 @@
         </div>
     </div>
     <div class="post-container">
+        <p>Logged in as: {{ request.user.username }}</p>
         {% for post in posts %}
         <div class="post">
             <div class="post-header">
@@ -34,10 +36,29 @@
                     <p class="username">{{ post.author.display_name }}</p>
                     <p class="date-posted">{{ post.published|date:"F d, Y" }}</p>
                 </div>
+
+                
                 <form action="{% url 'follow-author' post.author.id %}" method="post">
                     {% csrf_token %}
-                    <button type="submit" class="follow-btn">Follow</button>
+                    
+                    {% if user.is_authenticated %}
+                        {% if user == post.author %}
+                            <!-- Don't show the button if the user is viewing their own profile or post -->
+                        {% else %}
+                            <!-- Show Unfollow button if already following -->
+                            {% if user in post.author.followers.all %}
+                                <button type="submit" class="follow-btn">Unfollow</button>
+                            <!-- Show Follow button if not following -->
+                            {% else %}
+                                <button type="submit" class="follow-btn">Follow</button>
+                            {% endif %}
+                        {% endif %}
+                    {% else %}
+                        <p>Please <a href="{% url 'login' %}">log in</a> to follow users.</p>
+                    {% endif %}
                 </form>
+                
+
             </div>
             <div class="post-content">
                 <h2 class="title">{{ post.title }}</h2>
@@ -70,17 +91,6 @@
             </div>
         </div>
         {% endfor %}
-        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                document.querySelectorAll('.markdown-content').forEach(function (element) {
-                    const markdownContent = element.getAttribute('data-content');
-                    if (markdownContent) {
-                        element.innerHTML = marked.parse(markdownContent);
-                    }
-                });
-            });
-        </script>
     </div>
 </body>
 </html>

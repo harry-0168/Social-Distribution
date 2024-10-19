@@ -5,25 +5,22 @@ import jwt
 from datetime import datetime
 
 def home_page(request):
-    token = request.COOKIES.get('jwt')  # Retrieve the JWT token from the cookie
-    if not token:
-        # Redirect to login if no JWT is present
+    # The user is automatically set by the middleware
+    if not request.user.is_authenticated:
         return redirect('login')
 
-    try:
-        # Assuming your secret key is 'django-in', adjust as per your settings
-        payload = jwt.decode(token, 'django-in', algorithms=['HS256'])
-    except jwt.ExpiredSignatureError:
-        # Redirect if the token has expired
-        return redirect('login')
-    except jwt.DecodeError:
-        # Handle invalid token cases by redirecting to login
-        return redirect('login')
+    # You can also access JWT payload if needed
+    jwt_payload = request.jwt_payload  # Optional
 
-    author_id = payload.get('author_id')
-    if not author_id:
-        # Redirect or handle cases where author_id is missing
-        return redirect('login')
+    # For example, extracting more fields from the payload
+    if jwt_payload:
+        author_id = jwt_payload.get('author_id')
+        # You can use author_id if needed
 
     posts = Post.objects.filter(visibility='PUBLIC').order_by('-published')
-    return render(request, 'home/home_page.html', {'posts': posts, 'author_id': author_id})
+    return render(request, 'home/home_page.html', {
+        'posts': posts, 
+        'author_id': request.user.id,  # Now you can get the user ID
+        'username': request.user.username  # Use the authenticated username
+    })
+
