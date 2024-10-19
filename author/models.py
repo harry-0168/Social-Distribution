@@ -14,6 +14,8 @@ class Author(AbstractUser):
     page = models.CharField(max_length=255, blank=True, null=True)
     isVerified = models.BooleanField(default=False)
     username = None
+    followers = models.ManyToManyField('self', symmetrical=False, related_name='following', blank=True)
+
 
     USERNAME_FIELD = 'display_name'
     REQUIRED_FIELDS = []
