@@ -1,0 +1,16 @@
+{% extends 'author/author_base.html' %}
+
+{% block content %}
+<h1>{{ author.display_name }}'s Following ({{ following_count }})</h1>
+
+<ul>
+    {% for user in following %}
+        <li>{{ user.display_name }}</li> <!-- Display the user's display name -->
+    {% empty %}
+        <li>No following yet.</li>  <!-- Show this message if there are no users followed -->
+    {% endfor %}
+</ul>
+
+
+
+{% endblock %}
