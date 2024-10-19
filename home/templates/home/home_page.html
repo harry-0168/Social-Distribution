@@ -7,7 +7,6 @@
     <title>Home</title>
     <link rel="stylesheet" href="{% static 'home_page.css' %}">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
     <div class="header">
@@ -19,11 +18,10 @@
                 <img src="{% static 'home.png' %}">
             </a>
             <a href="{% url 'create_post' %}">
-                <img src="{% static 'add_post.png' %}">
+                <img src="/static/add_post.png">
             </a>
-            <a href="{% url 'inbox' %}">
-                <img src="{% static 'inbox.png' %}">
-            </a>
+            <img src="/static/notifications.png">
+            <img src="/static/inbox.png">
         </div>
     </div>
 
@@ -103,6 +101,17 @@
             </div>
         </div>
         {% endfor %}
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                document.querySelectorAll('.markdown-content').forEach(function (element) {
+                    const markdownContent = element.getAttribute('data-content');
+                    if (markdownContent) {
+                        element.innerHTML = marked.parse(markdownContent);
+                    }
+                });
+            });
+        </script>
     </div>
 
 </body>

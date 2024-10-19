@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'author_profile' author.id %}"> <!-- TO-DO replace with actual author id-->
+        <a href="{% url 'author_profile' 1%}"> <!-- TO-DO replace with actual author id-->
             <img style="padding-left: 90px;" src="/static/avatar.png">
         </a>
         <div class="icons">
@@ -19,12 +19,16 @@
             <a href="{% url 'create_post' %}">
                 <img src="{% static 'add_post.png' %}">
             </a>
-            <a href="{% url 'inbox' %}">
-                <img src="{% static 'inbox.png' %}">
-            </a>
+            <img src="{% static 'notifications.png' %}">
+            <img src="{% static 'inbox.png' %}">
         </div>
     </div>
 
+    <div class="icon-links">
+        <a href="#">Page</a>
+        <a href="#">Notification</a>
+        <a href="#">More</a>
+    </div>
 
     <div class="container">
  
@@ -33,38 +37,13 @@
             <img class="profile-pic" src="{{ author.profile_image.url }}" alt="Profile Picture">
             {% else %}
             <img class="profile-pic" src="{% static 'avatar.png' %}" alt="Default Profile Picture">
-        {% endif %}            
-        <h2 class="profile-name">{{ author.display_name }}</h2>
-
-        <div class="follow-info">
-            <!-- Clickable link for followers list -->
-            <a href="{% url 'followers_list' author.id %}" class="followers">
-                <strong>{{ followers_count }}</strong> Followers
-            </a>
-
-           <span> | </span>
-        
-            <!-- Clickable link for following list -->
-            <a href="{% url 'following_list' author.id %}" class="following">
-                <strong>{{ following_count }}</strong> Following
-            </a>
-        </div>
-
+        {% endif %}            <h2 class="profile-name">{{ author.display_name }}</h2>
             <ul class="profile-menu">
                 <li><a href="{% url 'author_profile' author.id %}">Home</a></li>
                 <li><a href="{% url 'author-about' author.id %}">About</a></li>
                 <li><a href="#">Photo</a></li>
                 <li><a href="#">Video</a></li>
                 <li><a href="{% url 'user-settings' author.id %}">Settings</a></li>
-
-                  <!-- Add the logout form below the settings option -->
-                <li>
-                    <form action="{% url 'logout' %}" method="POST">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">Logout</button>
-                    </form>
-                    
-                </li>
             </ul>
         </div>
 
