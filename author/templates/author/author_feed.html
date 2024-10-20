@@ -38,7 +38,7 @@
                     <img src="{{ post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
                 </div>
                 {% elif post.content_type == "text/markdown" %}
-                        <div class="content markdown-content" data-content="{{post.content|escapejs }}" id="markdown-content-{{ item.post.id }}"></div>
+                        <div class="content markdown-content" data-content="{{post.content}}" id="markdown-content-{{ item.post.id }}"></div>
                 {% else %}
                 <!-- 3rd row: Content of the post -->
                 <div class="post-content">
