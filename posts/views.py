@@ -10,6 +10,7 @@ from rest_framework import status
 from rest_framework import viewsets
 from .serializers import PostSerializer
 from author.views import get_author_from_cookie
+from django.conf import settings
 # Create your views here.
 def post(request):
     return render(request, "posts/createPost.html")
@@ -26,7 +27,7 @@ def create_post(request):
             return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
         
         try:
-            payload = jwt.decode(token, 'django-in', algorithms=['HS256'])
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             author = get_object_or_404(Author, display_name=payload['id'])
         except jwt.ExpiredSignatureError:
             return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
