@@ -229,7 +229,7 @@ def get_author_from_cookie(request):
         return AuthenticationFailed("Unauthenticated")
     
     try:
-        payload = jwt.decode(token, 'django-in', algorithms=['HS256'])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
     except jwt.ExpiredSignatureError:
         return AuthenticationFailed("Unauthenticated")
     
