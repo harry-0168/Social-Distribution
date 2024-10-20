@@ -112,3 +112,32 @@ body {
     text-decoration: none;
     padding-left: 20px;
 }
+
+.visibility-tag {
+    padding: 3px 6px;
+    font-size: 12px;
+    border-radius: 3px;
+    color: white;
+    font-weight: bold;
+}
+
+.public {
+    background-color: green;
+}
+
+.friends-only {
+    background-color: blue;
+}
+
+.unlisted {
+    background-color: orange;
+}
+
+.deleted {
+    background-color: red;
+    text-decoration: line-through;
+}
+
+.post-visibility {
+    margin-left: 20px;
+}

@@ -278,3 +278,82 @@ body {
 .settings-container button[type="submit"]:active {
     background-color: #388e3c;
 }
+
+.followers-list {
+    margin-top: 20px;
+}
+
+.follower-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    background-color: #f9f9f9;
+}
+
+.follower-info {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.unfollow-button button {
+    background-color: #d9534f;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.unfollow-button button:hover {
+    background-color: #c9302c;
+}
+
+
+/* The overall container for the following list */
+
+
+/* List of following items */
+.following-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center the child elements horizontally */
+    margin-top: 20px;
+}
+
+/* Each following item box */
+.following-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    background-color: #fff;
+    width: 80%;
+}
+
+/* Styling for the name of the following user */
+.following-info {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* Unfollow button */
+.unfollow-button button {
+    background-color: #d9534f;
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.unfollow-button button:hover {
+    background-color: #c9302c;
+}
+

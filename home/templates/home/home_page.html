@@ -5,13 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home</title>
-    <link rel="stylesheet" href="../../static/home_page.css">
+    <link rel="stylesheet" href="{% static 'home_page.css' %}">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'author_profile' 1%}"> <!-- TO-DO replace with actual author id-->
-            <img style="padding-left: 90px;" src="/static/avatar.png">
+        <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
+            <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
         </a>
         <div class="icons">
             <a href="{% url 'home_page' %}">
@@ -24,39 +24,74 @@
             <img src="/static/inbox.png">
         </div>
     </div>
+
     <div class="post-container">
-        {% for post in posts %}
+        <p>Logged in as: {{ request.user.display_name }}</p>
+        {% for item in post_list %}
         <div class="post">
             <div class="post-header">
-                <img  src="/static/avatar.png">
+                <img  src="{% static 'avatar.png' %}">
                 <div>
-                    <p class="username">{{ post.author.display_name }}</p>
-                    <p class="date-posted">{{ post.published|date:"F d, Y" }}</p>
+                    <p class="username">{{ item.post.author.display_name }}</p>
+                    <p class="date-posted">{{ item.post.published|date:"F d, Y" }}</p>
                 </div>
-                <a href="#" class="follow-btn">Follow</a>
+
+                 <!-- Visibility Tag -->
+                <div class="post-visibility">
+                    {% if item.post.visibility == 'PUBLIC' %}
+                        <span class="visibility-tag public">Public</span>
+                    {% elif item.post.visibility == 'FRIENDS' %}
+                        <span class="visibility-tag friends-only">Friends Only</span>
+                    {% elif item.post.visibility == 'UNLISTED' %}
+                        <span class="visibility-tag unlisted">Unlisted</span>
+                    {% elif item.post.visibility == 'DELETED' %}
+                        <span class="visibility-tag deleted">Deleted</span>
+                    {% endif %}
+                </div>
+
+                <!-- Follow/Unfollow button -->
+                <form action="{% url 'follow-author' item.post.author.id %}" method="post">
+                    {% csrf_token %}
+
+                    {% if user.is_authenticated %}
+                        {% if user == item.post.author %}
+                            <!-- Don't show the button if the user is viewing their own profile or post -->
+                        {% else %}
+                            <!-- Show Unfollow button if already following -->
+                            {% if item.is_following %}
+                                <button type="submit" class="follow-btn">Unfollow</button>
+                            <!-- Show Follow button if not following -->
+                            {% else %}
+                                <button type="submit" class="follow-btn">Follow</button>
+                            {% endif %}
+                        {% endif %}
+                    {% else %}
+                        <p>Please <a href="{% url 'login' %}">log in</a> to follow users.</p>
+                    {% endif %}
+                </form>
             </div>
+
             <div class="post-content">
-                <h2 class="title">{{ post.title }}</h2>
-                <p class="description">{{ post.description }}</p>
+                <h2 class="title">{{ item.post.title }}</h2>
+                <p class="description">{{ item.post.description }}</p>
                 <hr class="description">
-                <!-- <div class="image-placeholder">
-                    <img src="{% if post.content_type == 'image' %}{{ post.content }}{% endif %}" alt="Post Image">
-                </div> -->
-                {% if post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
-                <img src="{{ post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
-                {% elif post.content_type == "text/markdown" %}
-                <div class="content markdown-content" data-content="{{ post.content|escapejs }}" id="markdown-content-{{ post.id }}"></div>
+
+                {% if item.post.content_type == "image/png;base64" or item.post.content_type == "image/jpeg;base64" %}
+                    <img src="{{ item.post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
+                {% elif item.post.content_type == "text/markdown" %}
+                    <div class="content markdown-content" data-content="{{ item.post.content|escapejs }}" id="markdown-content-{{ item.post.id }}"></div>
                 {% else %}
-                <p class="content">{{post.content}}</p>
+                    <p class="content">{{ item.post.content }}</p>
                 {% endif %}
             </div>
+
             <div class="post-footer">
                 <div class="interactions">
-                    <img class="icon" src="/static/like.png">
+                    <img class="icon" src="{% static 'like.png' %}">
                     <span class="interactions-text">Like</span>
-                    <img class="icon" src="/static/comment.png">
+                    <img class="icon" src="{% static 'comment.png' %}">
                     <span class="interactions-text">Comment</span>
-                    <img class="icon" src="/static/share.png">
+                    <img class="icon" src="{% static 'share.png' %}">
                     <span class="interactions-text">Share</span>
                 </div>
                 <div class="stats">
@@ -78,5 +113,6 @@
             });
         </script>
     </div>
+
 </body>
 </html>

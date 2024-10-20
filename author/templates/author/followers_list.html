@@ -1,0 +1,29 @@
+{% extends 'author/author_base.html' %}
+
+{% block content %}
+<h1>{{ author.display_name }}'s Followers ({{ followers_count }})</h1>
+
+<div class="followers-list">
+    {% for follower in followers %}
+        <div class="follower-box">
+            <div class="follower-info">
+                <span>{{ follower.display_name }}</span>
+            </div>
+
+            <div class="unfollow-button">
+                <form action="{% if is_following %}{% url 'unfollow-author' user.id %}{% else %}{% url 'follow-author' user.id %}{% endif %}" method="post">
+                    {% csrf_token %}
+                    {% if is_following %}
+                        <button type="submit" class="btn btn-danger">Unfollow</button>
+                    {% else %}
+                        <button type="submit" class="btn btn-primary">Follow</button>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    {% empty %}
+        <p>No followers yet.</p>  <!-- Show this message if there are no followers -->
+    {% endfor %}
+</div>
+
+{% endblock %}
