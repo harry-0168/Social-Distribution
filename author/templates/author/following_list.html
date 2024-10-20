@@ -1,10 +1,27 @@
 {% extends 'author/author_base.html' %}
 
 {% block content %}
-<h1>Following ({{ following_count }})</h1>
-<ul>
-    {% for follow in following %}
-    <li>{{ follow.object_author.display_name }}</li>
-    {% endfor %}
-</ul>
+<h1>{{ author.display_name }}'s Following ({{ following_count }})</h1>
+
+<div class="following-list-container">
+    <div class="following-list">
+        {% for user in following %}
+            <div class="following-box">
+                <div class="following-info">
+                    <span>{{ user.display_name }}</span>
+                </div>
+
+                <div class="unfollow-button">
+                    <form action="{% url 'unfollow-author' user.id %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Unfollow</button>
+                    </form>
+                </div>
+            </div>
+        {% empty %}
+            <p>No users followed yet.</p>  <!-- Show this message if there are no users followed -->
+        {% endfor %}
+    </div>
+</div>
+
 {% endblock %}
