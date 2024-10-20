@@ -1,6 +1,6 @@
 from datetime import datetime
 from django.db import models
-from author.models import Author, following
+from author.models import Author, Following
 from django.utils import timezone
 import uuid
 
@@ -52,7 +52,7 @@ class Post(models.Model):
 
         # Friends-only posts are visible to friends (mutual followers)
         if self.visibility == 'FRIENDS':
-            return following.are_friends(self.author, user)
+            return Following.are_friends(self.author, user)
 
         # By default, the post is not visible
         return False
@@ -69,7 +69,7 @@ class Comment(models.Model):
     created_at = models.DateTimeField("date created", default=timezone.now)
     content =  models.TextField()
     post = models.ForeignKey(Post, on_delete=models.CASCADE) # a comment belong to a post
-    author = models.ForeignKey(Author, on_delete=models.CASCADE) # a comment belong to an author
+    author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True) # a comment belong to an author
     def save(self, *args, **kwargs):
         if not self.FQID:
             self.FQID = f"{self.post.FQID}/comments"

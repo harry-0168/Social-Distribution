@@ -15,7 +15,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from .serializers import UserSettingsForm
 from django.contrib import messages
 from django.conf import settings
-from .models import Author, following
+from .models import Author, Following
 
 
 def profile_view(request, author_id):
@@ -23,10 +23,10 @@ def profile_view(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     
     # Get the follower count (authors who follow this author)
-    followers_count = following.objects.filter(author2=author).count()  # Count of followers
+    followers_count = Following.objects.filter(author2=author).count()  # Count of followers
     
-    # Get the following count (authors this author is following)
-    following_count = following.objects.filter(author1=author).count()  # Count of people this author is following
+    # Get the Following count (authors this author is Following)
+    following_count = Following.objects.filter(author1=author).count()  # Count of people this author is following
     
     # Fetch the author's posts
     posts = Post.objects.filter(author=author).exclude(visibility='DELETED').order_by('-published')
@@ -34,7 +34,7 @@ def profile_view(request, author_id):
     # Check if the logged-in user is following the author (if user is authenticated)
     is_following = False
     if request.user.is_authenticated:
-        is_following = following.objects.filter(author1=request.user, author2=author).exists()
+        is_following = Following.objects.filter(author1=request.user, author2=author).exists()
 
     # Render the template with the author, posts, follower count, and if the user is following
     return render(request, 'author/author_feed.html', {
@@ -61,10 +61,10 @@ def follow_author(request, object_author_id):
         # Prevent users from following themselves
         if target_author != actor:
             # Follow the target author using the follow method in the model
-            following.follow(actor, target_author)
+            Following.follow(actor, target_author)
         
         # Optionally, check if they are now mutual followers (friends)
-        if following.are_friends(actor, target_author):
+        if Following.are_friends(actor, target_author):
             message = f"You are now friends with {target_author.display_name}."
         
         # Redirect back to the referring page
@@ -82,7 +82,7 @@ def unfollow_author(request, object_author_id):
         # Prevent users from unfollowing themselves
         if target_author != actor:
             # Unfollow the target author using the unfollow method in the model
-            following.unfollow(actor, target_author)
+            Following.unfollow(actor, target_author)
 
         # Redirect back to the referring page
         return redirect(request.META.get('HTTP_REFERER', '/'))
@@ -93,12 +93,12 @@ def following_list(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     
     # Get all authors that the current author is following
-    follow_relationships = following.objects.filter(author1=author).select_related('author2')
+    follow_relationships = Following.objects.filter(author1=author).select_related('author2')
 
     context = {
         'author': author,
         'following': [rel.author2 for rel in follow_relationships],  # List of authors being followed
-        'followers_count': following.objects.filter(author2=author).count(),  # Count of followers
+        'followers_count': Following.objects.filter(author2=author).count(),  # Count of followers
         'following_count': follow_relationships.count(),  # Count of following
     }
 
@@ -110,13 +110,13 @@ def followers_list(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     
     # Get all authors who follow this author
-    followers = following.objects.filter(author2=author).select_related('author1')
+    followers = Following.objects.filter(author2=author).select_related('author1')
 
     context = {
         'author': author,
         'followers': [rel.author1 for rel in followers],  # List of authors who follow the target
         'followers_count': followers.count(),  # Number of followers
-        'following_count': following.objects.filter(author1=author).count(),  # Number of authors this user is following
+        'following_count': Following.objects.filter(author1=author).count(),  # Number of authors this user is following
     }
 
     return render(request, 'author/followers_list.html', context)
@@ -229,7 +229,7 @@ def get_author_from_cookie(request):
         return AuthenticationFailed("Unauthenticated")
     
     try:
-        payload = jwt.decode(token, 'django-in', algorithms=['HS256'])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
     except jwt.ExpiredSignatureError:
         return AuthenticationFailed("Unauthenticated")
     

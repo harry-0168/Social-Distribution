@@ -1,7 +1,7 @@
 from django.contrib import admin
-from .models import Author, following
+from .models import Author, Following
 
 
 admin.site.register(Author)
 
-admin.site.register(following)
+admin.site.register(Following)
