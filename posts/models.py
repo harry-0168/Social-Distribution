@@ -1,6 +1,6 @@
 from datetime import datetime
 from django.db import models
-from author.models import Author
+from author.models import Author, following
 from django.utils import timezone
 import uuid
 
@@ -33,6 +33,27 @@ class Post(models.Model):
     
     def __str__(self):
         return self.title
+    
+    def is_visible_to(self, user):
+        """Determine if the current post is visible to the specified user."""
+        # Deleted posts should not be visible to anyone except admins
+        if self.visibility == 'DELETED':
+            return False
+
+        # Public posts are visible to everyone
+        if self.visibility == 'PUBLIC':
+            return True
+
+        # Unlisted posts are visible only to logged-in users with a link
+        if self.visibility == 'UNLISTED':
+            return user.is_authenticated
+
+        # Friends-only posts are visible to friends (mutual followers)
+        if self.visibility == 'FRIENDS':
+            return following.are_friends(self.author, user)
+
+        # By default, the post is not visible
+        return False
 
 class Comment(models.Model):
     username = models.CharField(max_length=32) 

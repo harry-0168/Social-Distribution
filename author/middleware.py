@@ -8,6 +8,10 @@ User = get_user_model()
 
 class JWTAuthenticationMiddleware(MiddlewareMixin):
     def process_request(self, request):
+        # Exclude the admin URL path from JWT authentication
+        if request.path.startswith('/admin/'):
+            return  # Bypass JWT authentication for admin
+
         # Get the JWT token from cookies
         token = request.COOKIES.get('jwt')  
         if token:
