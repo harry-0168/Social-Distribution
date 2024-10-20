@@ -11,7 +11,9 @@
 </head>
 <body>
     <div class="header">
-        <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
+        <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
+            <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
+        </a>
         <div class="icons">
             <a href="{% url 'home_page' %}">
                 <img src="{% static 'home.png' %}">
@@ -29,8 +31,8 @@
             <div class="userInfo">
                 <img class="profileImage" src="{% static 'avatar.png' %}">
                 <div class="username_DatePosted">
-                    <a class="username">Username</a> <!-- TODO: make the username clickable to go to userProfile-->
-                    <h3 class="postDate">{{published}}</h3>
+                    <a class="username">{{author.display_name}}</a> <!-- TODO: make the username clickable to go to userProfile-->
+                    <h3 class="postDate">{{post.published}}</h3>
                 </div>
                 <button class="followButton">Follow</button>
                 <form action="{% url 'delete_post' post.id %}" method="POST">
@@ -40,18 +42,18 @@
                     </button>
                 </form>
             </div>
-            <h1 class="postTitle">{{title}}</h1>
-            <p class="postDescription">
+            <h1 class="postTitle">{{post.title}}</h1>
+            <div class="postContent">
                 {% if post.content_type == "text/plain" %}
                     {{ post.content }}
                 {% elif post.content_type == "text/markdown" %}
-                <div id="markdown-content-{{ post.id }}" class="markdown-content" data-content="{{ post.content|escapejs }}"></div>
+                    <div id="markdown-content-{{ post.id }}" class="markdown-content" data-content="{{ post.content|escapejs }}"></div>
                 {% elif post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
                     <img src="{{ post.content }}" alt="Post Image" class="postImage">
                 {% else %}
                     {{ post.content }}
                 {% endif %}        
-            </p>
+            </div>
             <section class="likeCommentShare">
                 <form action="{% url 'like_post' post.id %}" method="POST">
                     {% csrf_token %}
@@ -88,7 +90,6 @@
                 <form method="POST"> 
                     {% csrf_token %}
                     <div class="commentInputWrapper">
-                        <input class="commentInputNameTextbox" type="text" name="username" placeholder="Your name" required>
                         <input id="comment-input" class="commentInputTextbox" type="text" name="content" placeholder="Add a comment ..." required>
                         <input class="commentInputSubmit" type="submit" value="Add Comment">
                     </div>            

@@ -23,7 +23,9 @@
 </head>
 <body>
     <div class="header">
-        <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
+        <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
+            <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
+        </a>
         <div class="icons">
             <a href="{% url 'home_page' %}">
                 <img src="{% static 'home.png' %}">
@@ -42,8 +44,8 @@
             <div class="userInfo">
                 <img class="profileImage" src="{% static 'avatar.png' %}">
                 <div class="username_DatePosted">
-                    <a class="username">Username</a> <!-- TODO: make the username clickable to go to userProfile-->
-                    <h3 class="postDate">{{published|default:"NApublished"}}</h3>
+                    <a class="username">{{author}}</a> <!-- TODO: make the username clickable to go to userProfile-->
+                    <h3 class="postDate">{{post.published|default:"NApublished"}}</h3>
                 </div>
                 <button class="followButton">Follow</button>
                 <form action="{% url 'delete_post' post.id %}" method="POST">
@@ -61,7 +63,7 @@
                             <div class="like">
                                 <img class="likeProfileImage" src="{% static 'avatar.png' %}">
                                 <div class="likeUsernameDate">
-                                    <h5 class="likeProfileUsername">Username</h5> <!--TODO: add the username of the profile that liked -->
+                                    <h5 class="likeProfileUsername">{{like.username}}</h5> <!--TODO: add the username of the profile that liked -->
                                     <h5 class="likeDate">{{ like.like_date }}</h5> 
                                 </div>
                             </div>
@@ -72,16 +74,18 @@
         </section>
 
         <section class="gridItemRight">
-            <h1 class="postTitle">{{title|default:"NAtitle"}}</h1>
-            <p class="postDescription">
-                {% if post.content_type == "text/markdown" or post.content_type == "text/plain" %}
+            <h1 class="postTitle">{{post.title|default:"NAtitle"}}</h1>
+            <div class="postContent">
+                {% if post.content_type == "text/plain" %}
                     {{ post.content|default:"NAcontent" }}
+                {% elif post.content_type == "text/markdown" %}
+                    <div id="markdown-content-{{ post.id }}" class="markdown-content" data-content="{{ post.content|escapejs }}"></div>
                 {% elif post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
                     <img src="{{ post.content }}" alt="Post Image" class="postImage">
                 {% else %}
                     {{ post.content|default:"NAcontent" }}
-                {% endif %}        
-            </p>
+                {% endif %}       
+            </div>
             <section class="likeCommentShare">
                 <form action="{% url 'like_post' post.id %}" method="POST">
                     {% csrf_token %}
@@ -90,7 +94,7 @@
                     </button>
                 </form>
                 <h3>{{ post.like_set.count }} like(s)</h3>
-                <a type="submit" class="comment-button" href="{% url 'likes' id=post.id %}">
+                <a type="submit" class="comment-button" href="{% url 'viewPost' id=post.id %}">
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
                 <h3>{{ post.comment_set.count }} comment(s)</h3>
@@ -103,6 +107,15 @@
             </section>
         </section>
     </section>
-
-
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.markdown-content').forEach(function (element) {
+                const markdownContent = element.getAttribute('data-content');
+                if (markdownContent) {
+                    element.innerHTML = marked.parse(markdownContent);
+                }
+            });
+        });
+    </script>
 </body>

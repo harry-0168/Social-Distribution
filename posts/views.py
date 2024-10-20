@@ -108,15 +108,27 @@ def view_post(request, id):
 
     if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
         # Non-admin users should not see deleted posts
-        return redirect('home_page')  # Redirect to index or a 404 page
+        return redirect('home_page')  # Redirect to index
+    
+    author = post.author
+    comments = post.comment_set.all()
 
-    published = post.published
-    title = post.title
-    description = post.description
+    # Extract the author from the JWT token
+    token = request.COOKIES.get('jwt')
+    if not token:
+        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+    try:
+        # Decode the JWT token and get the author's display name
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+        display_name = payload['id']  # Assuming 'id' is the display_name or can be replaced by actual key
+    except jwt.ExpiredSignatureError:
+        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+    except Author.DoesNotExist:
+        return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'POST':
         # Retrieve the form data
-        username = request.POST['username']
+        username = display_name
         content = request.POST['content']
         
         # Create and save the new comment
@@ -124,9 +136,9 @@ def view_post(request, id):
         comment.save()
         
         # Redirect to the same post after adding the comment (prevents form resubmission on refresh)
-        return redirect('view', id=post.id)
+        return redirect('viewPost', id=post.id)
 
-    return render(request, "posts/viewPost.html", {"id":id, "published":published, "title":title, "description":description, "post":post})
+    return render(request, "posts/viewPost.html", {"id":id, "post":post, "author":author, "comments":comments})
 
 def view_postLikes(request, id):
     post = get_object_or_404(Post, pk=id)
@@ -135,11 +147,9 @@ def view_postLikes(request, id):
         # Non-admin users should not see deleted posts
         return redirect('home_page')  # Redirect to index or a 404 page
 
-    published = post.published
-    title = post.title
-    description = post.description
+    author = post.author
 
-    return render(request, "posts/viewPostLikes.html", {"id":id, "published":published, "title":title, "description":description, "post":post})
+    return render(request, "posts/viewPostLikes.html", {"id":id, "post":post, "author":author})
 
 def like_post(request, id):
     post = get_object_or_404(Post, pk=id)
@@ -148,7 +158,6 @@ def like_post(request, id):
     token = request.COOKIES.get('jwt')
     if not token:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
-
     try:
         # Decode the JWT token and get the author's display name
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
@@ -164,7 +173,7 @@ def like_post(request, id):
         like.save()
 
     # Redirect back to the previous page using the HTTP_REFERER header
-    previous_url = request.META.get('HTTP_REFERER', 'view')  # 'view' is the fallback URL
+    previous_url = request.META.get('HTTP_REFERER', 'viewPost')  # 'view' is the fallback URL
     return redirect(previous_url)
 
 
