@@ -52,25 +52,27 @@
                 </div>
 
                 <!-- Follow/Unfollow button -->
-                <form action="{% url item.is_following|yesno:'unfollow-author,follow-author' item.post.author.id %}" method="post">
+                <form action="{% url item.is_following|yesno:'unfollow-author,follow-author' item.post.author.id %}" method="post" id="followForm-{{ item.post.author.id }}">
                     {% csrf_token %}
                 
                     {% if user.is_authenticated %}
                         {% if user == item.post.author %}
-                            <!-- Do not show the follow/unfollow button if it's the user's own profile -->
+                            <!-- Do not show follow/unfollow button if it's the user's own profile -->
                         {% else %}
-                            <!-- Show Unfollow button if already following -->
                             {% if item.is_following %}
-                                <button type="submit" class="follow-btn">Unfollow</button>
-                            <!-- Show Follow button if not following -->
+                                <button type="submit" class="follow-btn" id="followBtn-{{ item.post.author.id }}">Unfollow</button>
                             {% else %}
-                                <button type="submit" class="follow-btn">Follow</button>
+                                <button type="submit" class="follow-btn" id="followBtn-{{ item.post.author.id }}">Follow</button>
                             {% endif %}
                         {% endif %}
                     {% else %}
                         <p>Please <a href="{% url 'login' %}">log in</a> to follow users.</p>
                     {% endif %}
                 </form>
+                
+                <!-- Hidden iframe where the form will be submitted -->
+                <iframe name="hiddenFrame" style="display:none;"></iframe>
+                
                 
             </div>
 
@@ -105,6 +107,10 @@
         </div>
         {% endfor %}
     </div>
+
+    
+    
+    
 
 </body>
 </html>
