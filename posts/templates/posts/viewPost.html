@@ -13,11 +13,15 @@
     <div class="header">
         <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
         <div class="icons">
-            <img src="/static/home.png">
-            <img src="/static/add_post.png">
-            <img src="/static/notifications.png">
-            <img src="/static/edit.png">
-            <img src="/static/inbox.png">
+            <a href="{% url 'home_page' %}">
+                <img src="{% static 'home.png' %}">
+            </a>
+            <a href="{% url 'create_post' %}">
+                <img src="{% static 'add_post.png' %}">
+            </a>
+            <a href="{% url 'inbox' %}">
+                <img src="{% static 'inbox.png' %}">
+            </a>
         </div>
     </div>
     <section class="gridContainer">
@@ -29,6 +33,12 @@
                     <h3 class="postDate">{{published}}</h3>
                 </div>
                 <button class="followButton">Follow</button>
+                <form action="{% url 'delete_post' post.id %}" method="POST">
+                    {% csrf_token %}
+                    <button style=" margin-top: 20px; background-color: #f8eac7; border-color: #f8eac7; border-style: none; " type="submit" class="delete-button">
+                        <img style="width: 30px; height: 30px;" class="trash" src="{% static 'trash.png' %}">
+                    </button>
+                </form>
             </div>
             <h1 class="postTitle">{{title}}</h1>
             <p class="postDescription">

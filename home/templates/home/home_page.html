@@ -28,27 +28,40 @@
     </div>
 
     <div class="post-container">
-        <p>Logged in as: {{ request.user.username }}</p>
-        {% for post in posts %}
-        <a href="{% url 'viewPost' post.id %}" style="text-decoration: none; color: inherit;">
+        <p>Logged in as: {{ request.user.display_name }}</p>
+        {% for item in post_list %}
+        <a href="{% url 'viewPost' item.post.id %}" style="text-decoration: none; color: inherit;">
             <div class="post">
                 <div class="post-header">
-                    <img  src="/static/avatar.png">
+                    <img  src="{% static 'avatar.png' %}">
                     <div>
-                        <p class="username">{{ post.author.display_name }}</p>
-                        <p class="date-posted">{{ post.published|date:"F d, Y" }}</p>
+                        <p class="username">{{ item.post.author.display_name }}</p>
+                        <p class="date-posted">{{ item.post.published|date:"F d, Y" }}</p>
                     </div>
 
-                    
-                    <form action="{% url 'follow-author' post.author.id %}" method="post">
+                    <!-- Visibility Tag -->
+                    <div class="post-visibility">
+                        {% if item.post.visibility == 'PUBLIC' %}
+                            <span class="visibility-tag public">Public</span>
+                        {% elif item.post.visibility == 'FRIENDS' %}
+                            <span class="visibility-tag friends-only">Friends Only</span>
+                        {% elif item.post.visibility == 'UNLISTED' %}
+                            <span class="visibility-tag unlisted">Unlisted</span>
+                        {% elif item.post.visibility == 'DELETED' %}
+                            <span class="visibility-tag deleted">Deleted</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Follow/Unfollow button -->
+                    <form action="{% url item.is_following|yesno:'unfollow-author,follow-author' item.post.author.id %}" method="post">
                         {% csrf_token %}
-                        
+                    
                         {% if user.is_authenticated %}
-                            {% if user == post.author %}
-                                <!-- Don't show the button if the user is viewing their own profile or post -->
+                            {% if user == item.post.author %}
+                                <!-- Do not show the follow/unfollow button if it's the user's own profile -->
                             {% else %}
                                 <!-- Show Unfollow button if already following -->
-                                {% if user in post.author.followers.all %}
+                                {% if item.is_following %}
                                     <button type="submit" class="follow-btn">Unfollow</button>
                                 <!-- Show Follow button if not following -->
                                 {% else %}
@@ -59,36 +72,34 @@
                             <p>Please <a href="{% url 'login' %}">log in</a> to follow users.</p>
                         {% endif %}
                     </form>
-                    
 
+                    <!-- Hidden iframe where the form will be submitted -->
+                    <iframe name="hiddenFrame" style="display:none;"></iframe>
+                    
                 </div>
+
                 <div class="post-content">
-                    <h2 class="title">{{ post.title }}</h2>
-                    <p class="description">{{ post.description }}</p>
+                    <h2 class="title">{{ item.post.title }}</h2>
+                    <p class="description">{{ item.post.description }}</p>
                     <hr class="description">
-                    <!-- <div class="image-placeholder">
-                        <img src="{% if post.content_type == 'image' %}{{ post.content }}{% endif %}" alt="Post Image">
-                    </div> -->
-                    {% if post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
-                    <img src="{{ post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
-                    {% elif post.content_type == "text/markdown" %}
-                    <div class="content markdown-content" data-content="{{ post.content|escapejs }}" id="markdown-content-{{ post.id }}"></div>
+
+                    {% if item.post.content_type == "image/png;base64" or item.post.content_type == "image/jpeg;base64" %}
+                        <img src="{{ item.post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
+                    {% elif item.post.content_type == "text/markdown" %}
+                        <div class="content markdown-content" data-content="{{ item.post.content|escapejs }}" id="markdown-content-{{ item.post.id }}"></div>
                     {% else %}
-                    <p class="content">{{post.content}}</p>
+                        <p class="content">{{ item.post.content }}</p>
                     {% endif %}
                 </div>
+
                 <div class="post-footer">
                     <div class="interactions">
-                        <img class="icon" src="/static/like.png">
+                        <img class="icon" src="{% static 'like.png' %}">
                         <span class="interactions-text">Like</span>
-                        <img class="icon" src="/static/comment.png">
+                        <img class="icon" src="{% static 'comment.png' %}">
                         <span class="interactions-text">Comment</span>
-                        <img class="icon" src="/static/share.png">
+                        <img class="icon" src="{% static 'share.png' %}">
                         <span class="interactions-text">Share</span>
-                    </div>
-                    <div class="stats">
-                        <span>300 Likes</span>
-                        <a href="#">View all 26 comments</a>
                     </div>
                 </div>
             </div>
