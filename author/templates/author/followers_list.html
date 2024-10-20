@@ -3,12 +3,18 @@
 {% block content %}
 <h1>{{ author.display_name }}'s Followers ({{ followers_count }})</h1>
 
-<ul>
+<div class="followers-list">
     {% for follower in followers %}
-        <li>{{ follower.display_name }}</li> <!-- Display the follower's display name -->
+        <div class="follower-box">
+            <div class="follower-info">
+                <span>{{ follower.display_name }}</span>
+            </div>
+
+            
+        </div>
     {% empty %}
-        <li>No followers yet.</li>  <!-- Show this message if there are no followers -->
+        <p>No followers yet.</p>  <!-- Show this message if there are no followers -->
     {% endfor %}
-</ul>
+</div>
 
 {% endblock %}

@@ -15,15 +15,18 @@ from rest_framework.exceptions import AuthenticationFailed
 from .serializers import UserSettingsForm
 from django.contrib import messages
 from django.conf import settings
+from .models import Author, following
 
 
 def profile_view(request, author_id):
     # Fetch the author by ID
     author = get_object_or_404(Author, id=author_id)
     
-    # Get the follower count and following count
-    followers_count = author.followers.count()  # Count of followers
-    following_count = author.following.count()  # Count of people this author is following (reverse relation)
+    # Get the follower count (authors who follow this author)
+    followers_count = following.objects.filter(author2=author).count()  # Count of followers
+    
+    # Get the following count (authors this author is following)
+    following_count = following.objects.filter(author1=author).count()  # Count of people this author is following
     
     # Fetch the author's posts
     posts = Post.objects.filter(author=author).exclude(visibility='DELETED').order_by('-published')
@@ -31,7 +34,7 @@ def profile_view(request, author_id):
     # Check if the logged-in user is following the author (if user is authenticated)
     is_following = False
     if request.user.is_authenticated:
-        is_following = author.followers.filter(id=request.user.id).exists()
+        is_following = following.objects.filter(author1=request.user, author2=author).exists()
 
     # Render the template with the author, posts, follower count, and if the user is following
     return render(request, 'author/author_feed.html', {
@@ -50,46 +53,55 @@ def author_about(request, author_id):
 
 
 def follow_author(request, object_author_id):
-    actor = request.user  # The currently logged-in user
-    target_author = get_object_or_404(Author, id=object_author_id)
+    """Follow the target author."""
+    if request.method == 'POST' and request.user.is_authenticated:
+        actor = request.user  # The currently logged-in user
+        target_author = get_object_or_404(Author, id=object_author_id)  # The author to be followed
 
-    if target_author != actor:
-        if target_author.followers.filter(id=actor.id).exists():
-            # Unfollow the author if already following
-            target_author.followers.remove(actor)
-        else:
-            # Follow the author if not already following
-            target_author.followers.add(actor)
+        # Prevent users from following themselves
+        if target_author != actor:
+            # Follow the target author using the follow method in the model
+            following.follow(actor, target_author)
+        
+        # Optionally, check if they are now mutual followers (friends)
+        if following.are_friends(actor, target_author):
+            message = f"You are now friends with {target_author.display_name}."
+        
+        # Redirect back to the referring page
+        return redirect(request.META.get('HTTP_REFERER', '/'))
 
-    # Redirect back to the same page (referer)
-    return redirect(request.META.get('HTTP_REFERER', '/'))
+    return redirect('home_page')
 
 
 def unfollow_author(request, object_author_id):
-    if request.method == 'POST':
-        actor = request.user  # The logged-in user (actor)
-        target_author = get_object_or_404(Author, pk=object_author_id)  # The author to be unfollowed
-        
-        # Remove the logged-in user from the target's followers
-        if actor in target_author.followers.all():
-            target_author.followers.remove(actor)
-        return redirect('author_profile', author_id=object_author_id)  # Redirect to the author's profile or home
+    """Unfollow the target author."""
+    if request.method == 'POST' and request.user.is_authenticated:
+        actor = request.user  # The currently logged-in user
+        target_author = get_object_or_404(Author, id=object_author_id)  # The author to be unfollowed
+
+        # Prevent users from unfollowing themselves
+        if target_author != actor:
+            # Unfollow the target author using the unfollow method in the model
+            following.unfollow(actor, target_author)
+
+        # Redirect back to the referring page
+        return redirect(request.META.get('HTTP_REFERER', '/'))
 
     return redirect('home_page')
 
 def following_list(request, author_id):
     author = get_object_or_404(Author, id=author_id)
-    following = author.following.all()  # Get all following
-    followers_count = author.followers.count()  # Count the followers
-    following_count = following.count()  # Count the following
     
+    # Get all authors that the current author is following
+    follow_relationships = following.objects.filter(author1=author).select_related('author2')
+
     context = {
         'author': author,
-        'following': following,
-        'followers_count': followers_count,
-        'following_count': following_count,
+        'following': [rel.author2 for rel in follow_relationships],  # List of authors being followed
+        'followers_count': following.objects.filter(author2=author).count(),  # Count of followers
+        'following_count': follow_relationships.count(),  # Count of following
     }
-    
+
     return render(request, 'author/following_list.html', context)
 
 # View to get the list of followers of the given author
@@ -97,21 +109,18 @@ def followers_list(request, author_id):
     # Get the target author (author whose followers we want to list)
     author = get_object_or_404(Author, id=author_id)
     
-    # Get the followers (authors who follow this author)
-    followers = author.followers.all()  # This gives you all the users who follow the author
-
-    # Get the number of followers and following for the current author
-    followers_count = followers.count()
-    following_count = author.following.count()  # Number of people this author is following
+    # Get all authors who follow this author
+    followers = following.objects.filter(author2=author).select_related('author1')
 
     context = {
         'author': author,
-        'followers': followers,
-        'followers_count': followers_count,
-        'following_count': following_count,
+        'followers': [rel.author1 for rel in followers],  # List of authors who follow the target
+        'followers_count': followers.count(),  # Number of followers
+        'following_count': following.objects.filter(author1=author).count(),  # Number of authors this user is following
     }
 
     return render(request, 'author/followers_list.html', context)
+
 
 
 

@@ -14,7 +14,6 @@ class Author(AbstractUser):
     page = models.CharField(max_length=255, blank=True, null=True)
     isVerified = models.BooleanField(default=False)
     username = None
-    followers = models.ManyToManyField('self', symmetrical=False, related_name='following', blank=True)
 
 
     USERNAME_FIELD = 'display_name'
@@ -53,3 +52,25 @@ class following(models.Model):
 
     def __str__(self):
         return f"{self.author1.display_name} is following {self.author2.display_name}"
+
+    @staticmethod
+    def is_following(author1, author2):
+        """Check if author1 is following author2."""
+        return following.objects.filter(author1=author1, author2=author2).exists()
+
+    @staticmethod
+    def are_friends(author1, author2):
+        """Check if both authors are following each other (mutual following)."""
+        return (following.objects.filter(author1=author1, author2=author2).exists() and
+                following.objects.filter(author1=author2, author2=author1).exists())
+        
+    @staticmethod
+    def follow(author1, author2):
+        """Follow an author."""
+        if not following.objects.filter(author1=author1, author2=author2).exists():
+            following.objects.create(author1=author1, author2=author2)
+
+    @staticmethod
+    def unfollow(author1, author2):
+        """Unfollow an author and potentially unfriend."""
+        following.objects.filter(author1=author1, author2=author2).delete()
