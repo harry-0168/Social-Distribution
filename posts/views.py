@@ -13,7 +13,9 @@ from author.views import get_author_from_cookie
 from django.conf import settings
 # Create your views here.
 def post(request):
-    return render(request, "posts/createPost.html")
+    author_id = get_author_from_cookie(request).data.get('id')
+    author = get_object_or_404(Author, id=author_id)
+    return render(request, "posts/createPost.html", {'author': author})
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
@@ -61,7 +63,8 @@ def create_post(request):
 
         # Serialize the post and return the response
         serializer = PostSerializer(post)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return redirect('home_page')
 
     return Response({"error": "Invalid request method"}, status=status.HTTP_400_BAD_REQUEST)
     
