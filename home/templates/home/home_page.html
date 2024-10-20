@@ -52,12 +52,12 @@
                 </div>
 
                 <!-- Follow/Unfollow button -->
-                <form action="{% url 'follow-author' item.post.author.id %}" method="post">
+                <form action="{% url item.is_following|yesno:'unfollow-author,follow-author' item.post.author.id %}" method="post">
                     {% csrf_token %}
-
+                
                     {% if user.is_authenticated %}
                         {% if user == item.post.author %}
-                            <!-- Don't show the button if the user is viewing their own profile or post -->
+                            <!-- Do not show the follow/unfollow button if it's the user's own profile -->
                         {% else %}
                             <!-- Show Unfollow button if already following -->
                             {% if item.is_following %}
@@ -71,6 +71,7 @@
                         <p>Please <a href="{% url 'login' %}">log in</a> to follow users.</p>
                     {% endif %}
                 </form>
+                
             </div>
 
             <div class="post-content">
