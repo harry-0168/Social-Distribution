@@ -53,7 +53,7 @@
                 {% if post.content_type == "text/plain" %}
                     {{ post.content }}
                 {% elif post.content_type == "text/markdown" %}
-                    <div id="markdown-content-{{ post.id }}" class="markdown-content" data-content="{{ post.content|escapejs }}"></div>
+                    <div id="markdown-content-{{ post.id }}" class="markdown-content" data-content="{{ post.content }}"></div>
                 {% elif post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
                     <img src="{{ post.content }}" alt="Post Image" class="postImage">
                 {% else %}
@@ -113,9 +113,10 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.markdown-content').forEach(function (element) {
-                const markdownContent = element.getAttribute('data-content');
-                if (markdownContent) {
-                    element.innerHTML = marked.parse(markdownContent);
+                const markdownContent = element.getAttribute('data-content').trim();
+                const cleanedContent = markdownContent.replace(/\\u000D|\\u000A/g, "");
+                if (cleanedContent) {
+                    element.innerHTML = marked.parse(cleanedContent);
                 }
             });
         });
