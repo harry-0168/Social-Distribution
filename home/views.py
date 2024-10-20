@@ -6,6 +6,10 @@ import jwt
 from datetime import datetime
 
 def home_page(request):
+    '''
+    View for the home page
+    This view fetches all posts and renders the home page.
+    '''
     # Redirect to login if the user is not authenticated
     if not request.user.is_authenticated:
         return redirect('login')
