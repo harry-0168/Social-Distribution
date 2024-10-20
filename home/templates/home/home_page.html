@@ -12,7 +12,13 @@
 <body>
     <div class="header">
         <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
-            <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
+            {% if request.user.profile_image %}
+                <img src="{{ request.user.profile_image.url }}" 
+                    class="profile-pic">
+            {% else %}
+                <img src="{% static 'avatar.png' %}" 
+                    class="profile-pic">
+            {% endif %}
         </a>
         <div class="icons">
             <a href="{% url 'home_page' %}">
@@ -32,7 +38,13 @@
         {% for item in post_list %}
         <div class="post">
             <div class="post-header">
-                <img  src="{% static 'avatar.png' %}">
+                {% if item.post.author.profile_image %}
+                    <img src="{{ item.post.author.profile_image.url }}" 
+                        class="profile-pic-small">
+                {% else %}
+                    <img src="{% static 'avatar.png' %}" 
+                        class="profile-pic-small">
+                {% endif %}
                 <div>
                     <p class="username">{{ item.post.author.display_name }}</p>
                     <p class="date-posted">{{ item.post.published|date:"F d, Y" }}</p>
