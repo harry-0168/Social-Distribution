@@ -29,67 +29,69 @@
     <div class="post-container">
         <p>Logged in as: {{ request.user.username }}</p>
         {% for post in posts %}
-        <div class="post">
-            <div class="post-header">
-                <img  src="/static/avatar.png">
-                <div>
-                    <p class="username">{{ post.author.display_name }}</p>
-                    <p class="date-posted">{{ post.published|date:"F d, Y" }}</p>
-                </div>
+        <a href="{% url 'viewPost' post.id %}" style="text-decoration: none; color: inherit;">
+            <div class="post">
+                <div class="post-header">
+                    <img  src="/static/avatar.png">
+                    <div>
+                        <p class="username">{{ post.author.display_name }}</p>
+                        <p class="date-posted">{{ post.published|date:"F d, Y" }}</p>
+                    </div>
 
-                
-                <form action="{% url 'follow-author' post.author.id %}" method="post">
-                    {% csrf_token %}
                     
-                    {% if user.is_authenticated %}
-                        {% if user == post.author %}
-                            <!-- Don't show the button if the user is viewing their own profile or post -->
-                        {% else %}
-                            <!-- Show Unfollow button if already following -->
-                            {% if user in post.author.followers.all %}
-                                <button type="submit" class="follow-btn">Unfollow</button>
-                            <!-- Show Follow button if not following -->
+                    <form action="{% url 'follow-author' post.author.id %}" method="post">
+                        {% csrf_token %}
+                        
+                        {% if user.is_authenticated %}
+                            {% if user == post.author %}
+                                <!-- Don't show the button if the user is viewing their own profile or post -->
                             {% else %}
-                                <button type="submit" class="follow-btn">Follow</button>
+                                <!-- Show Unfollow button if already following -->
+                                {% if user in post.author.followers.all %}
+                                    <button type="submit" class="follow-btn">Unfollow</button>
+                                <!-- Show Follow button if not following -->
+                                {% else %}
+                                    <button type="submit" class="follow-btn">Follow</button>
+                                {% endif %}
                             {% endif %}
+                        {% else %}
+                            <p>Please <a href="{% url 'login' %}">log in</a> to follow users.</p>
                         {% endif %}
-                    {% else %}
-                        <p>Please <a href="{% url 'login' %}">log in</a> to follow users.</p>
-                    {% endif %}
-                </form>
-                
+                    </form>
+                    
 
-            </div>
-            <div class="post-content">
-                <h2 class="title">{{ post.title }}</h2>
-                <p class="description">{{ post.description }}</p>
-                <hr class="description">
-                <!-- <div class="image-placeholder">
-                    <img src="{% if post.content_type == 'image' %}{{ post.content }}{% endif %}" alt="Post Image">
-                </div> -->
-                {% if post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
-                <img src="{{ post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
-                {% elif post.content_type == "text/markdown" %}
-                <div class="content markdown-content" data-content="{{ post.content|escapejs }}" id="markdown-content-{{ post.id }}"></div>
-                {% else %}
-                <p class="content">{{post.content}}</p>
-                {% endif %}
-            </div>
-            <div class="post-footer">
-                <div class="interactions">
-                    <img class="icon" src="/static/like.png">
-                    <span class="interactions-text">Like</span>
-                    <img class="icon" src="/static/comment.png">
-                    <span class="interactions-text">Comment</span>
-                    <img class="icon" src="/static/share.png">
-                    <span class="interactions-text">Share</span>
                 </div>
-                <div class="stats">
-                    <span>300 Likes</span>
-                    <a href="#">View all 26 comments</a>
+                <div class="post-content">
+                    <h2 class="title">{{ post.title }}</h2>
+                    <p class="description">{{ post.description }}</p>
+                    <hr class="description">
+                    <!-- <div class="image-placeholder">
+                        <img src="{% if post.content_type == 'image' %}{{ post.content }}{% endif %}" alt="Post Image">
+                    </div> -->
+                    {% if post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
+                    <img src="{{ post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
+                    {% elif post.content_type == "text/markdown" %}
+                    <div class="content markdown-content" data-content="{{ post.content|escapejs }}" id="markdown-content-{{ post.id }}"></div>
+                    {% else %}
+                    <p class="content">{{post.content}}</p>
+                    {% endif %}
+                </div>
+                <div class="post-footer">
+                    <div class="interactions">
+                        <img class="icon" src="/static/like.png">
+                        <span class="interactions-text">Like</span>
+                        <img class="icon" src="/static/comment.png">
+                        <span class="interactions-text">Comment</span>
+                        <img class="icon" src="/static/share.png">
+                        <span class="interactions-text">Share</span>
+                    </div>
+                    <div class="stats">
+                        <span>300 Likes</span>
+                        <a href="#">View all 26 comments</a>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
         {% endfor %}
     </div>
 </body>

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404, reverse, get_object_or_404
 from .models import Post, Comment, Like, Author
 import base64
@@ -26,7 +27,7 @@ def create_post(request):
             return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
         
         try:
-            payload = jwt.decode(token, 'django-in', algorithms=['HS256'])
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             author = get_object_or_404(Author, display_name=payload['id'])
         except jwt.ExpiredSignatureError:
             return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -150,7 +151,7 @@ def like_post(request, id):
 
     try:
         # Decode the JWT token and get the author's display name
-        payload = jwt.decode(token, 'django-in', algorithms=['HS256'])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         display_name = payload['id']  # Assuming 'id' is the display_name or can be replaced by actual key
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)

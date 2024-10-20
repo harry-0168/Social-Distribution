@@ -94,7 +94,7 @@
                     </button>
                 </form>
                 <h3>{{ post.like_set.count }} like(s)</h3>
-                <a type="submit" class="comment-button" href="{% url 'view' id=post.id %}">
+                <a type="submit" class="comment-button" href="{% url 'likes' id=post.id %}">
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
                 <h3>{{ post.comment_set.count }} comment(s)</h3>
@@ -103,7 +103,7 @@
             </section>
             <section class="viewLikesComments">
                 <a class="viewLikes">view likes</a>
-                <a class="viewComments" href="{% url 'view' id=post.id %}">view comments</a>
+                <a class="viewComments" href="{% url 'viewPost' id=post.id %}">view comments</a>
             </section>
         </section>
     </section>
