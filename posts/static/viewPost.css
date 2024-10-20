@@ -110,16 +110,14 @@
     color:#000;
     margin: 10px;
  }
- 
- 
- .gridItemUser .postDescription{
+ .gridItemUser .postContent{
     background-color: #f8eac7;
     margin: 0;
     margin-bottom: 10px;
     padding: 10px;
     font-size: 26px;
  }
- .postDescription img.postImage{
+ .postContent img.postImage{
     width: 100%; /* Scale the image to fit the container */
     max-width: 500px; /* Set a max width for large images */
     height: auto; /* Maintain aspect ratio */
@@ -279,24 +277,20 @@
     gap: 10px; /* Adds some space between input fields */
     margin: 10px;
  }
- .commentInputNameTextbox,
  .commentInputTextbox {
     background-color: #D9D9D9;
     border-color: #D9D9D9;
     border-style: none;
     height: 30px;
+    width: 200px;
     margin: 0;
     padding: 5px;
     border-radius: 5px;
     font-size: 16px;
  }
- .commentInputNameTextbox {
-    width: 200px; /* Adjust this value as needed */
- }
- 
  
  .commentInputTextbox {
-    width: 300px; /* Adjust this value as needed */
+    width: 500px; /* Adjust this value as needed */
  }
  .commentInputSubmit{
     height: 30px;

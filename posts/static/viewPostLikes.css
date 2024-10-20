@@ -177,14 +177,14 @@
  }
  
  
- .gridItemRight .postDescription{
+ .gridItemRight .postContent{
     background-color: #f8eac7;
     margin: 0;
     margin-bottom: 10px;
     padding: 10px;
     font-size: 26px;
  }
- .postDescription img.postImage{
+ .postContent img.postImage{
     width: 100%; /* Scale the image to fit the container */
     max-width: 500px; /* Set a max width for large images */
     height: auto; /* Maintain aspect ratio */
