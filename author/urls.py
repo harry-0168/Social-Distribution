@@ -16,7 +16,6 @@ urlpatterns = [
     path('author', get_author_from_cookie, name='get_author_from_cookie'),
     path('logout', logout, name='logout'),
     
-    
     # Public profile page for an author
     path('<uuid:author_id>/', profile_view, name='author_profile'),
     
@@ -27,15 +26,13 @@ urlpatterns = [
     
     # Endpoint to handle follow requests
     path('authors/<uuid:object_author_id>/follow/', follow_author, name='follow-author'),
-
     path('authors/<uuid:object_author_id>/unfollow/', unfollow_author, name='unfollow-author'),
 
-
-    
     # Routes for viewing lists of followers and following
     path('<uuid:author_id>/followers/', followers_list, name='followers_list'),
     path('<uuid:author_id>/following/', following_list, name='following_list'),
 
+    # Route for user settings
     path('<uuid:author_id>/settings', user_settings, name= 'user-settings' ),
     
 ]
