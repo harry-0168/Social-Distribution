@@ -10,7 +10,13 @@
 <body>
     <div class="header">
         <a href="{% url 'author_profile' author.id %}"> <!-- TO-DO replace with actual author id-->
-            <img style="padding-left: 90px;" src="/static/avatar.png">
+            {% if author.profile_image %}
+                <img src="{{ author.profile_image.url }}" 
+                    class="profile-pic-header">
+            {% else %}
+                <img src="{% static 'avatar.png' %}" 
+                    class="profile-pic-header">
+            {% endif %}
         </a>
         <form method="GET" action="{% url 'search_results' %}" class="search-form">
             <input type="text" name="q" placeholder="Search by display name..." class="search-bar">
