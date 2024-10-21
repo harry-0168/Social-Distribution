@@ -54,7 +54,7 @@
                     <a class="username" href="{% url 'author_profile' post.author.id %}">{{ post.author.display_name }}</a> <!-- TODO: make the username clickable to go to userProfile-->
                     <h3 class="postDate">{{post.published|default:"NApublished"}}</h3>
                 </div>
-                <button class="followButton">Follow</button>
+                <!-- <button class="followButton">Follow</button> -->
                 <!-- Only the author can delete their own posts -->
                 {% if user.id == post.author.id %}
                     <form action="{% url 'delete_post' post.id %}" method="POST">
