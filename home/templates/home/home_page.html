@@ -37,19 +37,19 @@
         <p>Logged in as: {{ request.user.display_name }}</p>
         {% for item in post_list %}
         <a href="{% url 'viewPost' item.post.id %}" style="text-decoration: none; color: inherit;">
-          <div class="post">
-              <div class="post-header">
-                  {% if item.post.author.profile_image %}
-                      <img src="{{ item.post.author.profile_image.url }}" 
-                          class="profile-pic-small">
-                  {% else %}
-                      <img src="{% static 'avatar.png' %}" 
-                          class="profile-pic-small">
-                  {% endif %}
-                  <div>
-                      <p class="username">{{ item.post.author.display_name }}</p>
-                      <p class="date-posted">{{ item.post.published|date:"F d, Y" }}</p>
-                  </div>
+            <div class="post">
+                <div class="post-header">
+                    {% if item.post.author.profile_image %}
+                        <img src="{{ item.post.author.profile_image.url }}" 
+                            class="profile-pic-small">
+                    {% else %}
+                        <img src="{% static 'avatar.png' %}" 
+                            class="profile-pic-small">
+                    {% endif %}
+                    <div>
+                        <p class="username">{{ item.post.author.display_name }}</p>
+                        <p class="date-posted">{{ item.post.published|date:"F d, Y" }}</p>
+                    </div>
 
                     <!-- Visibility Tag -->
                     <div class="post-visibility">

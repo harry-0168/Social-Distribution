@@ -54,10 +54,11 @@
             <img style="padding: 0px 20px;" src="{% static 'avatar.png' %}">
             <div class="content">
                 <p class="description">{{ comment.username }} commented on your post</p>
-                <div class="action-buttons">
+                <!-- Hide these buttons first since they are not working yet -->
+                <!-- <div class="action-buttons">
                         <button class="accept">Go to the post</button>
                     </a>
-                </div>
+                </div> -->
             </div>
             <span class="date">{{ comment.created_at|date:"Y-m-d H:i:s" }}</span>
             <img style="padding: 0px 20px;" src="{% static 'close.png' %}">
@@ -70,10 +71,11 @@
             <img style="padding: 0px 20px;" src="{% static 'avatar.png' %}">
             <div class="content">
                 <p class="description">{{ like.username }} likes your post</p>
-                <div class="action-buttons">
+                <!-- Hide these buttons first since they are not working yet -->
+                <!-- <div class="action-buttons">
                         <button class="accept">Go to the post</button>
                     </a>
-                </div>
+                </div> -->
             </div>
             <span class="date">{{ like.like_date|date:"Y-m-d H:i:s" }}</span>
             <img style="padding: 0px 20px;" src="{% static 'close.png' %}">
