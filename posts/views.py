@@ -235,28 +235,32 @@ def view_edit_post(request, id):
     author_id = get_author_from_cookie(request).data.get('id')
     return render(request, 'posts/editPost.html', {'post': post, 'author_id': author_id})
 
-@api_view(['POST'])   
+@api_view(['POST'])
 def edit_post(request, id):
     post = get_object_or_404(Post, id=id)
-    if request.method == 'POST':
-        serializer = PostSerializer(post, data=request.POST, partial=True)
-        if serializer.is_valid():
-            content_type = request.data.get('content_type')
-            if content_type and content_type.startswith('image/'):
-                image = request.FILES.get('img')
-                if image:
-                    # Read and encode the image in base64
-                    image_data = image.read()
-                    encoded_image = base64.b64encode(image_data).decode('utf-8')
-                    # Update the content with the base64 image data
-                    serializer.validated_data['content'] = f"data:{image.content_type};base64,{encoded_image}"
-            else:
-                # If it's not an image, update the text content
-                serializer.validated_data['content'] = request.data.get('content', post.content)
-            serializer.save()
-            return redirect(reverse('author_profile', args=[post.author.id]))
+    
+    data = request.data.copy()  # Safely copy the data
+    image = request.FILES.get('img')
 
-    return Response({"error": "Invalid request method"}, status=status.HTTP_400_BAD_REQUEST)
+    # Handle image upload
+    if image:
+        # Read and encode the image in base64
+        image_data = image.read()
+        encoded_image = base64.b64encode(image_data).decode('utf-8')
+        # Set the encoded image as the content
+        data['content'] = f"data:{image.content_type};base64,{encoded_image}"
+    else:
+        # Retain the original content if no new content is provided
+        if not data.get('content'):
+            data['content'] = post.content
+
+    serializer = PostSerializer(post, data=data, partial=True)
+
+    if serializer.is_valid():
+        serializer.save()
+        return redirect(reverse('author_profile', args=[post.author.id]))
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 def view_post(request, id):
     post = get_object_or_404(Post, pk=id)
