@@ -68,6 +68,88 @@ def create_post(request):
         return redirect('home_page')
 
     return Response({"error": "Invalid request method"}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def repost_post(request, id):
+    post = get_object_or_404(Post, pk=id)
+
+    if request.method == 'POST':
+        # Extract the author from the JWT token
+        token = request.COOKIES.get('jwt')
+        if not token:
+            return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            author = get_object_or_404(Author, display_name=payload['id'])
+        except jwt.ExpiredSignatureError:
+            return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+        except Author.DoesNotExist:
+            return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Use the existing post object to create a new post
+        new_post = Post(
+            title=f"{post.title}(Reposted: {post.author.display_name})",  # Add "Reposted:" to the title
+            description=post.description,
+            content_type=post.content_type,
+            content=post.content,
+            visibility=post.visibility,  # You can choose to change this if needed
+            author=author,  # Use the author from the token
+        )
+        
+        new_post.save()
+
+        # Serialize the new post and return the response
+        serializer = PostSerializer(new_post)
+        # return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return redirect('home_page')  # Redirect after successful repost
+
+    return Response({"error": "Invalid request method"}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def repost_link(request, id):
+    post = get_object_or_404(Post, pk=id)
+
+    if request.method == 'POST':
+        # Extract the author from the JWT token
+        token = request.COOKIES.get('jwt')
+        if not token:
+            return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            author = get_object_or_404(Author, display_name=payload['id'])
+        except jwt.ExpiredSignatureError:
+            return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+        except Author.DoesNotExist:
+            return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Use the original post title and URL for the new repost
+        # Get the current URL
+        current_url = request.build_absolute_uri(request.path)
+        
+        # Remove the last part of the path
+        base_url = '/'.join(current_url.split('/')[:-2])  # This removes the last two segments
+
+    
+        new_post = Post(
+            title=f"Repost: {post.title}",  # Repost title
+            description="",  # Optional description
+            content_type="text/plain",  # Assuming you're using plain text for links
+            #content=f"{request.build_absolute_uri(post.get_absolute_url())}",  # Set the content to the post link
+            content = f"{base_url}",
+            visibility=post.visibility,
+            author=author,
+        )
+        
+        new_post.save()
+
+        # Serialize the new post and return the response
+        serializer = PostSerializer(new_post)
+        return redirect('home_page')  # Redirect after successful repost
+
+    return Response({"error": "Invalid request method"}, status=status.HTTP_400_BAD_REQUEST)
+
     
 def delete_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
