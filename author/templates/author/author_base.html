@@ -60,7 +60,8 @@
                 data-actor-name="{{ request.user.display_name }}"
                 data-actor-host="{{ request.user.host }}"
                 data-actor-github="{{ request.user.github }}"
-                data-actor-profile-image="{{ request.user.profile_image.url }}">
+                data-actor-profile-image="{% if request.user.profile_image %}{{ request.user.profile_image.url }}{% else %}None{% endif %}"
+
             {% csrf_token %}
             {% if is_following %}
                 <button type="button" class="unfollow-button">Unfollow</button>
