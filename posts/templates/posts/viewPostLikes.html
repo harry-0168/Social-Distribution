@@ -24,7 +24,13 @@
 <body>
     <div class="header">
         <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
-            <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
+            {% if request.user.profile_image %}
+                <img src="{{ request.user.profile_image.url }}" 
+                style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+            {% else %}
+                <img src="{% static 'avatar.png' %}" 
+                style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+            {% endif %}
         </a>
         <div class="icons">
             <a href="{% url 'home_page' %}">
@@ -39,21 +45,25 @@
         </div>
     </div>
 
+
     <section class="gridContainer">
         <section class="gridItemLeft">
             <div class="userInfo">
                 <img class="profileImage" src="{% static 'avatar.png' %}">
                 <div class="username_DatePosted">
-                    <a class="username">{{author}}</a> <!-- TODO: make the username clickable to go to userProfile-->
+                    <a class="username" href="{% url 'author_profile' post.author.id %}">{{ post.author.display_name }}</a> <!-- TODO: make the username clickable to go to userProfile-->
                     <h3 class="postDate">{{post.published|default:"NApublished"}}</h3>
                 </div>
                 <button class="followButton">Follow</button>
-                <form action="{% url 'delete_post' post.id %}" method="POST">
-                    {% csrf_token %}
-                    <button style=" margin-top: 20px; background-color: #f8eac7; border-color: #f8eac7; border-style: none; " type="submit" class="delete-button">
-                        <img style="width: 30px; height: 30px;" class="trash" src="{% static 'trash.png' %}">
-                    </button>
-                </form>
+                <!-- Only the author can delete their own posts -->
+                {% if user.id == post.author.id %}
+                    <form action="{% url 'delete_post' post.id %}" method="POST">
+                        {% csrf_token %}
+                        <button style="margin-top: 20px; background-color: #f8eac7; border-color: #f8eac7; border-style: none;" type="submit" class="delete-button">
+                            <img style="width: 30px; height: 30px;" class="trash" src="{% static 'trash.png' %}">
+                        </button>
+                    </form>
+                {% endif %}
             </div>
             <section class="likesArea">
                 <h3 class="likesAreaTitle">Likes</h3>
@@ -87,7 +97,7 @@
                 {% endif %}       
             </div>
             <section class="likeCommentShare">
-                <form action="{% url 'like_post' post.id %}" method="POST">
+                <form action="{% url 'create_like' post.id %}" method="POST">
                     {% csrf_token %}
                     <button type="submit" class="like-button">
                         <img class="heart" src="{% static 'heart.png' %}" alt="Like">

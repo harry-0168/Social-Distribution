@@ -7,6 +7,7 @@ from .models import Notification
 from rest_framework.decorators import api_view
 from author.models import Author, FollowRequest
 from posts.models import Post, Comment, Like
+from django.conf import settings
 import json
 from author.models import Following
 from .models import Inbox
