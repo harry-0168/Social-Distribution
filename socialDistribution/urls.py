@@ -26,4 +26,5 @@ urlpatterns = [
     path('author/', include('author.urls')),
     path('', include('home.urls')),
     path('inbox/', include('inbox.urls')),
+    path('search/', include('search.urls'))
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
