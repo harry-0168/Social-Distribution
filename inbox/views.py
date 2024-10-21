@@ -69,6 +69,8 @@ def inboxApi(request, object_author_id):
                 actor = get_object_or_404(Author, FQID=parsed_data['actor']['id'])
                 object_author = get_object_or_404(Author, FQID=parsed_data['object']['id'])
                 # check if the actor is already following the object_author
+                if actor.FQID == object_author.FQID:
+                    return Response({"error": "Cannot follow yourself"}, status=400)
                 new = Following.follow(actor, object_author)
                 if not new:
                     return Response({"error": "Already following"}, status=400)

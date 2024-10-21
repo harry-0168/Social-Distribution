@@ -60,7 +60,7 @@
                 data-actor-name="{{ request.user.display_name }}"
                 data-actor-host="{{ request.user.host }}"
                 data-actor-github="{{ request.user.github }}"
-                data-actor-profile-image="{{ request.user.profile_image.url }}">
+                data-actor-profile-image="{% if request.user.profile_image %}{{ request.user.profile_image.url }}{% else %}None{% endif %}">
             {% csrf_token %}
             {% if is_following %}
                 <button type="button" class="unfollow-button">Unfollow</button>
@@ -107,6 +107,23 @@
         </div>
     </div>
     <script>
+        function getToken(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie != '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0,name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+                }
+            }
+            }
+            return cookieValue;
+        }
+        const currentHost = window.location.origin;
+        const csrftoken = getToken('csrftoken');
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.follow-button').forEach(function (button) {
                 button.addEventListener('click', function () {
@@ -150,16 +167,17 @@
                         }
                     };
                     console.log("Follow Request Object:", followRequest);
+                    
 
 
-                    const inboxUrl = `${authorHost}inbox/api/authors/${authorId}/inbox/`;
+                    const inboxUrl = `${currentHost}/inbox/api/authors/${authorId}/inbox/`;
                     console.log("Attempting to send request to:", inboxUrl);
                     //Send the follow request to the author's inbox
                     fetch(inboxUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRFToken': '{{ csrf_token }}'
+                            'X-CSRFToken': csrftoken
                         },
                         body: JSON.stringify(followRequest)
                     })
