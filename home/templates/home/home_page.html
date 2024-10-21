@@ -98,7 +98,7 @@
                     {% if item.post.content_type == "image/png;base64" or item.post.content_type == "image/jpeg;base64" %}
                         <img src="{{ item.post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
                     {% elif item.post.content_type == "text/markdown" %}
-                        <div class="content markdown-content" data-content="{{ item.post.content|escapejs }}" id="markdown-content-{{ item.post.id }}"></div>
+                        <div class="content markdown-content" data-content="{{ item.post.content}}" id="markdown-content-{{ item.post.id }}"></div>
                     {% else %}
                         <p class="content">{{ item.post.content }}</p>
                     {% endif %}
@@ -118,5 +118,17 @@
         </a>
         {% endfor %}
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.markdown-content').forEach(function (element) {
+                const markdownContent = element.getAttribute('data-content').trim();
+                const cleanedContent = markdownContent.replace(/\\u000D|\\u000A/g, "");
+                if (cleanedContent) {
+                    element.innerHTML = marked.parse(cleanedContent);
+                }
+            });
+        });
+    </script>
 </body>
 </html>

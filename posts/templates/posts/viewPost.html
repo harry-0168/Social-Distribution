@@ -13,7 +13,13 @@
 
     <div class="header">
         <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
-            <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
+            {% if request.user.profile_image %}
+                <img src="{{ request.user.profile_image.url }}" 
+                    class="profile-pic">
+            {% else %}
+                <img src="{% static 'avatar.png' %}" 
+                    class="profile-pic">
+            {% endif %}
         </a>
         <div class="icons">
             <a href="{% url 'home_page' %}">
@@ -52,7 +58,7 @@
                 {% if post.content_type == "text/plain" %}
                     {{ post.content }}
                 {% elif post.content_type == "text/markdown" %}
-                    <div id="markdown-content-{{ post.id }}" class="markdown-content" data-content="{{ post.content|escapejs }}"></div>
+                    <div id="markdown-content-{{ post.id }}" class="markdown-content" data-content="{{ post.content }}"></div>
                 {% elif post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
                     <img src="{{ post.content }}" alt="Post Image" class="postImage">
                 {% else %}
@@ -71,9 +77,42 @@
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
                 <h3>{{ post.comment_set.count }} comment(s)</h3>
-                <img src="/static/share.png">
+                <img id="share-image" src="/static/share.png" alt="Share">
                 <h3>share</h3>
+                
             </section>
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const shareImage = document.getElementById('share-image');
+                    
+                    shareImage.addEventListener('click', function () {
+                        const postUrl = window.location.href;  // Get the current post URL
+            
+                        // Check if the Web Share API is supported
+                        if (navigator.share) {
+                            navigator.share({
+                                title: document.title, // Use the page title or post title
+                                text: 'Check out this post!',
+                                url: postUrl
+                            }).then(() => {
+                                console.log('Post shared successfully!');
+                            }).catch((error) => {
+                                console.error('Error sharing the post:', error);
+                            });
+                        } else {
+                            // Fallback for browsers that don't support the Web Share API
+                            const tempInput = document.createElement('input');
+                            document.body.appendChild(tempInput);
+                            tempInput.value = postUrl;
+                            tempInput.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(tempInput);
+                            alert('Post link copied to clipboard!');
+                        }
+                    });
+                });
+            </script>
+            
             <section class="viewLikesComments">
                 <a href="{% url 'likes' id=post.id %}" class="viewLikes">view likes</a>
                 <a class="viewComments">view comments</a>
@@ -85,7 +124,13 @@
                 <ol class="carousel-container">
                     {% for comment in post.comment_set.all %}
                         <div class="comment">
-                            <img class="commentProfileImage" src="{% static 'avatar.png' %}">
+                            {% if request.user.profile_image %}
+                                <img src="{{ request.user.profile_image.url }}" 
+                                    class="profile-pic-small">
+                            {% else %}
+                                <img src="{% static 'avatar.png' %}" 
+                                    class="profile-pic-small">
+                            {% endif %}
                             <h5 class="commentUsername">{{ comment.username }}<div class="commentContent">{{ comment.content }}</div></h5> 
                         </div>
                     {% endfor %}
@@ -106,9 +151,10 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.markdown-content').forEach(function (element) {
-                const markdownContent = element.getAttribute('data-content');
-                if (markdownContent) {
-                    element.innerHTML = marked.parse(markdownContent);
+                const markdownContent = element.getAttribute('data-content').trim();
+                const cleanedContent = markdownContent.replace(/\\u000D|\\u000A/g, "");
+                if (cleanedContent) {
+                    element.innerHTML = marked.parse(cleanedContent);
                 }
             });
         });

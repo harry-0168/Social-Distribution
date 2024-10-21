@@ -267,16 +267,18 @@
     font-size: 25px;
     margin: 10px;
  }
- .messages {
-    position: fixed; /* Keep the messages fixed at the bottom */
-    bottom: 0; /* Align to the bottom of the viewport */
-    left: 0; /* Align to the left */
-    right: 0; /* Stretch to the right */
-    background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent background */
-    color: white; /* White text color */
-    padding: 10px; /* Some padding */
-    text-align: center; /* Center text */
-    z-index: 1000; /* Ensure it appears above other content */
+ .profile-pic-small {
+   width: 50px;
+   height: 50px;
+   border-radius: 50%;
+   margin-right: 10px;
 }
- 
+
+ .profile-pic {
+   width: 50px;
+   height: 50px;
+   border-radius: 50%;
+   margin-right: 10px;
+   margin-left: 90px;
+}
  

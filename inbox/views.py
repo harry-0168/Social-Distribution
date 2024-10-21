@@ -6,6 +6,7 @@ from .models import Notification
 from rest_framework.decorators import api_view
 from author.models import Author, FollowRequest
 from posts.models import Post, Comment, Like
+from django.conf import settings
 
 @api_view(['GET'])
 def inbox(request):
@@ -14,7 +15,7 @@ def inbox(request):
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
     
     try:
-        payload = jwt.decode(token, 'django-in', algorithms=['HS256'])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         author = get_object_or_404(Author, display_name=payload['id'])
 
         # Get follow requests sent to the author
@@ -40,7 +41,5 @@ def inbox(request):
 
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=401)
-    except jwt.InvalidTokenError:
-        return Response({"error": "Invalid token"}, status=401)
     except Author.DoesNotExist:
         return Response({"error": "Author not found"}, status=404)
