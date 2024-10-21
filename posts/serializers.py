@@ -39,7 +39,7 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         # specifies which fields to serialize
-        fields = ['username', 'created_at', 'content', 'post']
+        fields = ['username', 'created_at', 'content', 'post', 'author']
 
 
 
@@ -47,4 +47,4 @@ class LikeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Like
         # specifies which fields to serialize
-        fields = ['username', 'post', 'like_date']
+        fields = ['username', 'post', 'like_date', 'author']

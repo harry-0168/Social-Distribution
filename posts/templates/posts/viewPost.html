@@ -37,7 +37,13 @@
     <section class="gridContainer">
         <section class="gridItemUser">
             <div class="userInfo">
-                <img class="profileImage" src="{% static 'avatar.png' %}">
+                <div>
+                    {% if author.profile_image %}
+                    <img src="{{ author.profile_image.url }}" class="profileImage">
+                    {% else %}
+                        <img src="{% static 'avatar.png' %}" class="profileImage">
+                    {% endif %} 
+                </div>
                 <div class="username_DatePosted">
                     <a class="username" href="{% url 'author_profile' post.author.id %}">{{ post.author.display_name }}</a> <!-- TODO: make the username clickable to go to userProfile-->
                     <h3 class="postDate">{{post.published}}</h3>
@@ -47,7 +53,7 @@
                 {% if user.id == post.author.id %}
                     <form action="{% url 'delete_post' post.id %}" method="POST">
                         {% csrf_token %}
-                        <button style="margin-top: 20px; background-color: #f8eac7; border-color: #f8eac7; border-style: none;" type="submit" class="delete-button">
+                        <button style="margin-top: 20px; background-color: #f7e8d4; border-color: #f7e8d4; border-style: none;" type="submit" class="delete-button">
                             <img style="width: 30px; height: 30px;" class="trash" src="{% static 'trash.png' %}">
                         </button>
                     </form>
@@ -169,8 +175,8 @@
                 <ol class="carousel-container">
                     {% for comment in post.comment_set.all %}
                         <div class="comment">
-                            {% if request.user.profile_image %}
-                                <img src="{{ request.user.profile_image.url }}" 
+                            {% if comment.author.profile_image %}
+                                <img src="{{ comment.author.profile_image.url }}" 
                                     class="profile-pic-small">
                             {% else %}
                                 <img src="{% static 'avatar.png' %}" 
