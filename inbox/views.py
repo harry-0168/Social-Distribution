@@ -1,4 +1,4 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from rest_framework.response import Response
 from rest_framework import status
 import jwt
@@ -29,7 +29,7 @@ def inbox(request):
         like_notifications = Like.objects.filter(post__in=posts)
 
         # Serialize the querysets to JSON-serializable data
-        follow_requests_data = list(follow_req_notifications.values('id', 'author1__display_name', 'date'))
+        follow_requests_data = list(follow_req_notifications.values('id', 'author1__display_name', 'author2__display_name','date'))
         comment_data = list(comment_notifications.values('id', 'username', 'content', 'created_at', 'post__title'))
         like_data = list(like_notifications.values('id', 'username', 'post__title', 'like_date'))
 
@@ -89,3 +89,29 @@ def inboxApi(request, object_author_id):
         return Response({"error": "Invalid token"}, status=401)
     except Author.DoesNotExist:
         return Response({"error": "Author not found"}, status=404)
+    
+@api_view(['POST'])
+def handle_follow_request_response(request):
+    token = request.COOKIES.get('jwt')
+    if not token:
+        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+        author = get_object_or_404(Author, display_name=payload['id']) # author that sent the request
+
+        # Parse JSON string into a Python dictionary
+        parsed_data = request.data
+        if parsed_data['status'] == 'accept':
+            follow_request = get_object_or_404(Following, id=parsed_data['id'])
+            follow_request.status = 'accepted'
+            follow_request.save()
+            return Response({"message": "Follow request accepted"}, status=200)
+        elif parsed_data['status'] == 'reject':
+            follow_request = get_object_or_404(Following, id=parsed_data['id'])
+            follow_request.delete()
+            return Response({"message": "Follow request rejected"}, status=200)
+        
+    except jwt.ExpiredSignatureError: # redirect to /login
+        return redirect('login')
+

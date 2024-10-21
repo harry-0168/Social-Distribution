@@ -37,6 +37,8 @@
                 <div class="post-image">
                     <img src="{{ post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
                 </div>
+                {% elif post.content_type == "text/markdown" %}
+                        <div class="content markdown-content" data-content="{{post.content}}" id="markdown-content-{{ item.post.id }}"></div>
                 {% else %}
                 <!-- 3rd row: Content of the post -->
                 <div class="post-content">
@@ -62,5 +64,17 @@
         <p>{{ author.display_name }} hasn't posted anything yet.</p>
     {% endif %}
 </div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.markdown-content').forEach(function (element) {
+            const markdownContent = element.getAttribute('data-content').trim();
+            const cleanedContent = markdownContent.replace(/\\u000D|\\u000A/g, "");
+            if (cleanedContent) {
+                element.innerHTML = marked.parse(cleanedContent);
+            }
+        });
+    });
+</script>
 
 {% endblock %}

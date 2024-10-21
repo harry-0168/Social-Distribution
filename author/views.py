@@ -19,6 +19,10 @@ from .models import Author, Following
 
 
 def profile_view(request, author_id):
+    '''
+    View to display the public profile of an author
+    This view fetches the author by ID and renders the author's profile page.
+    '''
     # Fetch the author by ID
     author = get_object_or_404(Author, id=author_id)
     
@@ -48,11 +52,19 @@ def profile_view(request, author_id):
 
 
 def author_about(request, author_id):
+    '''
+    View to display the about page of an author
+    This view fetches the author by ID and renders the author's about page.
+    '''
     author = Author.objects.get(id=author_id)  
     return render(request, 'author/author_about.html', {'author': author})
 
 
 def follow_author(request, object_author_id):
+    '''
+    This view is used to follow the target author. It fetches the currently logged-in user and the target author.
+    It then follows the target author using the follow method in the model.
+    '''
     """Follow the target author."""
     if request.method == 'POST' and request.user.is_authenticated:
         actor = request.user  # The currently logged-in user
@@ -74,6 +86,10 @@ def follow_author(request, object_author_id):
 
 
 def unfollow_author(request, object_author_id):
+    '''
+    This view is used to unfollow the target author. It fetches the currently logged-in user and the target author.
+    It then unfollows the target author using the unfollow method in the model.
+    '''
     """Unfollow the target author."""
     if request.method == 'POST' and request.user.is_authenticated:
         actor = request.user  # The currently logged-in user
@@ -90,6 +106,10 @@ def unfollow_author(request, object_author_id):
     return redirect('home_page')
 
 def following_list(request, author_id):
+    '''
+    View to get the list of authors that the given author is following
+    This view fetches the target author and lists all authors that the target author is following.
+    '''
     author = get_object_or_404(Author, id=author_id)
     
     # Get all authors that the current author is following
@@ -106,6 +126,10 @@ def following_list(request, author_id):
 
 # View to get the list of followers of the given author
 def followers_list(request, author_id):
+    '''
+    View to get the list of authors that follow the given author
+    This view fetches the target author and lists all authors that follow the target author.
+    '''
     # Get the target author (author whose followers we want to list)
     author = get_object_or_404(Author, id=author_id)
     
