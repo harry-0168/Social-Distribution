@@ -6,40 +6,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{% static 'viewPost.css' %}">
     <title>View Post</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
 </head>
 <body>
+
     <div class="header">
-        <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
+        <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
+            {% if request.user.profile_image %}
+                <img src="{{ request.user.profile_image.url }}" 
+                    class="profile-pic">
+            {% else %}
+                <img src="{% static 'avatar.png' %}" 
+                    class="profile-pic">
+            {% endif %}
+        </a>
         <div class="icons">
-            <img src="/static/home.png">
-            <img src="/static/add_post.png">
-            <img src="/static/notifications.png">
-            <img src="/static/edit.png">
-            <img src="/static/inbox.png">
+            <a href="{% url 'home_page' %}">
+                <img src="{% static 'home.png' %}">
+            </a>
+            <a href="{% url 'create_post' %}">
+                <img src="{% static 'add_post.png' %}">
+            </a>
+            <a href="{% url 'inbox' %}">
+                <img src="{% static 'inbox.png' %}">
+            </a>
         </div>
     </div>
+
     <section class="gridContainer">
         <section class="gridItemUser">
             <div class="userInfo">
                 <img class="profileImage" src="{% static 'avatar.png' %}">
                 <div class="username_DatePosted">
-                    <a class="username">Username</a> <!-- TODO: make the username clickable to go to userProfile-->
-                    <h3 class="postDate">{{published}}</h3>
+                    <a class="username" href="{% url 'author_profile' post.author.id %}">{{ post.author.display_name }}</a> <!-- TODO: make the username clickable to go to userProfile-->
+                    <h3 class="postDate">{{post.published}}</h3>
                 </div>
                 <button class="followButton">Follow</button>
+                <!-- Only the author can delete their own posts -->
+                {% if user.id == post.author.id %}
+                    <form action="{% url 'delete_post' post.id %}" method="POST">
+                        {% csrf_token %}
+                        <button style="margin-top: 20px; background-color: #f8eac7; border-color: #f8eac7; border-style: none;" type="submit" class="delete-button">
+                            <img style="width: 30px; height: 30px;" class="trash" src="{% static 'trash.png' %}">
+                        </button>
+                    </form>
+                {% endif %}
             </div>
-            <h1 class="postTitle">{{title}}</h1>
-            <p class="postDescription">
-                {% if post.content_type == "text/markdown" or post.content_type == "text/plain" %}
+            <h1 class="postTitle">{{post.title}}</h1>
+            <div class="postContent">
+                {% if post.content_type == "text/plain" %}
                     {{ post.content }}
+                {% elif post.content_type == "text/markdown" %}
+                    <div id="markdown-content-{{ post.id }}" class="markdown-content" data-content="{{ post.content }}"></div>
                 {% elif post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
                     <img src="{{ post.content }}" alt="Post Image" class="postImage">
                 {% else %}
                     {{ post.content }}
                 {% endif %}        
-            </p>
+            </div>
             <section class="likeCommentShare">
-                <form action="{% url 'like_post' post.id %}" method="POST">
+                <form action="{% url 'create_like' post.id %}" method="POST">
                     {% csrf_token %}
                     <button type="submit" class="like-button">
                         <img class="heart" src="{% static 'heart.png' %}" alt="Like">
@@ -50,9 +77,89 @@
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
                 <h3>{{ post.comment_set.count }} comment(s)</h3>
-                <img src="/static/share.png">
-                <h3>share</h3>
+                {% if post.visibility != "UNLISTED" and post.visibility != "FRIENDS" %}
+                    <img id="share-image" src="/static/share.png" alt="Share">
+                    <h3>share</h3>
+                    <form id="repostForm" method="POST" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="button" onclick="showRepostOptions()" style="background: none; border: none; color: blue; cursor: pointer;">
+                            <h3>Repost</h3>
+                        </button>
+                    </form>
+                    
+                    <!-- Modal for repost options -->
+                    <div id="repostModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); border:1px solid black; background-color:white; padding:20px; z-index:1000;">
+                        <h4>Choose Repost Option:</h4>
+                        <button onclick="submitRepost('link')">Link</button>
+                        <button onclick="submitRepost('post')">Post</button>
+                        <button onclick="closeModal()">Cancel</button>
+                    </div>
+                    
+                    <!-- Overlay -->
+                    <div id="overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0, 0, 0, 0.5); z-index:999;"></div>
+                    
+                    <script>
+                    function showRepostOptions() {
+                        document.getElementById('repostModal').style.display = 'block';
+                        document.getElementById('overlay').style.display = 'block';
+                    }
+                    
+                    function closeModal() {
+                        document.getElementById('repostModal').style.display = 'none';
+                        document.getElementById('overlay').style.display = 'none';
+                    }
+                    
+                    function submitRepost(type) {
+                        const form = document.getElementById('repostForm');
+                        
+                        // Change action based on the selected option
+                        if (type === 'link') {
+                            form.action = "{% url 'repost_link' post.id %}"; // Change action to repost_link
+                        } else {
+                            form.action = "{% url 'repost_post' post.id %}"; // Default action for repost_post
+                        }
+                        
+                        form.submit(); // Submit the form
+                    }
+                    </script>
+                {% endif %}
+                
+                
+
+                
             </section>
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const shareImage = document.getElementById('share-image');
+                    
+                    shareImage.addEventListener('click', function () {
+                        const postUrl = window.location.href;  // Get the current post URL
+            
+                        // Check if the Web Share API is supported
+                        if (navigator.share) {
+                            navigator.share({
+                                title: document.title, // Use the page title or post title
+                                text: 'Check out this post!',
+                                url: postUrl
+                            }).then(() => {
+                                console.log('Post shared successfully!');
+                            }).catch((error) => {
+                                console.error('Error sharing the post:', error);
+                            });
+                        } else {
+                            // Fallback for browsers that don't support the Web Share API
+                            const tempInput = document.createElement('input');
+                            document.body.appendChild(tempInput);
+                            tempInput.value = postUrl;
+                            tempInput.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(tempInput);
+                            alert('Post link copied to clipboard!');
+                        }
+                    });
+                });
+            </script>
+            
             <section class="viewLikesComments">
                 <a href="{% url 'likes' id=post.id %}" class="viewLikes">view likes</a>
                 <a class="viewComments">view comments</a>
@@ -64,17 +171,22 @@
                 <ol class="carousel-container">
                     {% for comment in post.comment_set.all %}
                         <div class="comment">
-                            <img class="commentProfileImage" src="{% static 'avatar.png' %}">
+                            {% if request.user.profile_image %}
+                                <img src="{{ request.user.profile_image.url }}" 
+                                    class="profile-pic-small">
+                            {% else %}
+                                <img src="{% static 'avatar.png' %}" 
+                                    class="profile-pic-small">
+                            {% endif %}
                             <h5 class="commentUsername">{{ comment.username }}<div class="commentContent">{{ comment.content }}</div></h5> 
                         </div>
                     {% endfor %}
                 </ol>
             </div>
             <section class="commentInput">
-                <form method="POST"> 
+                <form action="{% url 'create_comment' post.id %}" method="POST"> <!-- Updated the form action URL to post comments to the appropriate endpoint -->
                     {% csrf_token %}
                     <div class="commentInputWrapper">
-                        <input class="commentInputNameTextbox" type="text" name="username" placeholder="Your name" required>
                         <input id="comment-input" class="commentInputTextbox" type="text" name="content" placeholder="Add a comment ..." required>
                         <input class="commentInputSubmit" type="submit" value="Add Comment">
                     </div>            
@@ -82,5 +194,16 @@
             </section>
         </section>
     </section>
-
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.markdown-content').forEach(function (element) {
+                const markdownContent = element.getAttribute('data-content').trim();
+                const cleanedContent = markdownContent.replace(/\\u000D|\\u000A/g, "");
+                if (cleanedContent) {
+                    element.innerHTML = marked.parse(cleanedContent);
+                }
+            });
+        });
+    </script>
 </body>

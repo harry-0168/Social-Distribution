@@ -112,3 +112,53 @@ body {
     text-decoration: none;
     padding-left: 20px;
 }
+
+.visibility-tag {
+    padding: 3px 6px;
+    font-size: 12px;
+    border-radius: 3px;
+    color: white;
+    font-weight: bold;
+}
+
+.public {
+    background-color: green;
+}
+
+.friends-only {
+    background-color: blue;
+}
+
+.unlisted {
+    background-color: orange;
+}
+
+.deleted {
+    background-color: red;
+    text-decoration: line-through;
+}
+
+.post-visibility {
+    margin-left: 20px;
+}
+
+.profile-pic-small {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.profile-pic {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-right: 10px;
+    margin-left: 90px;
+}
+
+.markdown-content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
