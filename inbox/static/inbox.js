@@ -1,0 +1,91 @@
+
+'use strict';
+
+window.addEventListener('load', main);
+
+function getToken(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie != '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        // Does this cookie string begin with the name we want?
+        if (cookie.substring(0,name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+   }
+const csrftoken = getToken('csrftoken');
+
+function sendRequest(followRequestsData,status, index) {
+    const data = {
+        id: followRequestsData[index].id,
+        status: status
+    };
+    // I want to send a POST request to the endpoint current URL + '/follow'
+    const currentUrl = window.location.href;
+
+    fetch(`${currentUrl}follow`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken':csrftoken
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        // remove the element from the DOM
+        document.getElementById(`followRequest-${index}`).remove();
+        return response.json();
+    })
+    .then(data => {
+        console.log('Success:', data);
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+}
+
+function main() {
+    // Parse the JSON data from the script tags
+    let index = document.getElementById('followRequestsData').textContent.indexOf('[');
+    const followRequestsData = JSON.parse(document.getElementById('followRequestsData').textContent.substring(index));
+    index = document.getElementById('commentsData').textContent.indexOf('[')
+    const commentsData = JSON.parse(document.getElementById('commentsData').textContent.substring(index));
+    index = document.getElementById('likesData').textContent.indexOf('[')
+    const likesData = JSON.parse(document.getElementById('likesData').textContent.substring(index));
+
+    console.log(followRequestsData); // Now you can use this data
+    console.log(commentsData); 
+    console.log(likesData); 
+
+    // Example: storing data for later use
+    window.inboxData = {
+        followRequests: followRequestsData,
+        comments: commentsData,
+        likes: likesData
+    };
+
+    const buttonsAccept = document.querySelectorAll('.accept');
+    const buttonsDecline = document.querySelectorAll('.decline');
+
+    buttonsAccept.forEach(button => {
+        button.addEventListener('click', function() {
+            sendRequest(followRequestsData,'accept', parseInt(button.closest('.action-buttons').getAttribute('data-index')));
+            
+        });
+    });
+
+    buttonsDecline.forEach(button => {
+        button.addEventListener('click', function() {
+            sendRequest(followRequestsData,'decline', parseInt(button.closest('.action-buttons').getAttribute('data-index')));
+        });
+    });
+    
+}
