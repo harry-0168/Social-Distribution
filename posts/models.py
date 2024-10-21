@@ -59,18 +59,14 @@ class Comment(models.Model):
     username = models.CharField(max_length=32) 
     created_at = models.DateTimeField("date created", default=timezone.now)
     content =  models.TextField()
-    post = models.ForeignKey(Post, on_delete=models.CASCADE) # a comment belong to a post
-    author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True) # a comment belong to an author
-    def save(self, *args, **kwargs):
-        if not self.FQID:
-            self.FQID = f"{self.post.FQID}/comments"
-        if not self.page:
-            self.page = f"{self.post.page}/posts/{self.id}"
+    post = models.ForeignKey(Post, on_delete=models.CASCADE) # all comments belong to a post
+    author = models.ForeignKey(Author, related_name='comments', on_delete=models.CASCADE)
 
 class Like(models.Model):
     username = models.CharField(max_length=255,default="1")  # Store the display name instead of Author object
     post = models.ForeignKey(Post, on_delete=models.CASCADE)  # All likes belong to a post
     like_date = models.DateTimeField(default=timezone.now)
+    author = models.ForeignKey(Author, related_name='likes', on_delete=models.CASCADE)
 
     def __str__(self):
         return f"{self.username} liked {self.post.title}"

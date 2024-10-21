@@ -44,12 +44,13 @@ def create_comment(request, post_id):
 
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        username = payload['id']  # Assuming 'id' is the username or display name
+        display_name = payload['id']  # Assuming 'id' is the username or display name
+        user = Author.objects.get(display_name=display_name)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
     content = request.POST['content']
-    comment = Comment(username=username, content=content, post=post)
+    comment = Comment(username=display_name, content=content, post=post, author=user)
     comment.save()
     comment_serializer = CommentSerializer(comment)
     # Return a response with the created comment
@@ -67,17 +68,18 @@ def create_like(request, post_id):
 
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        username = payload['id']  # Assuming 'id' is the username or display name
+        display_name = payload['id']  # Assuming 'id' is the username or display name
+        user = Author.objects.get(display_name=display_name)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
     # Check if the user has already liked the post
-    if Like.objects.filter(username=username, post=post).exists():
+    if Like.objects.filter(username=display_name, post=post).exists():
         #return Response({"error": "Post already liked"}, status=status.HTTP_400_BAD_REQUEST)
         #messages.error(request, "You have already liked this post.")
         return redirect(request.META.get('HTTP_REFERER'))
 
-    like = Like(username=username, post=post)
+    like = Like(username=display_name, post=post, author=user)
     like.save()
     #messages.success(request, "Liked successfully!")
     like_serializer = LikeSerializer(like)
@@ -227,10 +229,6 @@ def repost_link(request, id):
         return redirect('home_page')  # Redirect after successful repost
 
     return Response({"error": "Invalid request method"}, status=status.HTTP_400_BAD_REQUEST)
-
-    
-
- 
     
 def edit_post(request, id):
     post = get_object_or_404(Post, id=id)
@@ -307,7 +305,12 @@ def view_post(request, id):
         # Redirect to the same post after adding the comment (prevents form resubmission on refresh)
         return redirect('viewPost', id=post.id)
 
-    return render(request, "posts/viewPost.html", {"id": id, "post": post, "author": author, "comments": comments})
+    likes = post.like_set.all()
+     # Fetch authors based on the username field in each like
+    for like in likes:
+        like.author = Author.objects.filter(display_name=like.username).first()
+
+    return render(request, "posts/viewPost.html", {"id": id, "post": post, "author": author, "comments": comments, "likes": likes})
 
 def view_postLikes(request, id):
     post = get_object_or_404(Post, pk=id)
