@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'posts',
     'inbox',
     'nodeAdmin',
+    'search'
 ]
 
 MIDDLEWARE = [
