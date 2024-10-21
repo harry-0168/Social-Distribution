@@ -52,7 +52,7 @@ class FollowRequest(models.Model):
     def __str__(self):
         return f"{self.actor.display_name} wants to follow {self.object_author.display_name}"
     
-class following(models.Model):
+class Following(models.Model):
     '''Model to store following relationship between authors. author1 is following author2
     this table represents following which is a many to many relationship btw author (author1, author2)
     Exist (a,b) a is following b AND Exist(b,a) b is following a --> friend;  
@@ -63,28 +63,33 @@ class following(models.Model):
     author1 = models.ForeignKey(Author, related_name='author', on_delete=models.CASCADE)
     author2 = models.ForeignKey(Author, related_name='following', on_delete=models.CASCADE)
     status = models.CharField(max_length=50, choices=[('pending', 'Pending'), ('accepted', 'Accepted')], default='pending')
-    like_date = models.DateTimeField(default=timezone.now)
+    date = models.DateTimeField(default=timezone.now)
+
     def __str__(self):
         return f"{self.author1.display_name} is following {self.author2.display_name}"
 
     @staticmethod
     def is_following(author1, author2):
         """Check if author1 is following author2."""
-        return following.objects.filter(author1=author1, author2=author2).exists()
+        return Following.objects.filter(author1=author1, author2=author2).exists()
 
     @staticmethod
     def are_friends(author1, author2):
         """Check if both authors are following each other (mutual following)."""
-        return (following.objects.filter(author1=author1, author2=author2).exists() and
-                following.objects.filter(author1=author2, author2=author1).exists())
+        return (Following.objects.filter(author1=author1, author2=author2).exists() and
+                Following.objects.filter(author1=author2, author2=author1).exists())
         
     @staticmethod
     def follow(author1, author2):
         """Follow an author."""
-        if not following.objects.filter(author1=author1, author2=author2).exists():
-            following.objects.create(author1=author1, author2=author2)
+        new = None  # if new following relationship is created return it else return None
+        if not Following.objects.filter(author1=author1, author2=author2).exists():
+            new = Following.objects.create(author1=author1, author2=author2)
+        return new
+        
+        
 
     @staticmethod
     def unfollow(author1, author2):
         """Unfollow an author and potentially unfriend."""
-        following.objects.filter(author1=author1, author2=author2).delete()
+        Following.objects.filter(author1=author1, author2=author2).delete()

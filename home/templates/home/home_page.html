@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="{% static 'home_page.css' %}">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{% static 'home_page.js' %}"></script>
 </head>
 <body>
     <div class="header">
@@ -20,6 +21,10 @@
                     class="profile-pic">
             {% endif %}
         </a>
+        <form method="GET" action="{% url 'search_results' %}" class="search-form">
+            <input type="text" name="q" placeholder="Search by display name..." class="search-bar">
+            <button type="submit" class="search-button">Search</button>
+        </form>
         <div class="icons">
             <a href="{% url 'home_page' %}">
                 <img src="{% static 'home.png' %}">

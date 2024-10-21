@@ -18,6 +18,10 @@
                     class="profile-pic-header">
             {% endif %}
         </a>
+        <form method="GET" action="{% url 'search_results' %}" class="search-form">
+            <input type="text" name="q" placeholder="Search by display name..." class="search-bar">
+            <button type="submit" class="search-button">Search</button>
+        </form>
         <div class="icons">
             <a href="{% url 'home_page' %}">
                 <img src="{% static 'home.png' %}">
@@ -41,7 +45,29 @@
             <img class="profile-pic" src="{% static 'avatar.png' %}" alt="Default Profile Picture">
         {% endif %}            
         <h2 class="profile-name">{{ author.display_name }}</h2>
+        
+        <!-- Get all the information of the user and author -->
+        <form method="POST" action="{% url 'follow-author' author.id %}" class="follow-form"
+                data-author-id="{{ author.id }}"
+                data-author-fqid="{{ author.FQID }}"
+                data-author-host="{{ author.host }}"
+                data-author-name="{{ author.display_name }}"
+                data-author-github="{{ author.user.github }}"
+                data-author-profile-image="{{ author.user.profile_image.url }}"
 
+                data-actor-id="{{ request.user.id }}"
+                data-actor-fqid="{{ request.user.FQID }}"
+                data-actor-name="{{ request.user.display_name }}"
+                data-actor-host="{{ request.user.host }}"
+                data-actor-github="{{ request.user.github }}"
+                data-actor-profile-image="{% if request.user.profile_image %}{{ request.user.profile_image.url }}{% else %}None{% endif %}">
+            {% csrf_token %}
+            {% if is_following %}
+                <button type="button" class="unfollow-button">Unfollow</button>
+            {% else %}
+                <button type="button" class="follow-button">Follow</button>
+            {% endif %}
+        </form>
         <div class="follow-info">
             <!-- Clickable link for followers list -->
             <a href="{% url 'followers_list' author.id %}" class="followers">
@@ -80,5 +106,99 @@
             {% endblock content %}
         </div>
     </div>
+    <script>
+        function getToken(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie != '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0,name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+                }
+            }
+            }
+            return cookieValue;
+        }
+        const currentHost = window.location.origin;
+        const csrftoken = getToken('csrftoken');
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.follow-button').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const form = button.closest('.follow-form');
+                    
+                    const authorId = form.getAttribute('data-author-id');
+                    const authorFQID = form.getAttribute('data-author-fqid');
+                    const authorName = form.getAttribute('data-author-name');
+                    const authorHost = form.getAttribute('data-author-host');
+                    const authorGithub = form.getAttribute('data-author-github')
+                    const authorProfileImage = form.getAttribute('data-author-profile-image');
+
+                    const actorId = form.getAttribute('data-actor-id');
+                    const actorFQID = form.getAttribute('data-actor-fqid');
+                    const actorName = form.getAttribute('data-actor-name');
+                    const actorHost = form.getAttribute('data-actor-host');
+                    const actorGithub = form.getAttribute('data-actor-github');
+                    const actorProfileImage = form.getAttribute('data-actor-profile-image');
+
+                    //Construct the follow request object
+                    const followRequest = {
+                        "type": "follow",
+                        "summary": `${actorName} wants to follow ${authorName}`,
+                        "actor": {
+                            "type": "author",
+                            "id": actorFQID, 
+                            "host": actorHost,
+                            "displayName": actorName,
+                            "github": actorGithub,
+                            "profileImage": actorProfileImage,
+                            "page": `${actorHost}authors/${actorId}`
+                        },
+                        "object": {
+                            "type": "author",
+                            "id": authorFQID, 
+                            "host": authorHost,
+                            "displayName": authorName,
+                            "page": `${authorHost}authors/${authorId}`,
+                            "github": authorGithub,  
+                            "profileImage": authorProfileImage  
+                        }
+                    };
+                    console.log("Follow Request Object:", followRequest);
+                    
+
+
+                    const inboxUrl = `${currentHost}/inbox/api/authors/${authorId}/inbox/`;
+                    console.log("Attempting to send request to:", inboxUrl);
+                    //Send the follow request to the author's inbox
+                    fetch(inboxUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken
+                        },
+                        body: JSON.stringify(followRequest)
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log("Response data:", data);
+                        if (data.message) {
+                            alert("Follow request sent successfully!");
+                        } else {
+                            alert("Failed to send follow request.");
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                });
+            });
+        });
+    </script>
 </body>
 </html>

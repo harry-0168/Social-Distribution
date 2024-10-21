@@ -1,6 +1,6 @@
 from datetime import datetime
 from django.db import models
-from author.models import Author, following
+from author.models import Author, Following
 from django.utils import timezone
 import uuid
 
@@ -50,7 +50,7 @@ class Post(models.Model):
 
         # Friends-only posts are visible to friends (mutual followers)
         if self.visibility == 'FRIENDS':
-            return following.are_friends(self.author, user)
+            return Following.are_friends(self.author, user)
 
         # By default, the post is not visible
         return False

@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from posts.models import Post
-from author.models import following
+from author.models import Following
 import jwt
 from datetime import datetime
 
@@ -26,7 +26,7 @@ def home_page(request):
     for post in all_posts:
         # Check if the post is visible to the current user using is_visible_to method
         if post.is_visible_to(request.user):
-            is_following = following.is_following(request.user, post.author) if request.user.is_authenticated else False
+            is_following = Following.is_following(request.user, post.author) if request.user.is_authenticated else False
             
             # Append post and follow status to the list if visible
             post_list.append({
