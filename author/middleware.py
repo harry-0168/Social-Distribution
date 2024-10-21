@@ -7,6 +7,9 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 class JWTAuthenticationMiddleware(MiddlewareMixin):
+    '''
+    Middleware to authenticate users using JWT token
+    '''
     def process_request(self, request):
         # Exclude the admin URL path from JWT authentication
         if request.path.startswith('/admin/'):
