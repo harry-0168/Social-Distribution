@@ -6,6 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inbox</title>
     <link rel="stylesheet" href="{% static 'inbox.css' %}">
+
+    <script id="followRequestsData" type="application/json">
+        {{ follow_requests|json_script:"followRequestsData" }}
+    </script>
+    
+    <script id="commentsData" type="application/json">
+        {{ comments|json_script:"commentsData" }}
+    </script>
+    
+    <script id="likesData" type="application/json">
+        {{ likes|json_script:"likesData" }}
+    </script>
+
+    <script src="{% static 'inbox.js' %}"></script>
 </head>
 <body>
     <div class="header">
