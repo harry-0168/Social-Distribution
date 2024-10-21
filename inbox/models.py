@@ -2,6 +2,7 @@ from django.db import models
 from author.models import Author
 from posts.models import Post
 import uuid
+
 # Create your models here.
 INBOX_ENTRY_TYPE_CHOICES = [
     ('post', 'Post'),
