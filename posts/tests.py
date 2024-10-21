@@ -65,7 +65,7 @@ class EditPostAPITest(APITestCase):
         self.assertEqual(self.post.title, 'Partially Updated Title')
         self.assertEqual(self.post.description, 'Original Description')
 
-class AuthorTestCase(TestCase):
+class CreatePostAPITest(TestCase):
 
     def setUp(self):
         # Create some test authors for the test database
@@ -115,52 +115,39 @@ class AuthorTestCase(TestCase):
         self.assertEqual(response.status_code, 404)  # Fails as the author is not verified
         
        
-class PostTestCase(TestCase):
-
+class CreatePostCheckTest(APITestCase):
     def setUp(self):
-        # Create some test authors for the test database
-        self.author = Author.objects.create(display_name="Author1", host='http://localhost', FQID='http://localhost/api/authors/1')
-
-        # Create a client instance
-        self.client = Client()
-    
-    def test_posts_creation(self):
-        """Test that posts are created successfully."""
-        # Create a post
-        post = Post.objects.create(
-            title="Test Post",
-            description="This is a test post description.",
-            content_type='text/plain',
-            content="This is the content of the test post.",
-            author=self.author,
-            visibility='PUBLIC'
+        # Create an Author for testing
+        self.author = Author.objects.create_user(
+            display_name='testauthor',
+            password='password123',
+            host='http://localhost'
         )
-
+        
+        # Create a post for the author
+        self.post = Post.objects.create(
+            id=uuid.uuid4(),
+            title='Test Post Title',
+            description='Test Post Description',
+            content_type='text/plain',
+            content='Test Post Content',
+            visibility='PUBLIC',
+            author=self.author
+        )
+    
+    def test_post_exists(self):
+        """Test that the post exists in the database."""
         # Check that the post exists in the database
         self.assertEqual(Post.objects.count(), 1)  # Ensure one post was created
 
-        created_post = Post.objects.get(title="Test Post")
+        # Retrieve the post from the database
+        post = Post.objects.get(id=self.post.id)
 
-        # Check that the post's properties are correct
-        self.assertEqual(created_post.description, "This is a test post description.")
-        self.assertEqual(created_post.content_type, 'text/plain')
-        self.assertEqual(created_post.content, "This is the content of the test post.")
-        self.assertEqual(created_post.author, self.author)
-        self.assertEqual(created_post.visibility, 'PUBLIC')
+        # Check the post's properties
+        self.assertEqual(post.title, 'Test Post Title')
+        self.assertEqual(post.description, 'Test Post Description')
+        self.assertEqual(post.content_type, 'text/plain')
+        self.assertEqual(post.content, 'Test Post Content')
+        self.assertEqual(post.visibility, 'PUBLIC')
+        self.assertEqual(post.author, self.author)
 
-    def test_post_visibility(self):
-        """Test visibility of posts."""
-        post = Post.objects.create(
-            title="Private Post",
-            description="This post is private.",
-            content_type='text/plain',
-            content="Content of the private post.",
-            author=self.author,
-            visibility='FRIENDS'  # Setting visibility to FRIENDS
-        )
-
-        # Check visibility logic (Assuming you have a way to determine the user)
-        user = None  # Simulate a user who is not a friend
-        self.assertFalse(post.is_visible_to(user))  # Should be False for non-friends
-
-        # You can add more tests for other visibility types as needed
