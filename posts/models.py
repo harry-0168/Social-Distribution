@@ -70,3 +70,4 @@ class Like(models.Model):
 
     def __str__(self):
         return f"{self.username} liked {self.post.title}"
+    
