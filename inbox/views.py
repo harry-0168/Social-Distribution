@@ -29,6 +29,7 @@ def inbox(request):
 
         # Prepare notifications
         notifications = {
+            'author': author,
             'follow_requests': follow_req_notifications,
             'comments': comment_notifications,
             'likes': like_notifications

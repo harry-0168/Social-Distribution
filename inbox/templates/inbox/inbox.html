@@ -9,8 +9,14 @@
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'author_profile' 'c5946fde-d4e3-4f71-a56e-1d5f6b1fbd38' %}"> <!-- TO-DO: replace with actual author id-->
-            <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
+        <a href="{% url 'author_profile' author.id %}">
+            {% if author.profile_image %}
+                <img src="{{ author.profile_image.url }}" 
+                style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+            {% else %}
+                <img src="{% static 'avatar.png' %}" 
+                style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+            {% endif %}
         </a>
         <div class="icons">
             <a href="{% url 'home_page' %}">
