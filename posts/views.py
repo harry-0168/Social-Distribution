@@ -239,7 +239,6 @@ def view_edit_post(request, id):
 def edit_post(request, id):
     post = get_object_or_404(Post, id=id)
     if request.method == 'POST':
-        print('hi')
         serializer = PostSerializer(post, data=request.POST, partial=True)
         if serializer.is_valid():
             content_type = request.data.get('content_type')
