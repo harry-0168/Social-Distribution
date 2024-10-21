@@ -77,50 +77,52 @@
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
                 <h3>{{ post.comment_set.count }} comment(s)</h3>
-                <img id="share-image" src="/static/share.png" alt="Share">
-                <h3>share</h3>
-                <form id="repostForm" method="POST" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="button" onclick="showRepostOptions()" style="background: none; border: none; color: blue; cursor: pointer;">
-                        <h3>Repost</h3>
-                    </button>
-                </form>
-                
-                <!-- Modal for repost options -->
-                <div id="repostModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); border:1px solid black; background-color:white; padding:20px; z-index:1000;">
-                    <h4>Choose Repost Option:</h4>
-                    <button onclick="submitRepost('link')">Link</button>
-                    <button onclick="submitRepost('post')">Post</button>
-                    <button onclick="closeModal()">Cancel</button>
-                </div>
-                
-                <!-- Overlay -->
-                <div id="overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0, 0, 0, 0.5); z-index:999;"></div>
-                
-                <script>
-                function showRepostOptions() {
-                    document.getElementById('repostModal').style.display = 'block';
-                    document.getElementById('overlay').style.display = 'block';
-                }
-                
-                function closeModal() {
-                    document.getElementById('repostModal').style.display = 'none';
-                    document.getElementById('overlay').style.display = 'none';
-                }
-                
-                function submitRepost(type) {
-                    const form = document.getElementById('repostForm');
+                {% if post.visibility != "UNLISTED" and post.visibility != "FRIENDS" %}
+                    <img id="share-image" src="/static/share.png" alt="Share">
+                    <h3>share</h3>
+                    <form id="repostForm" method="POST" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="button" onclick="showRepostOptions()" style="background: none; border: none; color: blue; cursor: pointer;">
+                            <h3>Repost</h3>
+                        </button>
+                    </form>
                     
-                    // Change action based on the selected option
-                    if (type === 'link') {
-                        form.action = "{% url 'repost_link' post.id %}"; // Change action to repost_link
-                    } else {
-                        form.action = "{% url 'repost_post' post.id %}"; // Default action for repost_post
+                    <!-- Modal for repost options -->
+                    <div id="repostModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); border:1px solid black; background-color:white; padding:20px; z-index:1000;">
+                        <h4>Choose Repost Option:</h4>
+                        <button onclick="submitRepost('link')">Link</button>
+                        <button onclick="submitRepost('post')">Post</button>
+                        <button onclick="closeModal()">Cancel</button>
+                    </div>
+                    
+                    <!-- Overlay -->
+                    <div id="overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0, 0, 0, 0.5); z-index:999;"></div>
+                    
+                    <script>
+                    function showRepostOptions() {
+                        document.getElementById('repostModal').style.display = 'block';
+                        document.getElementById('overlay').style.display = 'block';
                     }
                     
-                    form.submit(); // Submit the form
-                }
-                </script>
+                    function closeModal() {
+                        document.getElementById('repostModal').style.display = 'none';
+                        document.getElementById('overlay').style.display = 'none';
+                    }
+                    
+                    function submitRepost(type) {
+                        const form = document.getElementById('repostForm');
+                        
+                        // Change action based on the selected option
+                        if (type === 'link') {
+                            form.action = "{% url 'repost_link' post.id %}"; // Change action to repost_link
+                        } else {
+                            form.action = "{% url 'repost_post' post.id %}"; // Default action for repost_post
+                        }
+                        
+                        form.submit(); // Submit the form
+                    }
+                    </script>
+                {% endif %}
                 
                 
 
