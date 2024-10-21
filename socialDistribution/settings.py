@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-y+n@z$0zy+8o7+6ihi2tw96#^sr@-i&y20h_nka4r6+tjz^h)y
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1']
+ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1','localhost']
 
 
 # Application definition
@@ -56,6 +56,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'author.middleware.JWTAuthenticationMiddleware', 
 ]
 
 ROOT_URLCONF = 'socialDistribution.urls'
@@ -112,6 +113,10 @@ AUTH_USER_MODEL = "author.Author"
 CORS_ORIGIN_ALLOW_ALL = True   # allow all frontend ports to access all our routes
 CORS_ALLOW_CREDENTIALS = True  # allow cookies to be sent with requests
 
+JWT_AUTH_COOKIE = 'jwt'  # The name of the cookie where the JWT is stored
+SESSION_COOKIE_HTTPONLY = True  # Make sure the session cookie is HTTP-only for security
+
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
@@ -132,6 +137,9 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

@@ -6,16 +6,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{% static 'viewPostLikes.css' %}">
     <title>View Post</title>
+
+    <style>
+        /* Add hover style for the trash button */
+        .delete-button img.trash {
+            width: 30px;
+            height: 30px;
+            transition: transform 0.3s ease, content 0.3s ease;
+        }
+        .delete-button:hover img.trash {
+            transform: scale(1.1); /* Scale effect on hover */
+            content: url("{% static 'trashFilled.png' %}"); /* Change the image on hover */
+        }
+    </style>
+
 </head>
 <body>
     <div class="header">
-        <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
+        <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
+            {% if request.user.profile_image %}
+                <img src="{{ request.user.profile_image.url }}" 
+                style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+            {% else %}
+                <img src="{% static 'avatar.png' %}" 
+                style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+            {% endif %}
+        </a>
         <div class="icons">
-            <img src="/static/home.png">
-            <img src="/static/add_post.png">
-            <img src="/static/notifications.png">
-            <img src="/static/edit.png">
-            <img src="/static/inbox.png">
+            <a href="{% url 'home_page' %}">
+                <img src="{% static 'home.png' %}">
+            </a>
+            <a href="{% url 'create_post' %}">
+                <img src="{% static 'add_post.png' %}">
+            </a>
+            <a href="{% url 'inbox' %}">
+                <img src="{% static 'inbox.png' %}">
+            </a>
         </div>
     </div>
 
@@ -24,10 +50,16 @@
             <div class="userInfo">
                 <img class="profileImage" src="{% static 'avatar.png' %}">
                 <div class="username_DatePosted">
-                    <a class="username">Username</a> <!-- TODO: make the username clickable to go to userProfile-->
-                    <h3 class="postDate">{{published|default:"NApublished"}}</h3>
+                    <a class="username">{{author}}</a> <!-- TODO: make the username clickable to go to userProfile-->
+                    <h3 class="postDate">{{post.published|default:"NApublished"}}</h3>
                 </div>
                 <button class="followButton">Follow</button>
+                <form action="{% url 'delete_post' post.id %}" method="POST">
+                    {% csrf_token %}
+                    <button style=" margin-top: 20px; background-color: #f8eac7; border-color: #f8eac7; border-style: none; " type="submit" class="delete-button">
+                        <img style="width: 30px; height: 30px;" class="trash" src="{% static 'trash.png' %}">
+                    </button>
+                </form>
             </div>
             <section class="likesArea">
                 <h3 class="likesAreaTitle">Likes</h3>
@@ -37,7 +69,7 @@
                             <div class="like">
                                 <img class="likeProfileImage" src="{% static 'avatar.png' %}">
                                 <div class="likeUsernameDate">
-                                    <h5 class="likeProfileUsername">Username</h5> <!--TODO: add the username of the profile that liked -->
+                                    <h5 class="likeProfileUsername">{{like.username}}</h5> <!--TODO: add the username of the profile that liked -->
                                     <h5 class="likeDate">{{ like.like_date }}</h5> 
                                 </div>
                             </div>
@@ -48,16 +80,18 @@
         </section>
 
         <section class="gridItemRight">
-            <h1 class="postTitle">{{title|default:"NAtitle"}}</h1>
-            <p class="postDescription">
-                {% if post.content_type == "text/markdown" or post.content_type == "text/plain" %}
+            <h1 class="postTitle">{{post.title|default:"NAtitle"}}</h1>
+            <div class="postContent">
+                {% if post.content_type == "text/plain" %}
                     {{ post.content|default:"NAcontent" }}
+                {% elif post.content_type == "text/markdown" %}
+                    <div id="markdown-content-{{ post.id }}" class="markdown-content" data-content="{{ post.content|escapejs }}"></div>
                 {% elif post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
                     <img src="{{ post.content }}" alt="Post Image" class="postImage">
                 {% else %}
                     {{ post.content|default:"NAcontent" }}
-                {% endif %}        
-            </p>
+                {% endif %}       
+            </div>
             <section class="likeCommentShare">
                 <form action="{% url 'like_post' post.id %}" method="POST">
                     {% csrf_token %}
@@ -66,7 +100,7 @@
                     </button>
                 </form>
                 <h3>{{ post.like_set.count }} like(s)</h3>
-                <a type="submit" class="comment-button" href="{% url 'view' id=post.id %}">
+                <a type="submit" class="comment-button" href="{% url 'viewPost' id=post.id %}">
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
                 <h3>{{ post.comment_set.count }} comment(s)</h3>
@@ -75,10 +109,19 @@
             </section>
             <section class="viewLikesComments">
                 <a class="viewLikes">view likes</a>
-                <a class="viewComments" href="{% url 'view' id=post.id %}">view comments</a>
+                <a class="viewComments" href="{% url 'viewPost' id=post.id %}">view comments</a>
             </section>
         </section>
     </section>
-
-
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.markdown-content').forEach(function (element) {
+                const markdownContent = element.getAttribute('data-content');
+                if (markdownContent) {
+                    element.innerHTML = marked.parse(markdownContent);
+                }
+            });
+        });
+    </script>
 </body>
