@@ -110,39 +110,54 @@ def edit_post(request, id):
 def view_post(request, id):
     post = get_object_or_404(Post, pk=id)
 
-    if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
-        # Non-admin users should not see deleted posts
-        return redirect('home_page')  # Redirect to index
-    
+    # Check for post visibility
+    if post.visibility == 'DELETED' and not request.user.is_staff:  # Only admins can see deleted posts
+        return redirect('home_page')  # Redirect non-admins to the home page
+
+    if post.visibility == 'PRIVATE' and not request.user.is_authenticated:  # Private posts require authentication
+        return redirect('login')  # Redirect unauthenticated users to login
+
+    if post.visibility == 'UNLISTED' or post.visibility == 'PUBLIC':
+        # Allow access for public and unlisted posts without authentication
+        pass
+    else:
+        # For all other posts, ensure the user is authenticated
+        if not request.user.is_authenticated:
+            return redirect('login')
+
     author = post.author
     comments = post.comment_set.all()
 
     # Extract the author from the JWT token
     token = request.COOKIES.get('jwt')
-    if not token:
+    if not token and (post.visibility != 'PUBLIC' and post.visibility != 'UNLISTED'):
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
-    try:
-        # Decode the JWT token and get the author's display name
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        display_name = payload['id']  # Assuming 'id' is the display_name or can be replaced by actual key
-    except jwt.ExpiredSignatureError:
-        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
-    except Author.DoesNotExist:
-        return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if token:
+        try:
+            # Decode the JWT token and get the author's display name
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            display_name = payload['id']  # Assuming 'id' holds the display_name or appropriate user identifier
+        except jwt.ExpiredSignatureError:
+            return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+        except jwt.DecodeError:
+            return Response({"error": "Invalid token"}, status=status.HTTP_401_UNAUTHORIZED)
+        except Author.DoesNotExist:
+            return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'POST':
         # Retrieve the form data
-        username = display_name
-        content = request.POST['content']
-        
+        username = display_name if token else "Anonymous"  # Assign anonymous for public/unlisted without JWT
+        content = request.POST.get('content')
+
         # Create and save the new comment
         comment = Comment(username=username, content=content, post=post)
         comment.save()
-        
+
         # Redirect to the same post after adding the comment (prevents form resubmission on refresh)
         return redirect('viewPost', id=post.id)
 
-    return render(request, "posts/viewPost.html", {"id":id, "post":post, "author":author, "comments":comments})
+    return render(request, "posts/viewPost.html", {"id": id, "post": post, "author": author, "comments": comments})
 
 def view_postLikes(request, id):
     post = get_object_or_404(Post, pk=id)
