@@ -45,11 +45,12 @@ def create_comment(request, post_id):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         username = payload['id']  # Assuming 'id' is the username or display name
+        user = Author.objects.get(display_name=username)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
     content = request.POST['content']
-    comment = Comment(username=username, content=content, post=post)
+    comment = Comment(username=username, content=content, post=post, author=user)
     comment.save()
     comment_serializer = CommentSerializer(comment)
     # Return a response with the created comment
@@ -68,6 +69,7 @@ def create_like(request, post_id):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         username = payload['id']  # Assuming 'id' is the username or display name
+        user = Author.objects.get(display_name=username)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -77,7 +79,7 @@ def create_like(request, post_id):
         #messages.error(request, "You have already liked this post.")
         return redirect(request.META.get('HTTP_REFERER'))
 
-    like = Like(username=username, post=post)
+    like = Like(username=username, post=post, author=user)
     like.save()
     #messages.success(request, "Liked successfully!")
     like_serializer = LikeSerializer(like)
