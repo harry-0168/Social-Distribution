@@ -12,7 +12,13 @@
 <body>
     <div class="header">
         <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
-            <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
+            {% if request.user.profile_image %}
+                <img src="{{ request.user.profile_image.url }}" 
+                    class="profile-pic">
+            {% else %}
+                <img src="{% static 'avatar.png' %}" 
+                    class="profile-pic">
+            {% endif %}
         </a>
         <div class="icons">
             <a href="{% url 'home_page' %}">
@@ -80,7 +86,13 @@
                 <ol class="carousel-container">
                     {% for comment in post.comment_set.all %}
                         <div class="comment">
-                            <img class="commentProfileImage" src="{% static 'avatar.png' %}">
+                            {% if request.user.profile_image %}
+                                <img src="{{ request.user.profile_image.url }}" 
+                                    class="profile-pic-small">
+                            {% else %}
+                                <img src="{% static 'avatar.png' %}" 
+                                    class="profile-pic-small">
+                            {% endif %}
                             <h5 class="commentUsername">{{ comment.username }}<div class="commentContent">{{ comment.content }}</div></h5> 
                         </div>
                     {% endfor %}
