@@ -4,7 +4,8 @@ from . import views
 urlpatterns = [
     path("", views.post, name="create_post"),
     path("create/", views.create_post, name="create"),
-    path('<uuid:id>/editpost/', views.edit_post, name='edit_post'),
+    path('<uuid:id>/editpost/', views.view_edit_post, name='view_edit_post'),
+    path('<uuid:id>/edit/', views.edit_post, name='edit_post'), # API for editing post
     path("<uuid:id>/viewPost/", views.view_post, name="viewPost"), # path to the specific post
     path("<uuid:id>/viewPost/likes/", views.view_postLikes, name="likes"), # path to posts view likes
 
