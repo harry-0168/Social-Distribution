@@ -1,0 +1,434 @@
+/* General Reset */
+* {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Body and Container Layout */
+body {
+    background-color: #f8eac7;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.container {
+    display: flex;
+    height: calc(100vh - 60px);
+}
+
+/* Header */
+.header {
+    background-color: #3e305e;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header .icons {
+    display: flex;
+    gap: 50px;
+    padding-right: 90px;
+}
+
+/* Icon Links */
+.icon-links {
+    display: flex;
+    justify-content: left;
+    padding: 10px 0;
+    padding-left: 40px;
+    background-color: #fff;
+}
+
+.icon-links a {
+    margin: 0 15px;
+    color: #000;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1.1em;
+    text-transform: uppercase;
+}
+
+.icon-links a:hover {
+    color: #f8eac7;
+}
+
+/* Profile Area */
+.profile-area {
+    width: 20%;
+    padding: 20px;
+    background-color: #D9D9D9;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    position: sticky;
+    top: 0;
+    height: 100%;
+    overflow-y: auto;
+    display: flex; /* Using flexbox */
+    flex-direction: column; /* Stack children vertically */
+    align-items: center; /* Center children horizontally */
+    justify-content: flex-start; /* Align children to start vertically */
+}
+
+.welcome-message {
+    color: #000000; /* White color for visibility */
+    font-size: 1.5em; /* Larger font size */
+    margin-top: 20px; /* Space from the top of the container */
+    z-index: 10; /* Ensure it's above other content */
+    width: 100%; /* Take full width to center text effectively */
+}
+
+.profile-area .profile-pic {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    margin-bottom: 15px;
+    border: 3px solid #3e305e;
+    margin-top: 20px;
+}
+
+.profile-area .profile-name {
+    font-size: 1.5em;
+    margin-bottom: 10px;
+    color: #3e305e;
+}
+
+.profile-area .profile-menu {
+    list-style: none;
+    padding: 0;
+}
+
+.profile-area .profile-menu li {
+    margin: 15px 0;
+}
+
+.profile-area .profile-menu li a {
+    color: #3e305e;
+    text-decoration: none;
+    font-size: 1.2em;
+}
+
+.profile-area .profile-menu li a:hover {
+    color: #6d4f8d;
+}
+
+/* Main Content */
+.main-content {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* Post Box */
+.post-box {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+    margin-bottom: 20px;
+    padding: 20px;
+    width: 80%;
+    max-width: 800px;
+    align-self: center;
+    margin-left: auto; /* Center align horizontally */
+    margin-right: auto;
+    overflow: hidden; /* Ensures no content spills out */
+}
+
+.post-image img {
+    width: 100%; /* Ensures image takes up all available width */
+    height: auto; /* Keeps the image proportionate */
+}
+
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.profile-info {
+    display: flex;
+    align-items: center;
+}
+
+.profile-pic-small {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.profile-pic-header {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-right: 10px;
+    margin-left: 90px;
+}
+
+.author-name-date h4,
+.author-name-date p {
+    margin: 0;
+    color: #666;
+}
+
+/* Post Actions */
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.action-buttons .delete-button,
+.action-buttons .edit-button {
+    background-color: #3e305e;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-align: center;
+    width: 100px;
+    border: none;
+    cursor: pointer;
+    display: inline-block;
+    text-decoration: none;
+    height: 37px;
+    font-size: 15px;
+}
+
+.action-buttons .delete-button {
+    background-color: rgb(219, 94, 77);
+}
+
+.action-buttons .delete-button:hover {
+    background-color: darkred;
+}
+
+.action-buttons .edit-button:hover {
+    background-color: #6d4f8d;
+}
+
+/* Post Content */
+.post-content img {
+    max-width: 100%;
+    border-radius: 5px;
+    margin-top: 15px;
+}
+
+.post-content p {
+    font-size: 1.1em;
+    line-height: 1.6;
+    color: #333;
+}
+
+/* Post Footer */
+.post-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.post-footer a {
+    text-decoration: none;
+    color: #3e305e;
+}
+
+.post-footer a:hover {
+    text-decoration: underline;
+    color: #6d4f8d;
+}
+
+.post-title h3 {
+    color: #3e305e; /* Matching the theme color */
+    margin-bottom: 10px; /* Spacing before the image or content */
+}
+.settings-container {
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    margin: 0 auto; 
+    margin-bottom: 20px;
+}
+.settings-container h2 {
+    text-align: center; 
+    color: #333; 
+    margin-bottom: 20px; 
+}
+
+.settings-container form {
+    display: flex;
+    flex-direction: column;  /* Stack form elements vertically */
+    gap: 15px; 
+}
+
+.settings-container input[type="text"],
+.settings-container input[type="url"],
+.settings-container input[type="file"],
+.settings-container select,
+.settings-container textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc; 
+    border-radius: 5px; 
+    font-size: 16px;
+    background-color: #fff; 
+    box-sizing: border-box;  /* Ensure padding doesn't affect overall width */
+}
+
+.settings-container button[type="submit"] {
+    padding: 12px;
+    background-color: #4CAF50; 
+    color: #fff; 
+    font-size: 18px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer; 
+    transition: background-color 0.3s ease; 
+}
+
+.settings-container button[type="submit"]:hover {
+    background-color: #45a049; 
+}
+
+.settings-container button[type="submit"]:active {
+    background-color: #388e3c;
+}
+
+.followers-list {
+    margin-top: 20px;
+}
+
+.follower-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    background-color: #f9f9f9;
+}
+
+.follower-info {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.unfollow-button button {
+    background-color: #d9534f;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.unfollow-button button:hover {
+    background-color: #c9302c;
+}
+
+
+/* The overall container for the following list */
+
+
+/* List of following items */
+.following-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center the child elements horizontally */
+    margin-top: 20px;
+}
+
+/* Each following item box */
+.following-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    background-color: #fff;
+    width: 80%;
+}
+
+/* Styling for the name of the following user */
+.following-info {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* Unfollow button */
+.unfollow-button button {
+    background-color: #d9534f;
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.unfollow-button button:hover {
+    background-color: #c9302c;
+}
+
+
+.follow-button, .unfollow-button {
+    padding: 6px 14px;
+    font-size: 16px;
+    border: 2px solid purple; 
+    border-radius: 4px;
+    background-color: transparent; 
+    color: purple;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s; 
+    margin-bottom: 10px;
+
+}
+
+.follow-button:hover, .unfollow-button:hover {
+    background-color: purple;
+    color: white; 
+}
+
+.search-form {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+}
+
+.search-bar {
+    width: 300px;
+    padding: 8px;
+    font-size: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px 0 0 4px;
+}
+
+.search-button {
+    padding: 9px 16px;
+    font-size: 12px;
+    background-color: #5a00a3;
+    color: white;
+    border:none;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+
+}
+
+.search-button:hover {
+    background-color: #3f0069;
+}
+.markdown-content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
