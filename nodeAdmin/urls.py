@@ -13,6 +13,6 @@ urlpatterns = [
     # API endpoints for handling JSON responses
     path('api/authors/', views.api_list_authors, name='api_list_authors'), 
     path('api/authors/add/', views.api_add_author, name='api_add_author'),  
-    path('api/authors/<int:author_id>/', views.api_author_detail, name='api_author_detail'),  
-    path('api/authors/<int:author_id>/delete/', views.api_delete_author, name='api_delete_author'), 
+    path('api/authors/<uuid:author_id>/', views.api_author_detail, name='api_author_detail'),  
+    path('api/authors/<uuid:author_id>/delete/', views.api_delete_author, name='api_delete_author'), 
 ]
