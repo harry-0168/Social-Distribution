@@ -87,7 +87,7 @@ def create_like(request, post_id):
     return redirect(request.META.get('HTTP_REFERER'))
 
 @api_view(['POST'])
-def create_post(request):
+def create_post(request, author_id):
     if request.method == 'POST':
         # Extract the author from the JWT token
         token = request.COOKIES.get('jwt')
@@ -133,21 +133,6 @@ def create_post(request):
         return redirect('home_page')
 
     return Response({"error": "Invalid request method"}, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['POST'])
-def delete_post(request, id):
-    post = get_object_or_404(Post, id=id)
-    # Ensure that only the author of the post or an admin can delete the post
-    if post.author == request.user or request.user.is_superuser:
-        post.visibility = 'DELETED'  # Mark the post as 'DELETED'
-        post.save()
-
-        post_serializer = PostSerializer(post)
-        
-        return redirect('author_profile', author_id=post.author.id)  # Redirect to the author's profile page
-    else:
-        # If the user is not the author, they are redirected back
-        return redirect('author_profile', author_id=post.author.id)
 
 @api_view(['POST'])
 def repost_post(request, id):
@@ -235,32 +220,49 @@ def view_edit_post(request, id):
     author_id = get_author_from_cookie(request).data.get('id')
     return render(request, 'posts/editPost.html', {'post': post, 'author_id': author_id})
 
-@api_view(['POST'])
-def edit_post(request, id):
-    post = get_object_or_404(Post, id=id)
-    
-    data = request.data.copy()  # Safely copy the data
-    image = request.FILES.get('img')
+@api_view(['GET', 'POST'])
+def get_edit_delete_post(request, author_id, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    method = request.POST.get('_method', '').upper()
+    if method == 'GET':
+        serializer = PostSerializer(post)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    if method == 'PUT':
+        data = request.data.copy()  # Safely copy the data
+        image = request.FILES.get('img')
 
-    # Handle image upload
-    if image:
-        # Read and encode the image in base64
-        image_data = image.read()
-        encoded_image = base64.b64encode(image_data).decode('utf-8')
-        # Set the encoded image as the content
-        data['content'] = f"data:{image.content_type};base64,{encoded_image}"
-    else:
-        # Retain the original content if no new content is provided
-        if not data.get('content'):
-            data['content'] = post.content
+        # Handle image upload
+        if image:
+            # Read and encode the image in base64
+            image_data = image.read()
+            encoded_image = base64.b64encode(image_data).decode('utf-8')
+            # Set the encoded image as the content
+            data['content'] = f"data:{image.content_type};base64,{encoded_image}"
+        else:
+            # Retain the original content if no new content is provided
+            if not data.get('content'):
+                data['content'] = post.content
 
-    serializer = PostSerializer(post, data=data, partial=True)
+        serializer = PostSerializer(post, data=data, partial=True)
 
-    if serializer.is_valid():
-        serializer.save()
-        return redirect(reverse('author_profile', args=[post.author.id]))
+        if serializer.is_valid():
+            serializer.save()
+            return redirect(reverse('author_profile', args=[author_id]))
 
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    if method == 'DELETE':
+        # Ensure that only the author of the post or an admin can delete the post
+        if post.author == request.user or request.user.is_superuser:
+            post.visibility = 'DELETED'  # Mark the post as 'DELETED'
+            post.save()
+
+            post_serializer = PostSerializer(post)
+            
+            return redirect('author_profile', author_id=post.author.id)  # Redirect to the author's profile page
+        else:
+            # If the user is not the author, they are redirected back
+            return redirect('author_profile', author_id=post.author.id)
+    return Response({"error": "Method not allowed"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 def view_post(request, id):
     post = get_object_or_404(Post, pk=id)

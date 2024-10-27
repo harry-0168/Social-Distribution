@@ -57,8 +57,9 @@
                 <!-- <button class="followButton">Follow</button> -->
                 <!-- Only the author can delete their own posts -->
                 {% if user.id == post.author.id %}
-                    <form action="{% url 'delete_post' post.id %}" method="POST">
+                    <form action="{% url 'delete_post' request.user.id post.id %}" method="POST">
                         {% csrf_token %}
+                        <input type="hidden" name="_method" value="DELETE"> <!--IMPORTANT: Walk around for delete method-->
                         <button style="margin-top: 20px; background-color: #f7e8d4; border-color: #f7e8d4; border-style: none;" type="submit" class="delete-button">
                             <img style="width: 30px; height: 30px;" class="trash" src="{% static 'trash.png' %}">
                         </button>

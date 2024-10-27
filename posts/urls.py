@@ -11,16 +11,16 @@ router.register(r'likes', views.LikeViewSet, basename='likes')
 urlpatterns = [
     path("api/", include(router.urls)),
     path("", views.post, name="create_post"),
-    path("create/", views.create_post, name="create"),
+    path("api/authors/<uuid:author_id>/posts/", views.create_post, name="create"),
     path('<uuid:id>/editpost/', views.view_edit_post, name='view_edit_post'),
-    path('<uuid:id>/edit/', views.edit_post, name='edit_post'), # API for editing post
+    path('api/authors/<uuid:author_id>/posts/<uuid:post_id>', views.get_edit_delete_post, name='edit_post'), # API for editing post
     path("<uuid:id>/viewPost/", views.view_post, name="viewPost"), # path to the specific post
     path("<uuid:id>/viewPost/likes/", views.view_postLikes, name="likes"), # path to posts view likes
 
     path("<uuid:id>/viewPost/repost_post/", views.repost_post, name="repost_post"),  # URL for repost functionality
     path("<uuid:id>/viewPost/repost_link/", views.repost_link, name="repost_link"),  # URL for repost functionality
 
-    path('api/<uuid:id>/delete/', views.delete_post, name='delete_post'),
+    path('api/authors/<uuid:author_id>/posts/<uuid:post_id>', views.get_edit_delete_post, name='delete_post'),
 
     # API paths for creating comments and likes
     path("api/<uuid:post_id>/comment/", views.create_comment, name="create_comment"),  # API for creating comments
