@@ -48,23 +48,6 @@
 
     <section class="gridContainer">
         <section class="gridItemLeft">
-            <div class="userInfo">
-                <img class="profileImage" src="{% static 'avatar.png' %}">
-                <div class="username_DatePosted">
-                    <a class="username" href="{% url 'author_profile' post.author.id %}">{{ post.author.display_name }}</a> <!-- TODO: make the username clickable to go to userProfile-->
-                    <h3 class="postDate">{{post.published|default:"NApublished"}}</h3>
-                </div>
-                <!-- <button class="followButton">Follow</button> -->
-                <!-- Only the author can delete their own posts -->
-                {% if user.id == post.author.id %}
-                    <form action="{% url 'delete_post' post.id %}" method="POST">
-                        {% csrf_token %}
-                        <button style="margin-top: 20px; background-color: #f7e8d4; border-color: #f7e8d4; border-style: none;" type="submit" class="delete-button">
-                            <img style="width: 30px; height: 30px;" class="trash" src="{% static 'trash.png' %}">
-                        </button>
-                    </form>
-                {% endif %}
-            </div>
             <section class="likesArea">
                 <h3 class="likesAreaTitle">Likes</h3>
                 <div class="carousel">
@@ -90,6 +73,24 @@
         </section>
 
         <section class="gridItemRight">
+            <div class="userInfo">
+                <img class="profileImage" src="{% static 'avatar.png' %}">
+                <div class="username_DatePosted">
+                    <a class="username" href="{% url 'author_profile' post.author.id %}">{{ post.author.display_name }}</a> <!-- TODO: make the username clickable to go to userProfile-->
+                    <h3 class="postDate">{{post.published|default:"NApublished"}}</h3>
+                </div>
+                <!-- <button class="followButton">Follow</button> -->
+                <!-- Only the author can delete their own posts -->
+                {% if user.id == post.author.id %}
+                    <form action="{% url 'delete_post' request.user.id post.id %}" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="_method" value="DELETE"> <!--IMPORTANT: Walk around for delete method-->
+                        <button style="margin-top: 20px; background-color: #f7e8d4; border-color: #f7e8d4; border-style: none;" type="submit" class="delete-button">
+                            <img style="width: 30px; height: 30px;" class="trash" src="{% static 'trash.png' %}">
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
             <h1 class="postTitle">{{post.title|default:"NAtitle"}}</h1>
             <div class="postContent">
                 {% if post.content_type == "text/plain" %}

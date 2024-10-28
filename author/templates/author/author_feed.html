@@ -19,8 +19,9 @@
                         </div>
                     </div>
                     <div class="action-buttons">
-                        <form method="POST" action="{% url 'delete_post' post.id %}" class="delete-form">
+                        <form method="POST" action="{% url 'delete_post' request.user.id post.id %}" class="delete-form">
                             {% csrf_token %}
+                            <input type="hidden" name="_method" value="DELETE"> <!--IMPORTANT: Walk around for delete method-->
                             <button type="submit" class="delete-button">Delete</button>
                         </form>
                         <a href="{% url 'view_edit_post' post.id %}" class="edit-button">Edit</a>  
