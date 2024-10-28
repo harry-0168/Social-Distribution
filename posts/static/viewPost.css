@@ -12,13 +12,12 @@
  
  
  .header {
-    background-color: #3e305e;
-    padding: 15px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 30px;
- }
+   background-color: #3e305e;
+   padding: 15px;
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+}
  
  
  .header .icons {
@@ -33,14 +32,14 @@
     grid-template-rows: 1fr;          /* One row */
     grid-template-columns: 1fr 1fr;   /* Two columns of equal size */
     padding: 10px;
-    height: calc(100vh - 60px);  /* 100% height minus the header */
+    height: calc(100vh - 120px);  /* 100% height minus the header */
     border-radius: 10px;
    
  }
  /* User Section */
  .gridItemUser{
     background-color: #f7e8d4; /* #f8eac7 */
-    padding: 20px;
+    padding: 30px;
     font-size: 30px;
     /*display: grid; /* enable flexbox */
     /*grid-template-rows: 4fr;    /* One row */
@@ -104,7 +103,11 @@
     color: #3e305e;
  }
  
- 
+ .commentAreaTitle{
+   color: #3e305e;
+   margin: 10px;
+   width: 100%;
+}
  .gridItemUser .postTitle{
     background-color: #f7e8d4;
     color:#000;
@@ -213,9 +216,8 @@
     align-items: center;
     text-align: center;
     border-radius: 5px;
-    margin: 40px;
+    margin: 10px;
     /* height: 650px; */
-    height: 100vh;
  }
  
  
