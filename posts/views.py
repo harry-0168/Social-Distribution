@@ -19,6 +19,7 @@ def post(request):
     author_id = get_author_from_cookie(request).data.get('id')
     author = get_object_or_404(Author, id=author_id)
     return render(request, "posts/createPost.html", {'author': author})
+
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
@@ -224,6 +225,19 @@ def view_edit_post(request, id):
 def get_edit_delete_post(request, author_id, post_id):
     post = get_object_or_404(Post, id=post_id)
     method = request.POST.get('_method', '').upper()
+    token = request.COOKIES.get('jwt')
+    if not token:
+        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+        # Make sure user who is not the author can't edit/delete the post
+        print(author_id,payload['id'])
+        if author_id != payload['id']:
+            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+    except jwt.ExpiredSignatureError:
+        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+    except Author.DoesNotExist:
+        return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
     if method == 'GET':
         serializer = PostSerializer(post)
         return Response(serializer.data, status=status.HTTP_200_OK)

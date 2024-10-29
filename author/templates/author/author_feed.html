@@ -18,6 +18,8 @@
                             <p>{{ post.published|date:"F j, Y, g:i a" }}</p>
                         </div>
                     </div>
+                    <!-- Check if the logged-in user is the post author or an admin -->
+                    {% if request.user.id == post.author.id or user.is_superuser %}
                     <div class="action-buttons">
                         <form method="POST" action="{% url 'delete_post' request.user.id post.id %}" class="delete-form">
                             {% csrf_token %}
@@ -26,6 +28,7 @@
                         </form>
                         <a href="{% url 'view_edit_post' post.id %}" class="edit-button">Edit</a>  
                     </div>
+                    {% endif %}
                 </div>
 
                 <!-- Title of the post -->
