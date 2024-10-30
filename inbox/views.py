@@ -28,17 +28,24 @@ def inbox(request):
         posts = Post.objects.filter(author=author)
         comment_notifications = Comment.objects.filter(post__in=posts)
         like_notifications = Like.objects.filter(post__in=posts)
+        
+        # Get the list of authors that the current user is following
+        followed_authors = Following.objects.filter(author1=author).values_list('author2', flat=True)
+        # Filter for repost notifications where the author is in the list of followed authors
+        repost_notifications = Post.objects.filter(author__in=followed_authors, type="repost")
 
         # Serialize the querysets to JSON-serializable data
         follow_requests_data = list(follow_req_notifications.values('id', 'author1__display_name', 'author2__display_name','date'))
         comment_data = list(comment_notifications.values('id', 'username', 'content', 'created_at', 'post__title'))
         like_data = list(like_notifications.values('id', 'username', 'post__title', 'like_date'))
+        repost_data = list(repost_notifications.values('id', 'author__display_name', 'content', 'title'))
 
         # Send the data to the template
         context = {
             'follow_requests': follow_requests_data,
             'comments': comment_data,
-            'likes': like_data
+            'likes': like_data,
+            'reposts': repost_data
         }
 
         return render(request, 'inbox/inbox.html', context)

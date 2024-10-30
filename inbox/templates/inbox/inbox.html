@@ -19,6 +19,10 @@
         {{ likes|json_script:"likesData" }}
     </script>
 
+    <script id="repostData" type="application/json">
+        {{ reposts|json_script:"repostData" }}
+    </script>
+
     <script src="{% static 'inbox.js' %}"></script>
 </head>
 <body>
@@ -90,6 +94,22 @@
                 </div>  -->
             </div>
             <span class="date">{{ like.like_date|date:"Y-m-d H:i:s" }}</span>
+            <img style="padding: 0px 20px;" src="{% static 'close.png' %}">
+        </div>
+        {% endfor %}
+
+        <h2>reposts</h2>
+        {% for repost in reposts %}
+        <div class="notification">
+            <img style="padding: 0px 20px;" src="{% static 'avatar.png' %}">
+            <div class="content">
+                <p class="description">{{ repost.author__display_name }} reposted "{{ repost.title }}"</p>
+                <!-- <div class="action-buttons" data-index="{{ forloop.counter0 }}">
+                        <button class="accept">Go to the post</button>
+                    </a>
+                </div>  -->
+            </div>
+            <!-- <span class="date">{{ like.like_date|date:"Y-m-d H:i:s" }}</span> -->
             <img style="padding: 0px 20px;" src="{% static 'close.png' %}">
         </div>
         {% endfor %}

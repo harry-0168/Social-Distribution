@@ -161,6 +161,7 @@ def repost_post(request, id):
             content=post.content,
             visibility=post.visibility,  # You can choose to change this if needed
             author=author,  # Use the author from the token
+            type='repost'
         )
         
         new_post.save()
