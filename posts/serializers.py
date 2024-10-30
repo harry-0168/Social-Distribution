@@ -1,7 +1,9 @@
 from rest_framework import serializers
 from .models import Post, Comment, Like
+from author.serializers import AuthorSerializer
 
 class PostSerializer(serializers.ModelSerializer):
+    author = AuthorSerializer(read_only=True) # So the response actually return the author object instead of just id
     class Meta:
         model = Post
         fields = ['id', 'title', 'description', 'content_type', 'content', 'visibility', 'author', 'published']
