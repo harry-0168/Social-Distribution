@@ -8,7 +8,7 @@ from inbox.models import Notification
 from posts.models import Post  
 from .serializers import AuthorSerializer, FollowRequestSerializer
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import Http404, JsonResponse
+from django.http import Http404, JsonResponse, HttpResponse, HttpResponseNotFound
 import jwt
 from datetime import datetime, timedelta
 from rest_framework.exceptions import AuthenticationFailed  
@@ -16,6 +16,7 @@ from .serializers import UserSettingsForm
 from django.contrib import messages
 from django.conf import settings
 from .models import Author, Following
+import json
 
 
 def profile_view(request, author_id):
@@ -145,6 +146,79 @@ def followers_list(request, author_id):
 
     return render(request, 'author/followers_list.html', context)
 
+@api_view(['GET'])
+def api_list_authors(request):
+    # Fetch all authors from the database
+    authors = Author.objects.all()
+
+    # Serialize the authors using a serializer
+    serializer = AuthorSerializer(authors, many=True)
+
+    # Return the serialized data using Response, which will be displayed in the browsable API
+    return Response({"type": "authors", "authors": serializer.data}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def api_add_author(request):
+    # Deserialize the incoming request data using the AuthorSerializer
+    serializer = AuthorSerializer(data=request.data)
+
+    # Validate and save the data if it's valid
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "Author created successfully", "author": serializer.data}, status=status.HTTP_201_CREATED)
+
+    # If data is invalid, return the errors
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+@api_view(['GET', 'PUT'])
+def api_author_detail(request, author_id):
+    # GET request to retrieve a single author
+    if request.method == 'GET':
+        author = get_object_or_404(Author, id=author_id)
+        
+        # Handle the serialization of ImageField (use URL or None if not available)
+        profile_image_url = author.profile_image.url if author.profile_image else None
+
+        data = {
+            "type": "author",
+            "id": str(author.id),
+            "host": author.host,
+            "display_name": author.display_name,
+            "github": author.github,
+            "profile_image": profile_image_url,
+            "page": author.page,
+        }
+        return Response(data, status=status.HTTP_200_OK)
+    
+    # PUT request to modify an author
+    elif request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+
+            author = get_object_or_404(Author, id=author_id)
+
+            author.display_name = data.get('display_name', author.display_name)
+            author.github = data.get('github', author.github)
+            author.page = data.get('page', author.page)
+
+            # Handle image update - in PUT requests, this typically requires a multipart form-data request
+            profile_image = data.get('profile_image')
+            if profile_image:
+                author.profile_image = profile_image
+
+            author.save()
+
+            return Response({'message': 'Author modified successfully'}, status=status.HTTP_200_OK)
+
+        except json.JSONDecodeError:
+            return Response({'error': 'Invalid JSON data'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    return HttpResponseNotFound()
+    
 
 
 

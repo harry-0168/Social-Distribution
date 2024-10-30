@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import AuthorViewSet, profile_view, author_about, login, signup, get_author_from_cookie, logout, user_settings, follow_author,followers_list,following_list,unfollow_author
 from posts.views import PostViewSet
 from django.contrib.auth import views as auth_views
+from . import views
 
 router = DefaultRouter()
 router.register(r'authors', AuthorViewSet, basename='author')  # Registers /authors/ endpoint
@@ -35,4 +36,5 @@ urlpatterns = [
     # Route for user settings
     path('<uuid:author_id>/settings', user_settings, name= 'user-settings' ),
     
+
 ]
