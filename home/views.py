@@ -8,6 +8,8 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import api_view
 import jwt
 from datetime import datetime
+from django.utils.safestring import mark_safe
+import json
 
 class PostPagination(PageNumberPagination):
     page_size = 100
@@ -67,6 +69,6 @@ def home_page(request):
 
     # Render the home page with follow status
     return render(request, 'home/home_page.html', {
-        'following_list': following_list
+        'following_list': mark_safe(json.dumps(following_list)),
     })
 

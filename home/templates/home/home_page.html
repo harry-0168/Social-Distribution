@@ -38,14 +38,14 @@
         document.addEventListener('DOMContentLoaded', function () {
             const userId = "{{ request.user.id }}"; // Current user ID
             const apiUrl = `/api/authors/${userId}/posts/`; // API URL
-            const followingList = "{{ following_list|safe }}"; // Pass following_list from Django
+            const followingList = {{ following_list|safe }}; // Pass following_list from Django
 
             fetch(apiUrl)
                 .then(response => response.json())
                 .then(data => {
                     const postContainer = document.getElementById('post-container');
                     postContainer.innerHTML = ''; // Clear the loading message
-                    console.log(data)
+
                     data.src.forEach((post, index) => {
                         const isFollowing = followingList[index]; // Match follow status by index
 
