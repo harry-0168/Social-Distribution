@@ -8,7 +8,7 @@ from inbox.models import Notification
 from posts.models import Post  
 from .serializers import AuthorSerializer, FollowRequestSerializer
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import Http404, JsonResponse
+from django.http import Http404, JsonResponse, HttpResponse, HttpResponseNotFound
 import jwt
 from datetime import datetime, timedelta
 from rest_framework.exceptions import AuthenticationFailed  
@@ -16,6 +16,7 @@ from .serializers import UserSettingsForm
 from django.contrib import messages
 from django.conf import settings
 from .models import Author, Following
+import json
 
 
 def profile_view(request, author_id):
@@ -145,6 +146,75 @@ def followers_list(request, author_id):
 
     return render(request, 'author/followers_list.html', context)
 
+@api_view(['GET'])
+def api_list_authors(request):
+    if request.method == 'GET':
+        authors = Author.objects.all()
+        data = {"type": "authors", "authors": list(authors.values())}  # Convert QuerySet to list of dictionaries
+        return JsonResponse(data)
+
+@api_view(['POST'])
+def api_add_author(request):
+    if request.method == 'POST':
+        try:
+
+            author_data = {
+                'display_name': request.POST.get('display_name'),
+                'host': f"http://{request.get_host()}",  # set host 
+                'github': request.POST.get('github'),
+                'profile_image': request.POST.get('profile_image'),
+                'page': request.POST.get('page')
+            }
+
+            Author.objects.create(**author_data)
+
+            return JsonResponse({"message": "Author created successfully"}, status=201)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+
+
+@api_view(['GET', 'PUT'])
+def api_author_detail(request, author_id):
+    # GET request to retrieve a single author
+    if request.method == 'GET':
+        author = get_object_or_404(Author, id=author_id)
+        data = {
+            "type": "author",
+            "id": author.id,
+            "host": author.host,
+            "display_name": author.display_name,
+            "github": author.github,
+            "profile_image": author.profile_image,
+            "page": author.page,
+        }
+        return JsonResponse(data)
+    
+    # PUT request to modify an author
+    elif request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+
+            author = get_object_or_404(Author, id=author_id)
+
+            author.display_name = data.get('display_name', author.display_name)
+            author.github = data.get('github', author.github)
+            author.profile_image = data.get('profile_image', author.profile_image)
+            author.page = data.get('page', author.page)
+
+            author.save()
+
+            return JsonResponse({'message': 'Author modified successfully'}, status=200)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return HttpResponseNotFound()
+    
 
 
 
