@@ -60,16 +60,20 @@ function main() {
     const commentsData = JSON.parse(document.getElementById('commentsData').textContent.substring(index));
     index = document.getElementById('likesData').textContent.indexOf('[')
     const likesData = JSON.parse(document.getElementById('likesData').textContent.substring(index));
+    index = document.getElementById('repostData').textContent.indexOf('[')
+    const repostData = JSON.parse(document.getElementById('repostData').textContent.substring(index));
 
     console.log(followRequestsData); // Now you can use this data
     console.log(commentsData); 
     console.log(likesData); 
+    console.log(repostData);
 
     // Example: storing data for later use
     window.inboxData = {
         followRequests: followRequestsData,
         comments: commentsData,
-        likes: likesData
+        likes: likesData,
+        repost: repostData
     };
 
     const buttonsAccept = document.querySelectorAll('.accept');
