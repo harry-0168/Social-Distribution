@@ -30,7 +30,7 @@
     </div>
 
     <div class="post-container" id="post-container">
-        <p>Loading posts...</p> <!-- Default loading message -->
+        <p>Logged in as: {{ request.user.display_name }}</p>
     </div>
 
     <script>
@@ -44,7 +44,6 @@
                 .then(response => response.json())
                 .then(data => {
                     const postContainer = document.getElementById('post-container');
-                    postContainer.innerHTML = ''; // Clear the loading message
 
                     data.src.forEach((post, index) => {
                         const isFollowing = followingList[index]; // Match follow status by index
