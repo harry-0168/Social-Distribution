@@ -148,31 +148,27 @@ def followers_list(request, author_id):
 
 @api_view(['GET'])
 def api_list_authors(request):
-    if request.method == 'GET':
-        authors = Author.objects.all()
-        data = {"type": "authors", "authors": list(authors.values())}  # Convert QuerySet to list of dictionaries
-        return JsonResponse(data)
+    # Fetch all authors from the database
+    authors = Author.objects.all()
+
+    # Serialize the authors using a serializer
+    serializer = AuthorSerializer(authors, many=True)
+
+    # Return the serialized data using Response, which will be displayed in the browsable API
+    return Response({"type": "authors", "authors": serializer.data}, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def api_add_author(request):
-    if request.method == 'POST':
-        try:
+    # Deserialize the incoming request data using the AuthorSerializer
+    serializer = AuthorSerializer(data=request.data)
 
-            author_data = {
-                'display_name': request.POST.get('display_name'),
-                'host': f"http://{request.get_host()}",  # set host 
-                'github': request.POST.get('github'),
-                'profile_image': request.POST.get('profile_image'),
-                'page': request.POST.get('page')
-            }
+    # Validate and save the data if it's valid
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "Author created successfully", "author": serializer.data}, status=status.HTTP_201_CREATED)
 
-            Author.objects.create(**author_data)
-
-            return JsonResponse({"message": "Author created successfully"}, status=201)
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
-
-    return JsonResponse({"error": "Invalid request"}, status=400)
+    # If data is invalid, return the errors
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -181,16 +177,20 @@ def api_author_detail(request, author_id):
     # GET request to retrieve a single author
     if request.method == 'GET':
         author = get_object_or_404(Author, id=author_id)
+        
+        # Handle the serialization of ImageField (use URL or None if not available)
+        profile_image_url = author.profile_image.url if author.profile_image else None
+
         data = {
             "type": "author",
-            "id": author.id,
+            "id": str(author.id),
             "host": author.host,
             "display_name": author.display_name,
             "github": author.github,
-            "profile_image": author.profile_image,
+            "profile_image": profile_image_url,
             "page": author.page,
         }
-        return JsonResponse(data)
+        return Response(data, status=status.HTTP_200_OK)
     
     # PUT request to modify an author
     elif request.method == 'PUT':
@@ -201,17 +201,21 @@ def api_author_detail(request, author_id):
 
             author.display_name = data.get('display_name', author.display_name)
             author.github = data.get('github', author.github)
-            author.profile_image = data.get('profile_image', author.profile_image)
             author.page = data.get('page', author.page)
+
+            # Handle image update - in PUT requests, this typically requires a multipart form-data request
+            profile_image = data.get('profile_image')
+            if profile_image:
+                author.profile_image = profile_image
 
             author.save()
 
-            return JsonResponse({'message': 'Author modified successfully'}, status=200)
+            return Response({'message': 'Author modified successfully'}, status=status.HTTP_200_OK)
 
         except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+            return Response({'error': 'Invalid JSON data'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     return HttpResponseNotFound()
     
