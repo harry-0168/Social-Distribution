@@ -36,9 +36,5 @@ urlpatterns = [
     # Route for user settings
     path('<uuid:author_id>/settings', user_settings, name= 'user-settings' ),
     
-    
-    # API endpoints for handling JSON responses
-    path('api/authors/', views.api_list_authors, name='api_list_authors'), 
-    path('api/authors/add/', views.api_add_author, name='api_add_author'),  
-    path('api/authors/<uuid:author_id>/', views.api_author_detail, name='api_author_detail'),  
+
 ]
