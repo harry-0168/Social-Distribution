@@ -8,6 +8,7 @@ import markdown
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
 from rest_framework import viewsets
 from .serializers import PostSerializer, CommentSerializer, LikeSerializer
@@ -87,14 +88,47 @@ def create_like(request, post_id):
     # return Response(like_serializer.data, status=status.HTTP_201_CREATED)
     return redirect(request.META.get('HTTP_REFERER'))
 
-@api_view(['POST'])
-def create_post(request, author_id):
-    if request.method == 'POST':
-        # Extract the author from the JWT token
+# Construct posts object for home page
+class PostPagination(PageNumberPagination):
+    page_size = 100
+    page_size_query_param = 'size'
+    max_page_size = 100
+
+    def get_paginated_response(self, data):
+        return Response({
+            'type': 'posts',
+            'page_number': self.page.number,
+            'size': self.page.paginator.per_page,
+            'count': self.page.paginator.count,
+            'src': data,
+        })
+
+@api_view(['GET', 'POST'])
+def get_posts_create_post(request, author_id):
+    """Handles both fetching posts for home page and creating post"""
+
+    if request.method == 'GET':
+        author = get_object_or_404(Author, id=author_id)
+        posts = Post.objects.all().order_by('-published')
+
+        paginator = PostPagination()
+        result_page = paginator.paginate_queryset(posts, request)
+
+        # Filter posts based on visibility to the current user
+        visible_posts = [post for post in result_page if post.is_visible_to(request.user)]
+        serializer = PostSerializer(visible_posts, many=True)
+
+        # Adjust the count to reflect only the visible posts
+        paginated_response = paginator.get_paginated_response(serializer.data)
+        paginated_response.data['count'] = len(visible_posts)
+
+        return paginated_response
+
+    elif request.method == 'POST':
         token = request.COOKIES.get('jwt')
         if not token:
             return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
-        
+
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             author = get_object_or_404(Author, display_name=payload['id'])
@@ -104,19 +138,19 @@ def create_post(request, author_id):
             return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
 
         # Extract post data from request
-        title = request.POST['title']
-        description = request.POST['description']
-        content_type = request.POST['content_type']
-        visibility = request.POST['visibility']
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        content_type = request.POST.get('content_type')
+        visibility = request.POST.get('visibility')
         content = request.POST.get('content', '')
         image = request.FILES.get('img')
-        
-        if content_type.startswith('image/') and image:
+
+        if content_type and content_type.startswith('image/') and image:
             # Read the image file and encode it as base64
             image_data = image.read()
             encoded_image = base64.b64encode(image_data).decode('utf-8')
             content = f"data:{image.content_type};base64,{encoded_image}"
-        
+
         # Create a new post associated with the current author
         post = Post(
             title=title,
@@ -130,10 +164,7 @@ def create_post(request, author_id):
 
         # Serialize the post and return the response
         serializer = PostSerializer(post)
-        # return Response(serializer.data, status=status.HTTP_201_CREATED)
         return redirect('home_page')
-
-    return Response({"error": "Invalid request method"}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 def repost_post(request, id):
@@ -226,15 +257,10 @@ def view_edit_post(request, id):
 def get_edit_delete_post(request, author_id, post_id):
     post = get_object_or_404(Post, id=post_id)
     method = request.POST.get('_method', '').upper()
-    token = request.COOKIES.get('jwt')
-    if not token:
-        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         # Make sure user who is not the author can't edit/delete the post
-        print(author_id,payload['id'])
-        if author_id != payload['id']:
-            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+        if author_id != post.author.id:
+            return Response({"error": "Unauthorized to edit other author's post"}, status=status.HTTP_403_FORBIDDEN)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
     except Author.DoesNotExist:

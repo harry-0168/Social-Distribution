@@ -1,47 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from posts.models import Post
-from posts.serializers import PostSerializer
-from author.models import Following, Author
-from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.decorators import api_view
-import jwt
-from datetime import datetime
+from author.models import Following
 from django.utils.safestring import mark_safe
 import json
-
-class PostPagination(PageNumberPagination):
-    page_size = 100
-    page_size_query_param = 'size'
-    max_page_size = 100
-
-    def get_paginated_response(self, data):
-        return Response({
-            'type': 'posts',
-            'page_number': self.page.number,
-            'size': self.page.paginator.per_page,
-            'count': self.page.paginator.count,
-            'src': data,
-        })
-
-@api_view(['GET'])
-def get_posts(request, author_id):
-    """API view to fetch posts"""
-    author = get_object_or_404(Author, id=author_id)
-    posts = Post.objects.all().order_by('-published')
-
-    paginator = PostPagination()
-    result_page = paginator.paginate_queryset(posts, request)
-
-    # Filter posts based on visibility to the current user
-    visible_posts = [post for post in result_page if post.is_visible_to(request.user)]
-    serializer = PostSerializer(visible_posts, many=True)
-    # Adjust the count to reflect only the visible posts
-    paginated_response = paginator.get_paginated_response(serializer.data)
-    paginated_response.data['count'] = len(visible_posts)
-
-    return paginated_response
 
 def home_page(request):
     '''

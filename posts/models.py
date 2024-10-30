@@ -46,7 +46,7 @@ class Post(models.Model):
 
         # Unlisted posts are visible only to logged-in users with a link
         if self.visibility == 'UNLISTED':
-            return user.is_authenticated
+            return Following.is_following(user, self.author) or user == self.author
 
         # Friends-only posts are visible to friends (mutual followers)
         if self.visibility == 'FRIENDS':
