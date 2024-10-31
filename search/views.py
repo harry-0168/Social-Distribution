@@ -8,6 +8,6 @@ def search_results(request):
     results = []
 
     if query:
-        results = User.objects.filter(display_name__icontains=query)
+        results = User.objects.filter(displayName__icontains=query)
 
     return render(request, 'search.html', {'results': results, 'query': query})

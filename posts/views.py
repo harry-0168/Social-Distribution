@@ -47,7 +47,7 @@ def create_comment(request, post_id):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         username = payload['id']  # Assuming 'id' is the username or display name
-        user = Author.objects.get(display_name=username)
+        user = Author.objects.get(displayName=username)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -71,7 +71,7 @@ def create_like(request, post_id):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         username = payload['id']  # Assuming 'id' is the username or display name
-        user = Author.objects.get(display_name=username)
+        user = Author.objects.get(displayName=username)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -131,7 +131,7 @@ def get_posts_create_post(request, author_id):
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-            author = get_object_or_404(Author, display_name=payload['id'])
+            author = get_object_or_404(Author, displayName=payload['id'])
         except jwt.ExpiredSignatureError:
             return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
         except Author.DoesNotExist:
@@ -178,7 +178,7 @@ def repost_post(request, id):
         
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-            author = get_object_or_404(Author, display_name=payload['id'])
+            author = get_object_or_404(Author, displayName=payload['id'])
         except jwt.ExpiredSignatureError:
             return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
         except Author.DoesNotExist:
@@ -186,7 +186,7 @@ def repost_post(request, id):
 
         # Use the existing post object to create a new post
         new_post = Post(
-            title=f"{post.title}(Reposted: {post.author.display_name})",  # Add "Reposted:" to the title
+            title=f"{post.title}(Reposted: {post.author.displayName})",  # Add "Reposted:" to the title
             description=post.description,
             content_type=post.content_type,
             content=post.content,
@@ -216,7 +216,7 @@ def repost_link(request, id):
         
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-            author = get_object_or_404(Author, display_name=payload['id'])
+            author = get_object_or_404(Author, displayName=payload['id'])
         except jwt.ExpiredSignatureError:
             return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
         except Author.DoesNotExist:
@@ -334,7 +334,7 @@ def view_post(request, id):
         try:
             # Decode the JWT token and get the author's display name
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-            display_name = payload['id']  # Assuming 'id' holds the display_name or appropriate user identifier
+            displayName = payload['id']  # Assuming 'id' holds the displayName or appropriate user identifier
         except jwt.ExpiredSignatureError:
             return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
         except jwt.DecodeError:
@@ -344,7 +344,7 @@ def view_post(request, id):
 
     if request.method == 'POST':
         # Retrieve the form data
-        username = display_name if token else "Anonymous"  # Assign anonymous for public/unlisted without JWT
+        username = displayName if token else "Anonymous"  # Assign anonymous for public/unlisted without JWT
         content = request.POST.get('content')
 
         # Create and save the new comment

@@ -1,9 +1,14 @@
 from django.urls import path
 from posts.views import get_edit_delete_post,get_posts_create_post
-from author.views import api_list_authors, api_add_author, api_author_detail
+from author.views import api_list_authors, api_add_author, api_author_detail, login, signup, get_author_from_cookie, logout
 
 
 urlpatterns = [
+    path('signup', signup, name='signup'),
+    path('login', login, name='login'),
+    path('author', get_author_from_cookie, name='get_author_from_cookie'),
+    path('logout', logout, name='logout'),
+
     path('authors/<uuid:author_id>/posts/<uuid:post_id>', get_edit_delete_post, name='edit_post'), # API for editing post
     path('authors/<uuid:author_id>/posts/', get_posts_create_post, name='get_posts'),
     path("authors/<uuid:author_id>/posts/", get_posts_create_post, name="create"),

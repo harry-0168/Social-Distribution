@@ -12,12 +12,12 @@ class NodeAdminAPITests(TestCase):
         self.client = APIClient()
         # Create test authors for use in API testing
         self.author1 = Author.objects.create(
-            display_name="Author One",
+            displayName="Author One",
             github="https://github.com/author1",
             host="http://localhost"
         )
         self.author2 = Author.objects.create(
-            display_name="Author Two",
+            displayName="Author Two",
             github="https://github.com/author2",
             host="http://localhost"
         )
@@ -34,7 +34,7 @@ class NodeAdminAPITests(TestCase):
     # Test for adding a new author (POST /api/authors/add/)
     def test_add_author(self):
         author_data = {
-            'display_name': 'New Author',
+            'displayName': 'New Author',
             'github': 'https://github.com/newauthor',
             'profile_image': '',  # No image for now
             'page': ''
@@ -42,7 +42,7 @@ class NodeAdminAPITests(TestCase):
         response = self.client.post(reverse('api_add_author'), data=author_data)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()["message"], "Author created successfully")
-        self.assertTrue(Author.objects.filter(display_name='New Author').exists())
+        self.assertTrue(Author.objects.filter(displayName='New Author').exists())
 
     # Test for API to retrieve a single author detail (GET /api/authors/<int:author_id>/)
     def test_get_author_detail(self):
@@ -59,14 +59,14 @@ class NodeAdminAPITests(TestCase):
         data = response.json()
         
         # Check the expected fields, ignoring 'profile_image'
-        self.assertEqual(data["display_name"], "Author One")
+        self.assertEqual(data["displayName"], "Author One")
         self.assertEqual(data["github"], "https://github.com/author1")
 
     # Test for API to update an author (PUT /api/authors/<int:author_id>/)
     def test_update_author(self):
         author_id = self.author1.id
         update_data = json.dumps({
-            'display_name': 'Updated Author One',
+            'displayName': 'Updated Author One',
             'github': 'https://github.com/updatedauthor',
             'profile_image': 'new_image_url',
             'page': '/new_page'
@@ -81,7 +81,7 @@ class NodeAdminAPITests(TestCase):
 
         # Ensure the author was updated in the database
         self.author1.refresh_from_db()
-        self.assertEqual(self.author1.display_name, 'Updated Author One')
+        self.assertEqual(self.author1.displayName, 'Updated Author One')
         self.assertEqual(self.author1.github, 'https://github.com/updatedauthor')
 
     # Test for API to delete an author (DELETE /api/authors/<int:author_id>/delete/)
@@ -109,10 +109,10 @@ class NodeAdminAPITests(TestCase):
 
 
     # Test for updating a non-existent author (PUT /api/authors/<int:author_id>/)
-    def test_add_author_with_empty_display_name_and_github(self):
-        # Prepare data with empty display_name and arbitrary github value (no validation on github)
+    def test_add_author_with_empty_displayName_and_github(self):
+        # Prepare data with empty displayName and arbitrary github value (no validation on github)
         invalid_author_data = {
-            'display_name': '',  # Empty display_name is allowed
+            'displayName': '',  # Empty displayName is allowed
             'github': 'invalid_github_url'  # No validation on github field
         }
         
@@ -126,15 +126,15 @@ class NodeAdminAPITests(TestCase):
 
         # Ensure the new author is created in the database with the provided values
         new_author = Author.objects.get(github='invalid_github_url')  # Find by github field
-        self.assertEqual(new_author.display_name, '')  # Display name should be empty
+        self.assertEqual(new_author.displayName, '')  # Display name should be empty
         self.assertEqual(new_author.github, 'invalid_github_url')  # GitHub field should match the input
 
 
     # Test for invalid PUT request data when updating an author (PUT /api/authors/<int:author_id>/)
-    def test_update_author_with_empty_display_name_and_github(self):
+    def test_update_author_with_empty_displayName_and_github(self):
         author_id = self.author1.id
         update_data = json.dumps({
-            'display_name': '',  # Empty display_name is allowed, so no error expected
+            'displayName': '',  # Empty displayName is allowed, so no error expected
             'github': 'invalid_github_url'  # No validation on github, so this is just treated as a string
         })
         
@@ -152,5 +152,5 @@ class NodeAdminAPITests(TestCase):
 
         # Fetch the updated author and confirm the changes
         updated_author = Author.objects.get(id=author_id)
-        self.assertEqual(updated_author.display_name, '')  # Ensure the display_name is updated to empty
+        self.assertEqual(updated_author.displayName, '')  # Ensure the displayName is updated to empty
         self.assertEqual(updated_author.github, 'invalid_github_url')  # Ensure the github field is updated

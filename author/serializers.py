@@ -5,7 +5,7 @@ from django import forms
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Author
-        fields = ['id', 'host', 'display_name', 'github', 'profile_image', 'page', 'password']
+        fields = ['id', 'host', 'displayName', 'github', 'profile_image', 'page', 'password']
         extra_kwargs = {'password': {'write_only': True}}
     
     def create(self, validated_data):
@@ -36,7 +36,7 @@ class FollowRequestSerializer(serializers.ModelSerializer):
 class UserSettingsForm(forms.ModelForm):
     class Meta:
         model = Author
-        fields = ['display_name', 'github', 'profile_image']
+        fields = ['displayName', 'github', 'profile_image']
         widgets = {
             'profile_image': forms.FileInput(),
         }

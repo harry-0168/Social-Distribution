@@ -21,7 +21,7 @@ def inbox(request):
     
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        author = get_object_or_404(Author, display_name=payload['id']) # author that sent the request
+        author = get_object_or_404(Author, displayName=payload['id']) # author that sent the request
 
         # Get follow requests, comments, and likes as querysets
         follow_req_notifications = Following.objects.filter(author2=author, status='pending')
@@ -35,10 +35,10 @@ def inbox(request):
         repost_notifications = Post.objects.filter(author__in=followed_authors, type="repost")
 
         # Serialize the querysets to JSON-serializable data
-        follow_requests_data = list(follow_req_notifications.values('id', 'author1__display_name', 'author2__display_name','date'))
+        follow_requests_data = list(follow_req_notifications.values('id', 'author1__displayName', 'author2__displayName','date'))
         comment_data = list(comment_notifications.values('id', 'username', 'content', 'created_at', 'post__title'))
         like_data = list(like_notifications.values('id', 'username', 'post__title', 'like_date'))
-        repost_data = list(repost_notifications.values('id', 'author__display_name', 'content', 'title'))
+        repost_data = list(repost_notifications.values('id', 'author__displayName', 'content', 'title'))
 
         # Send the data to the template
         context = {
@@ -65,7 +65,7 @@ def inboxApi(request, object_author_id):
     
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        author = get_object_or_404(Author, display_name=payload['id']) # author that sent the request
+        author = get_object_or_404(Author, displayName=payload['id']) # author that sent the request
 
         # Parse JSON string into a Python dictionary
         parsed_data = request.data
@@ -108,7 +108,7 @@ def handle_follow_request_response(request):
     
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        author = get_object_or_404(Author, display_name=payload['id']) # author that sent the request
+        author = get_object_or_404(Author, displayName=payload['id']) # author that sent the request
 
         # Parse JSON string into a Python dictionary
         parsed_data = request.data

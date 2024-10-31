@@ -1,13 +1,13 @@
 {% extends 'author/author_base.html' %}
 
 {% block content %}
-<h1>{{ author.display_name }}'s Followers ({{ followers_count }})</h1>
+<h1>{{ author.displayName }}'s Followers ({{ followers_count }})</h1>
 
 <div class="followers-list">
     {% for follower in followers %}
         <div class="follower-box">
             <div class="follower-info">
-                <span>{{ follower.display_name }}</span>
+                <span>{{ follower.displayName }}</span>
             </div>
 
             

@@ -15,7 +15,7 @@ class EditPostAPITest(APITestCase):
     def setUp(self):
         # Create an Author for testing
         self.author = Author.objects.create_user(
-            display_name='testauthor',
+            displayName='testauthor',
             password='password123',
             host='http://localhost'
         )
@@ -69,11 +69,11 @@ class CreatePostAPITest(TestCase):
 
     def setUp(self):
         # Create some test authors for the test database
-        self.author1 = Author.objects.create(display_name="Author1", host='http://localhost', FQID='http://localhost/api/authors/1')
-        self.author2 = Author.objects.create(display_name="Author2", host='http://localhost', FQID='http://localhost/api/authors/2')
+        self.author1 = Author.objects.create(displayName="Author1", host='http://localhost', FQID='http://localhost/api/authors/1')
+        self.author2 = Author.objects.create(displayName="Author2", host='http://localhost', FQID='http://localhost/api/authors/2')
         
         # Create a JWT token for the first author
-        self.token = jwt.encode({'id': self.author1.display_name}, settings.SECRET_KEY, algorithm='HS256')
+        self.token = jwt.encode({'id': self.author1.displayName}, settings.SECRET_KEY, algorithm='HS256')
 
         # Create a client instance
         self.client = Client()
@@ -83,8 +83,8 @@ class CreatePostAPITest(TestCase):
         # Check that authors exist in the database
         self.assertEqual(Author.objects.count(), 2)  # Ensure two authors were created
 
-        author1 = Author.objects.get(display_name="Author1")
-        author2 = Author.objects.get(display_name="Author2")
+        author1 = Author.objects.get(displayName="Author1")
+        author2 = Author.objects.get(displayName="Author2")
 
         # Check that the author's properties are correct
         self.assertEqual(author1.host, 'http://localhost')
@@ -119,7 +119,7 @@ class CreatePostCheckTest(APITestCase):
     def setUp(self):
         # Create an Author for testing
         self.author = Author.objects.create_user(
-            display_name='testauthor',
+            displayName='testauthor',
             password='password123',
             host='http://localhost'
         )

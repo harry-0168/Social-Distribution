@@ -8,12 +8,12 @@ from django.utils import timezone
 class Author(AbstractUser):
     '''
     Custom User model to represent an author in the system
-    The model extends the AbstractUser model and overrides the username field with display_name
+    The model extends the AbstractUser model and overrides the username field with displayName
     '''
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     FQID = models.CharField(max_length= 1000, unique=True, null=True)
     host = models.CharField(max_length=255, null=False)
-    display_name = models.CharField(_("display_name"),max_length=100, unique=True)
+    displayName = models.CharField(_("displayName"),max_length=100, unique=True)
     github = models.CharField(max_length=255, blank=True, null=True)
     profile_image = models.ImageField(upload_to='profile_images/', blank=True, null=True)
     page = models.CharField( max_length=1000,blank=True, null=True)
@@ -21,13 +21,13 @@ class Author(AbstractUser):
     username = None
 
 
-    USERNAME_FIELD = 'display_name'
+    USERNAME_FIELD = 'displayName'
     REQUIRED_FIELDS = []
 
     objects = CustomUserManager()
 
     def __str__(self):
-        return self.display_name
+        return self.displayName
 
     def save(self, *args, **kwargs):
         '''
@@ -38,7 +38,7 @@ class Author(AbstractUser):
         if not self.FQID:  # Only set if FQID is not already set
             self.FQID = f"{self.host}/api/authors/{self.id}"
         if not self.page:
-            self.page = f"{self.host}/authors/{self.display_name}"
+            self.page = f"{self.host}/authors/{self.displayName}"
         
         super().save(*args, **kwargs)
 
@@ -50,7 +50,7 @@ class FollowRequest(models.Model):
     status = models.CharField(max_length=50, choices=[('pending', 'Pending'), ('accepted', 'Accepted')], default='pending')
 
     def __str__(self):
-        return f"{self.actor.display_name} wants to follow {self.object_author.display_name}"
+        return f"{self.actor.displayName} wants to follow {self.object_author.displayName}"
     
 class Following(models.Model):
     '''Model to store following relationship between authors. author1 is following author2
@@ -66,7 +66,7 @@ class Following(models.Model):
     date = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return f"{self.author1.display_name} is following {self.author2.display_name}"
+        return f"{self.author1.displayName} is following {self.author2.displayName}"
 
     @staticmethod
     def is_following(author1, author2):

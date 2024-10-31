@@ -17,19 +17,19 @@ class InboxApiTestCase(APITestCase):
     def setUp(self):
         # Create two authors for the follow request tests
         self.author1 = Author.objects.create(
-            display_name="Greg Johnson", 
+            displayName="Greg Johnson", 
             FQID="http://nodeaaaa/api/authors/111", 
             host="http://nodeaaaa/api/"
         )
         self.author2 = Author.objects.create(
-            display_name="Lara Croft", 
+            displayName="Lara Croft", 
             FQID="http://nodebbbb/api/authors/222", 
             host="http://nodebbbb/api/"
         )
         
         # Generate JWT token for author1
         payload = {
-        'id': self.author1.display_name,
+        'id': self.author1.displayName,
         'author_id': str(self.author1.id),
         'exp': datetime.now() + timedelta(days=1),  # Token expiration
         'iat': datetime.now()
@@ -54,7 +54,7 @@ class InboxApiTestCase(APITestCase):
                 "type": "author",
                 "id": self.author1.FQID,
                 "host": self.author1.host,
-                "displayName": self.author1.display_name,
+                "displayName": self.author1.displayName,
                 "github": "http://github.com/gjohnson",
                 "profileImage": "https://i.imgur.com/k7XVwpB.jpeg",
                 "page": "http://nodeaaaa/authors/greg"
@@ -63,7 +63,7 @@ class InboxApiTestCase(APITestCase):
                 "type": "author",
                 "id": self.author2.FQID,
                 "host": self.author2.host,
-                "displayName": self.author2.display_name,
+                "displayName": self.author2.displayName,
                 "page": "http://nodebbbb/authors/222",
                 "github": "http://github.com/laracroft",
                 "profileImage": "http://nodebbbb/api/authors/222/posts/217/image"
@@ -86,13 +86,13 @@ class InboxApiTestCase(APITestCase):
                 "type": "author",
                 "id": self.author1.FQID,
                 "host": self.author1.host,
-                "displayName": self.author1.display_name
+                "displayName": self.author1.displayName
             },
             "object": {
                 "type": "author",
                 "id": self.author1.FQID,  # Actor and object are the same
                 "host": self.author1.host,
-                "displayName": self.author1.display_name
+                "displayName": self.author1.displayName
             }
         }
 
@@ -115,13 +115,13 @@ class InboxApiTestCase(APITestCase):
                 "type": "author",
                 "id": self.author1.FQID,
                 "host": self.author1.host,
-                "displayName": self.author1.display_name
+                "displayName": self.author1.displayName
             },
             "object": {
                 "type": "author",
                 "id": self.author2.FQID,
                 "host": self.author2.host,
-                "displayName": self.author2.display_name
+                "displayName": self.author2.displayName
             }
         }
 
@@ -143,13 +143,13 @@ class InboxApiTestCase(APITestCase):
                 "type": "author",
                 "id": self.author1.FQID,
                 "host": self.author1.host,
-                "displayName": self.author1.display_name
+                "displayName": self.author1.displayName
             },
             "object": {
                 "type": "author",
                 "id": self.author2.FQID,
                 "host": self.author2.host,
-                "displayName": self.author2.display_name
+                "displayName": self.author2.displayName
             }
         }
 
@@ -172,13 +172,13 @@ class InboxApiTestCase(APITestCase):
                 "type": "author",
                 "id": self.author1.FQID,
                 "host": self.author1.host,
-                "displayName": self.author1.display_name
+                "displayName": self.author1.displayName
             },
             "object": {
                 "type": "author",
                 "id": self.author2.FQID,
                 "host": self.author2.host,
-                "displayName": self.author2.display_name
+                "displayName": self.author2.displayName
             }
         }
 

@@ -76,7 +76,7 @@
             <div class="userInfo">
                 <img class="profileImage" src="{% static 'avatar.png' %}">
                 <div class="username_DatePosted">
-                    <a class="username" href="{% url 'author_profile' post.author.id %}">{{ post.author.display_name }}</a> <!-- TODO: make the username clickable to go to userProfile-->
+                    <a class="username" href="{% url 'author_profile' post.author.id %}">{{ post.author.displayName }}</a> <!-- TODO: make the username clickable to go to userProfile-->
                     <h3 class="postDate">{{post.published|default:"NApublished"}}</h3>
                 </div>
                 <!-- <button class="followButton">Follow</button> -->

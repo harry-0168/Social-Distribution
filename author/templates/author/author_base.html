@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{% static 'profile.css' %}">
-    <title>{{ author.display_name }}'s Profile</title>
+    <title>{{ author.displayName }}'s Profile</title>
 </head>
 <body>
     <div class="header">
@@ -44,20 +44,20 @@
             {% else %}
             <img class="profile-pic" src="{% static 'avatar.png' %}" alt="Default Profile Picture">
         {% endif %}            
-        <h2 class="profile-name">{{ author.display_name }}</h2>
+        <h2 class="profile-name">{{ author.displayName }}</h2>
         
         <!-- Get all the information of the user and author -->
         <form method="POST" action="{% url 'follow-author' author.id %}" class="follow-form"
                 data-author-id="{{ author.id }}"
                 data-author-fqid="{{ author.FQID }}"
                 data-author-host="{{ author.host }}"
-                data-author-name="{{ author.display_name }}"
+                data-author-name="{{ author.displayName }}"
                 data-author-github="{{ author.user.github }}"
                 data-author-profile-image="{{ author.user.profile_image.url }}"
 
                 data-actor-id="{{ request.user.id }}"
                 data-actor-fqid="{{ request.user.FQID }}"
-                data-actor-name="{{ request.user.display_name }}"
+                data-actor-name="{{ request.user.displayName }}"
                 data-actor-host="{{ request.user.host }}"
                 data-actor-github="{{ request.user.github }}"
                 data-actor-profile-image="{% if request.user.profile_image %}{{ request.user.profile_image.url }}{% else %}None{% endif %}">

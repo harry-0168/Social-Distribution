@@ -30,7 +30,7 @@
     </div>
 
     <div class="post-container" id="post-container">
-        <p>Logged in as: {{ request.user.display_name }}</p>
+        <p>Logged in as: {{ request.user.displayName }}</p>
     </div>
 
     <script>
@@ -54,7 +54,7 @@
                                     <div class="post-header">
                                         <img src="${post.author.profile_image || '{% static "avatar.png" %}'}" class="profile-pic-small">
                                         <div>
-                                            <p class="username">${post.author.display_name}</p>
+                                            <p class="username">${post.author.displayName}</p>
                                             <p class="date-posted">${new Date(post.published).toLocaleDateString()}</p>
                                         </div>
                                         <div class="post-visibility">

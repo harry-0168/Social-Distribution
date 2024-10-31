@@ -78,7 +78,7 @@ def follow_author(request, object_author_id):
         
         # Optionally, check if they are now mutual followers (friends)
         if Following.are_friends(actor, target_author):
-            message = f"You are now friends with {target_author.display_name}."
+            message = f"You are now friends with {target_author.displayName}."
         
         # Redirect back to the referring page
         return redirect(request.META.get('HTTP_REFERER', '/'))
@@ -185,7 +185,7 @@ def api_author_detail(request, author_id):
             "type": "author",
             "id": str(author.id),
             "host": author.host,
-            "display_name": author.display_name,
+            "displayName": author.displayName,
             "github": author.github,
             "profile_image": profile_image_url,
             "page": author.page,
@@ -199,7 +199,7 @@ def api_author_detail(request, author_id):
 
             author = get_object_or_404(Author, id=author_id)
 
-            author.display_name = data.get('display_name', author.display_name)
+            author.displayName = data.get('displayName', author.displayName)
             author.github = data.get('github', author.github)
             author.page = data.get('page', author.page)
 
@@ -259,7 +259,7 @@ class AuthorViewSet(viewsets.ModelViewSet):
         follow_request = FollowRequest(
             actor=actor_author,
             object_author=object_author,
-            summary=f"{actor_author.display_name} wants to follow {object_author.display_name}",
+            summary=f"{actor_author.displayName} wants to follow {object_author.displayName}",
             status='pending'  # Initial status set to 'pending'
         )
         
@@ -290,7 +290,7 @@ class AuthorViewSet(viewsets.ModelViewSet):
 '''
 @api_view(['POST'])
 def login(request):
-    author = get_object_or_404(Author, display_name=request.data['display_name'])
+    author = get_object_or_404(Author, displayName=request.data['displayName'])
     if not author.isVerified:
         return Response({"detail": "Not Verified by admin"}, status=status.HTTP_401_UNAUTHORIZED)
     if not author.check_password(request.data['password']):
@@ -298,7 +298,7 @@ def login(request):
 
     # Generate the JWT token
     payload = {
-        'id': author.display_name,
+        'id': author.displayName,
         'author_id': str(author.id),
         'exp': datetime.now() + timedelta(days=1),  # Token expiration
         'iat': datetime.now()
@@ -331,7 +331,7 @@ def get_author_from_cookie(request):
     except jwt.ExpiredSignatureError:
         return AuthenticationFailed("Unauthenticated")
     
-    author = Author.objects.filter(display_name = payload['id']).first()
+    author = Author.objects.filter(displayName = payload['id']).first()
     serializer = AuthorSerializer(instance = author)
     return Response(serializer.data)
 
