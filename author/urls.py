@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import AuthorViewSet, profile_view, author_about, login, signup, get_author_from_cookie, logout, user_settings, follow_author,followers_list,following_list,unfollow_author
+from .views import AuthorViewSet, profile_view, author_about, loginPage, user_settings, follow_author,followers_list,following_list,unfollow_author
 from posts.views import PostViewSet
 from django.contrib.auth import views as auth_views
 from . import views
@@ -12,10 +12,7 @@ router.register(r'posts', PostViewSet, basename='post')  # Registers /posts/ end
 urlpatterns = [
 
     path('api/', include(router.urls)),  
-    path('login', login, name='login'),
-    path('signup', signup, name='signup'),
-    path('author', get_author_from_cookie, name='get_author_from_cookie'),
-    path('logout', logout, name='logout'),
+    path('login/', loginPage, name='login'),
     
     # Public profile page for an author
     path('<uuid:author_id>/', profile_view, name='author_profile'),
