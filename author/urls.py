@@ -12,7 +12,7 @@ router.register(r'posts', PostViewSet, basename='post')  # Registers /posts/ end
 urlpatterns = [
 
     path('api/', include(router.urls)),  
-    path('login/', loginPage, name='login'),
+    path('login/', loginPage, name='loginPage'),
     
     # Public profile page for an author
     path('<uuid:author_id>/', profile_view, name='author_profile'),

@@ -79,8 +79,8 @@
           // click the login header to switch to the login form
           loginHeader.click();
         } else {
-          // inside alert show the error message
-          alert(response.data);
+          response.json().then(data => alert(data.detail+" Try again"));
+          
           // show the signup form again
           signupHeader.click();
 
@@ -103,8 +103,7 @@
           // redirect to the home page
           window.location.href = "/";
         } else {
-          console.log(response);
-          alert(response.body.data);
+          response.json().then(data => alert(data.detail+" Try again"));
           loginHeader.click();
         }
       });

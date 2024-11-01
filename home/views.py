@@ -11,7 +11,7 @@ def home_page(request):
     '''
     # Redirect to login if the user is not authenticated
     if not request.user.is_authenticated:
-        return redirect('login')
+        return redirect('loginPage')
     # Access JWT payload if needed (optional)
     jwt_payload = request.jwt_payload  # Optional
     if jwt_payload:

@@ -292,8 +292,6 @@ def loginPage(request):
     return render(request, 'author/login.html')
 
 
-
-
 @api_view(['POST'])
 def login(request):
     author = get_object_or_404(Author, displayName=request.data['displayName'])
@@ -324,7 +322,7 @@ def signup(request):
         serializer.save()
         return Response(serializer.data, status= status.HTTP_201_CREATED)
 
-    return Response(serializer.errors, status= status.HTTP_400_BAD_REQUEST)
+    return Response({"detail": "UserName already exists."}, status= status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 def get_author_from_cookie(request):

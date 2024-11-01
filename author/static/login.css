@@ -12,7 +12,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f0faff;
+  background: #f7e8d4;
 }
 .wrapper {
   position: relative;
@@ -22,7 +22,7 @@ body {
   padding: 20px
     30px
     120px;
-  background: #4070f4;
+  background: #3e305e;
   box-shadow: 0
     5px
     10px
