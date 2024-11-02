@@ -23,7 +23,6 @@
             <button type="submit" class="search-button">Search</button>
         </form>
         <div class="icons">
-            <a href="{% url 'home_page' %}"><button class="private-button">Public</button></a> <!-- Added Private Button -->
             <a href="{% url 'home_page' %}"><img src="{% static 'home.png' %}"></a>
             <a href="{% url 'create_post' %}"><img src="{% static 'add_post.png' %}"></a>
             <a href="{% url 'inbox' %}"><img src="{% static 'inbox.png' %}"></a>
@@ -45,9 +44,8 @@
                 .then(response => response.json())
                 .then(data => {
                     const postContainer = document.getElementById('post-container');
-                    const friendsOnlyPosts = data.src.filter(post => post.visibility === 'FRIENDS');
 
-                    friendsOnlyPosts.forEach((post, index) => {
+                    data.src.forEach((post, index) => {
                         const isFollowing = followingList[index]; // Match follow status by index
 
                         const postElement = `
