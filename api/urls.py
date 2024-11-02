@@ -14,8 +14,9 @@ urlpatterns = [
     path("authors/<uuid:author_id>/posts/", get_posts_create_post, name="create"),
     path('authors/<uuid:author_id>/posts/<uuid:post_id>', get_edit_delete_post, name='delete_post'),
     
-    path('posts/<str:FQID>/image/', get_post_image, name='post_image'),
-    
+    path('posts/<str:FQID>/image/', get_post_image, name='post_image_FQID'),
+    path('authors/<uuid:author_id>/posts/<uuid:post_id>/image', get_post_image, name='post_image_SERIAL'),
+
     # Author API endpoints
     path('authors/', api_list_authors, name='api_list_authors'), 
     path('authors/add/', api_add_author, name='api_add_author'),  

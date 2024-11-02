@@ -307,9 +307,15 @@ def get_edit_delete_post(request, author_id, post_id):
 
 
 @api_view(['GET'])
-def get_post_image(request, FQID):
-    # Retrieve the post using the FQID
-    post = get_object_or_404(Post, id=FQID)
+def get_post_image(request, author_id=None, post_id=None, FQID=None):
+    # If author_id and post_id are provided, retrieve the post by post_id
+    if author_id:
+        # Retrieve the post using both author_id and post_id
+        post = get_object_or_404(Post, id=post_id, author__id=author_id)
+    elif FQID:
+        post = get_object_or_404(Post, id=FQID)
+    else:
+        return Response({'error': 'Post ID or FQID must be provided'}, status=status.HTTP_400_BAD_REQUEST)
     
     # Check if the content type is a base64 image
     if post.content_type in ['image/png;base64', 'image/jpeg;base64']:
