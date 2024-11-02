@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404, reverse, get_object_or_404
 from .models import Post, Comment, Like, Author
 import base64
@@ -304,6 +304,41 @@ def get_edit_delete_post(request, author_id, post_id):
             # If the user is not the author, they are redirected back
             return redirect('author_profile', author_id=post.author.id)
     return Response({"error": "Method not allowed"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+@api_view(['GET'])
+def get_post_image(request, author_id=None, post_id=None, FQID=None):
+    # If author_id and post_id are provided, retrieve the post by post_id
+    if author_id:
+        # Retrieve the post using both author_id and post_id
+        post = get_object_or_404(Post, id=post_id, author__id=author_id)
+    elif FQID:
+        post = get_object_or_404(Post, id=FQID)
+    else:
+        return Response({'error': 'Post ID or FQID must be provided'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Check if the content type is a base64 image
+    if post.content_type in ['image/png;base64', 'image/jpeg;base64']:
+        try:
+            # Extract the base64 data after the comma
+            encoded_data = post.content.split(',', 1)[1]
+            print("encoded_DATA: ", encoded_data)
+            # Decode the base64 content
+            image_data = base64.b64decode(encoded_data)
+            
+            # Set the appropriate MIME type for the response
+            mime_type = 'image/png' if 'png' in post.content_type else 'image/jpeg'
+            
+            # Return the binary image data in the response
+            return HttpResponse(image_data, content_type=mime_type)
+        
+        except base64.binascii.Error:
+            # Handle decoding error
+            return Response({'error': 'Invalid base64 image data', 'content': post.content}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        # If the content is not an image, return a 404 or error response
+        return Response({'error': 'Image not found or content type is not an image', 'post.content_type': post.content_type}, status=status.HTTP_404_NOT_FOUND)
+
 
 def view_post(request, id):
     post = get_object_or_404(Post, pk=id)
