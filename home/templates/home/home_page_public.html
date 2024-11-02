@@ -1,0 +1,146 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <link rel="stylesheet" href="{% static 'home_page.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <a href="{% url 'author_profile' request.user.id %}">
+            {% if request.user.profile_image %}
+                <img src="{{ request.user.profile_image.url }}" class="profile-pic">
+            {% else %}
+                <img src="{% static 'avatar.png' %}" class="profile-pic">
+            {% endif %}
+        </a>
+        <form method="GET" action="{% url 'search_results' %}" class="search-form">
+            <input type="text" name="q" placeholder="Search by display name..." class="search-bar">
+            <button type="submit" class="search-button">Search</button>
+        </form>
+        <div class="icons">
+            <a href="{% url 'private_home_page' %}"><button class="private-button">Private</button></a> <!-- Added Private Button -->
+            <a href="{% url 'home_page' %}"><img src="{% static 'home.png' %}"></a>
+            <a href="{% url 'create_post' %}"><img src="{% static 'add_post.png' %}"></a>
+            <a href="{% url 'inbox' %}"><img src="{% static 'inbox.png' %}"></a>
+        </div>
+    </div>
+
+    <div class="post-container" id="post-container">
+        <p>Logged in as: {{ request.user.displayName }}</p>
+    </div>
+
+    <script>
+        // Load posts dynamically using JavaScript
+        document.addEventListener('DOMContentLoaded', function () {
+            const userId = "{{ request.user.id }}"; // Current user ID
+            const apiUrl = `/api/authors/${userId}/posts/`; // API URL
+            const followingList = {{ following_list|safe }}; // Pass following_list from Django
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const postContainer = document.getElementById('post-container');
+                    const PublicPosts = data.src.filter(post => post.visibility === 'PUBLIC');
+
+                    PublicPosts.forEach((post, index) => {
+                        const isFollowing = followingList[index]; // Match follow status by index
+
+                        const postElement = `
+                            <a href="/post/${post.id}/viewPost/" style="text-decoration: none; color: inherit;">
+                                <div class="post">
+                                    <div class="post-header">
+                                        <img src="${post.author.profile_image || '{% static "avatar.png" %}'}" class="profile-pic-small">
+                                        <div>
+                                            <p class="username">${post.author.displayName}</p>
+                                            <p class="date-posted">${new Date(post.published).toLocaleDateString()}</p>
+                                        </div>
+                                        <div class="post-visibility">
+                                            ${getVisibilityTag(post.visibility)}
+                                        </div>
+                                        ${renderFollowButton(isFollowing, post.author.id)}
+                                    </div>
+                                    <div class="post-content">
+                                        <h2 class="title">${post.title}</h2>
+                                        <p class="description">${post.description}</p>
+                                        <hr class="description">
+                                        ${renderPostContent(post)}
+                                    </div>
+                                    <div class="post-footer">
+                                        <div class="interactions">
+                                            <img class="icon" src="{% static 'like.png' %}">
+                                            <span class="interactions-text">Like</span>
+                                            <img class="icon" src="{% static 'comment.png' %}">
+                                            <span class="interactions-text">Comment</span>
+                                            <img class="icon" src="{% static 'share.png' %}">
+                                            <span class="interactions-text">Share</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        `;
+                        postContainer.innerHTML += postElement;
+                    });
+
+                    document.querySelectorAll('.markdown-content').forEach(function (element) {
+                        const markdownContent = element.getAttribute('data-content').trim();
+                        const cleanedContent = markdownContent.replace(/\\u000D|\\u000A/g, "");
+                        if (cleanedContent) {
+                            element.innerHTML = marked.parse(cleanedContent);
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching posts:', error);
+                    document.getElementById('post-container').innerHTML = '<p>Error loading posts.</p>';
+                });
+
+            function renderPostContent(post) {
+                if (post.content_type.startsWith('image/')) {
+                    return `<img src="${post.content}" alt="Uploaded Image" style="max-width: 100%; height: auto;">`;
+                } else if (post.content_type === 'text/markdown') {
+                    return `<div class="content markdown-content" data-content="${post.content}"></div>`;
+                } else {
+                    return `<p class="content">${post.content}</p>`;
+                }
+            }
+
+            function getVisibilityTag(visibility) {
+                const visibilityMap = {
+                    'PUBLIC': 'Public',
+                    'FRIENDS': 'Friends Only',
+                    'UNLISTED': 'Unlisted',
+                    'DELETED': 'Deleted'
+                };
+                const classMap = {
+                    'PUBLIC': 'public',
+                    'FRIENDS': 'friends-only',
+                    'UNLISTED': 'unlisted',
+                    'DELETED': 'deleted'
+                };
+                return `<span class="visibility-tag ${classMap[visibility]}">${visibilityMap[visibility]}</span>`;
+            }
+
+            function renderFollowButton(isFollowing, authorId) {
+                if (userId === authorId) {
+                    return ''; // Don't show the follow/unfollow button on own profile
+                }
+
+                const action = isFollowing ? 'unfollow' : 'follow';
+                const buttonText = isFollowing ? 'Unfollow' : 'Follow';
+
+                return `
+                    <form action="/author/authors/${authorId}/${action}/" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="follow-btn">${buttonText}</button>
+                    </form>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
