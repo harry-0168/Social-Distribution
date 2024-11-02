@@ -116,9 +116,17 @@ def following_list(request, author_id):
     # Get all authors that the current author is following
     follow_relationships = Following.objects.filter(author1=author).select_related('author2')
 
+    following = []
+    for rel in follow_relationships:
+        user = rel.author2
+        following.append({
+            'user': user,
+            'is_friend': author.is_friend(user)  # Check if the author and the following author are mutual friends
+        })
+
     context = {
         'author': author,
-        'following': [rel.author2 for rel in follow_relationships],  # List of authors being followed
+        'following': following,  # List of authors being followed with friend status
         'followers_count': Following.objects.filter(author2=author).count(),  # Count of followers
         'following_count': follow_relationships.count(),  # Count of following
     }
@@ -135,12 +143,20 @@ def followers_list(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     
     # Get all authors who follow this author
-    followers = Following.objects.filter(author2=author).select_related('author1')
+    followers_relationships = Following.objects.filter(author2=author).select_related('author1')
+
+    followers = []
+    for rel in followers_relationships:
+        follower = rel.author1
+        followers.append({
+            'user': follower,
+            'is_friend': author.is_friend(follower)  # Check if the author and the follower are mutual friends
+        })
 
     context = {
         'author': author,
-        'followers': [rel.author1 for rel in followers],  # List of authors who follow the target
-        'followers_count': followers.count(),  # Number of followers
+        'followers': followers,  # List of authors who follow the target with friend status
+        'followers_count': followers_relationships.count(),  # Number of followers
         'following_count': Following.objects.filter(author1=author).count(),  # Number of authors this user is following
     }
 

@@ -4,13 +4,14 @@
 <h1>{{ author.displayName }}'s Followers ({{ followers_count }})</h1>
 
 <div class="followers-list">
-    {% for follower in followers %}
+    {% for item in followers %}
         <div class="follower-box">
             <div class="follower-info">
-                <span>{{ follower.displayName }}</span>
+                <span>{{ item.user.displayName }}</span>
+                {% if item.is_friend %}
+                    <span class="friend-tag">Friend</span> <!-- Add the "Friend" tag -->
+                {% endif %}
             </div>
-
-            
         </div>
     {% empty %}
         <p>No followers yet.</p>  <!-- Show this message if there are no followers -->
