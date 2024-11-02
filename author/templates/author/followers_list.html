@@ -1,0 +1,20 @@
+{% extends 'author/author_base.html' %}
+
+{% block content %}
+<h1>{{ author.displayName }}'s Followers ({{ followers_count }})</h1>
+
+<div class="followers-list">
+    {% for follower in followers %}
+        <div class="follower-box">
+            <div class="follower-info">
+                <span>{{ follower.displayName }}</span>
+            </div>
+
+            
+        </div>
+    {% empty %}
+        <p>No followers yet.</p>  <!-- Show this message if there are no followers -->
+    {% endfor %}
+</div>
+
+{% endblock %}

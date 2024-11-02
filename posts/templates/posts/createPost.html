@@ -4,29 +4,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../../static/createPost.css">
+    <link rel="stylesheet" href="{% static 'createPost.css' %}">
     <title>Create New Post</title>
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'author_profile' 1%}"> <!-- TO-DO replace with actual author id-->
-            <img style="padding-left: 90px;" src="/static/avatar.png">
+        <a href="{% url 'author_profile' author.id %}">
+            {% if author.profile_image %}
+                <img src="{{ author.profile_image.url }}" 
+                style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+            {% else %}
+                <img src="{% static 'avatar.png' %}" 
+                style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+            {% endif %}
         </a>
         <div class="icons">
             <a href="{% url 'home_page' %}">
                 <img src="{% static 'home.png' %}">
             </a>
             <a href="{% url 'create_post' %}">
-                <img src="/static/add_post.png">
+                <img src="{% static 'add_post.png' %}">
             </a>
-            <img src="/static/notifications.png">
-            <img src="/static/inbox.png">
+            <a href="{% url 'inbox' %}">
+                <img src="{% static 'inbox.png' %}">
+            </a>
         </div>
     </div>
 
     <div class="container">
         <div class="form-title">Create New Post</div>
-        <form id="save-form" method="POST" enctype="multipart/form-data" action="/post/create/">
+        <form id="save-form" method="POST" enctype="multipart/form-data" action="{% url 'create' request.user.id %}">
             {% csrf_token %}
             <div class="form-field-inline">
                 <div class="form-field">
@@ -40,9 +47,9 @@
                 <div class="form-field">
                     <label for="visibility">Visibility</label>
                     <select id="visibility" name="visibility">
-                        <option value="public">Public</option>
-                        <option value="unlisted">Unlisted</option>
-                        <option value="friends">Friends-only</option>
+                        <option value="PUBLIC">Public</option>
+                        <option value="UNLISTED">Unlisted</option>
+                        <option value="FRIENDS">Friends-only</option>
                     </select>
                 </div>
             </div>

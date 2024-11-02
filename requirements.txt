@@ -7,12 +7,14 @@ curtsies==0.4.2
 cwcwidth==0.1.9
 dj-database-url==2.2.0
 Django==5.1.1
+django-cors-headers==4.5.0
 djangorestframework==3.15.2
 greenlet==3.1.1
 gunicorn==23.0.0
-Markdown==3.7
 idna==3.10
+Markdown==3.7
 packaging==24.1
+pillow==11.0.0
 psycopg2-binary==2.9.9
 Pygments==2.18.0
 PyJWT==2.9.0
