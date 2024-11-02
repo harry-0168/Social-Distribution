@@ -39,7 +39,7 @@ class Post(models.Model):
         # Ensure FQID is set on creation only
         if not self.FQID:
             # Assumes the host is accessible in kwargs;
-            host = kwargs.get('host', 'localhost')
+            host = kwargs.get('request_host', 'localhost')
             self.FQID = f"http://{host}/api/posts/{self.id}"
         
         super().save(*args, **kwargs)
