@@ -164,15 +164,31 @@ def followers_list(request, author_id):
 
 @api_view(['GET'])
 def api_list_authors(request):
-    # Fetch all authors from the database
+    paginator = AuthorPagination()  # Use the custom pagination class
     authors = Author.objects.all()
+    result_page = paginator.paginate_queryset(authors, request)
 
-    # Serialize the authors using a serializer
-    serializer = AuthorSerializer(authors, many=True)
+    # Format author data as per your required structure
+    formatted_authors = []
+    for author in result_page:
+        profile_image_url = author.profile_image.url if author.profile_image else None
+        full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
+        host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
 
-    # Return the serialized data using Response, which will be displayed in the browsable API
-    return Response({"type": "authors", "authors": serializer.data}, status=status.HTTP_200_OK)
+        formatted_authors.append({
+            "type": "author",
+            "id": full_id_url,
+            "host": host_with_postfix,
+            "displayName": author.displayName,
+            "github": author.github,
+            "profileImage": profile_image_url,
+            "page": author.page,
+        })
 
+    # Return the customized paginated response
+    return paginator.get_paginated_response(formatted_authors)
+    
+    
 @api_view(['POST'])
 def api_add_author(request):
     # Deserialize the incoming request data using the AuthorSerializer
@@ -194,13 +210,19 @@ def api_author_detail(request, author_id):
     if request.method == 'GET':
         author = get_object_or_404(Author, id=author_id)
         
+        # Construct the full ID URL
+        full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
+        
         # Handle the serialization of ImageField (use URL or None if not available)
         profile_image_url = author.profile_image.url if author.profile_image else None
 
+        # Get the host with the postfix
+        host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
+        
         data = {
             "type": "author",
-            "id": str(author.id),
-            "host": author.host,
+            "id": full_id_url,
+            "host": host_with_postfix,
             "displayName": author.displayName,
             "github": author.github,
             "profile_image": profile_image_url,
@@ -241,9 +263,16 @@ def api_author_detail(request, author_id):
 
 
 class AuthorPagination(PageNumberPagination):
-    page_size = 10
-    page_size_query_param = 'size'
-    max_page_size = 500
+    page_size = 100 # Default number of items per page
+    page_size_query_param = 'size' # Custom query parameter for page size
+    max_page_size = 1000 # Maximum number of items per page
+
+    def get_paginated_response(self, data):
+        # Customize the response format to only include `type` and `authors`
+        return Response({
+            "type": "authors",
+            "authors": data
+        })
 
 class AuthorViewSet(viewsets.ModelViewSet):
     queryset = Author.objects.all()
