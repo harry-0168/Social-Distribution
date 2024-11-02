@@ -15,6 +15,7 @@ from .serializers import PostSerializer, CommentSerializer, LikeSerializer
 from author.views import get_author_from_cookie
 from django.conf import settings
 from django.contrib import messages
+from urllib.parse import unquote
 # Create your views here.
 def post(request):
     author_id = get_author_from_cookie(request).data.get('id')
@@ -58,6 +59,39 @@ def create_comment(request, post_id):
     # Return a response with the created comment
     # return Response(comment_serializer.data, status=status.HTTP_201_CREATED)
     return redirect('viewPost', id=post.id) 
+
+@api_view(['GET'])
+def get_comment(request, FQID):
+    print("in")
+    print("FQID: ", FQID)
+    # Decode the FQID to handle percent encoding
+    decoded_FQID = unquote(FQID)
+    
+    # Retrieve the comment using the decoded FQID
+    comment = get_object_or_404(Comment, FQID=decoded_FQID)
+    print("comment: ", comment)
+    # Prepare the data to be returned
+    comment_data = {
+        "id": comment.id,
+        "type": comment.type,
+        "contentType": comment.contentType,
+        "username": comment.username,
+        "created_at": comment.created_at,
+        "content": comment.content,
+        "post": comment.post.FQID,
+        "FQID": comment.FQID,
+        "author": {
+            "id": comment.author.id,
+            "host": comment.author.host,
+            "displayName": comment.author.displayName,
+            "github": comment.author.github,
+            #"profile_image": comment.author.profile_image,
+            "FQID": comment.author.FQID,  # Reference to the author's FQID
+        }
+    }
+    
+    # Return the comment data as a JSON response
+    return Response(comment_data, status=status.HTTP_200_OK)
 
 # API to create a like
 @api_view(['POST'])
