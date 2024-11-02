@@ -30,9 +30,19 @@ class Post(models.Model):
     author = models.ForeignKey(Author, related_name='posts', on_delete=models.CASCADE)
     published = models.DateTimeField(auto_now_add=True)
     visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES)
+    FQID = models.CharField(max_length=1000, unique=True, null=True)
     
     def __str__(self):
         return self.title
+    
+    def save(self, *args, **kwargs):
+        # Ensure FQID is set on creation only
+        if not self.FQID:
+            # Assumes the host is accessible in kwargs;
+            host = kwargs.get('host', 'localhost')
+            self.FQID = f"http://{host}/api/posts/{self.id}"
+        
+        super().save(*args, **kwargs)
     
     def is_visible_to(self, user):
         """Determine if the current post is visible to the specified user."""

@@ -1,5 +1,5 @@
 from django.urls import path
-from posts.views import get_edit_delete_post,get_posts_create_post
+from posts.views import get_edit_delete_post,get_posts_create_post,get_post_image
 from author.views import api_list_authors, api_add_author, api_author_detail, login, signup, get_author_from_cookie, logout
 
 
@@ -13,6 +13,8 @@ urlpatterns = [
     path('authors/<uuid:author_id>/posts/', get_posts_create_post, name='get_posts'),
     path("authors/<uuid:author_id>/posts/", get_posts_create_post, name="create"),
     path('authors/<uuid:author_id>/posts/<uuid:post_id>', get_edit_delete_post, name='delete_post'),
+    
+    path('posts/<str:FQID>/image/', get_post_image, name='post_image'),
     
     # Author API endpoints
     path('authors/', api_list_authors, name='api_list_authors'), 
