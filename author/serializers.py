@@ -1,10 +1,11 @@
 from rest_framework import serializers
 from .models import Author, FollowRequest
+from django import forms
 
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Author
-        fields = ['id', 'host', 'display_name', 'github', 'profile_image', 'page', 'password']
+        fields = ['id', 'host', 'displayName', 'github', 'profile_image', 'page', 'password']
         extra_kwargs = {'password': {'write_only': True}}
     
     def create(self, validated_data):
@@ -30,4 +31,12 @@ class FollowRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = FollowRequest
-        fields = ['id', 'actor', 'object_author', 'summary', 'status']
+        fields = ['actor', 'object_author', 'summary', 'status']
+        depth = 1
+class UserSettingsForm(forms.ModelForm):
+    class Meta:
+        model = Author
+        fields = ['displayName', 'github', 'profile_image']
+        widgets = {
+            'profile_image': forms.FileInput(),
+        }
