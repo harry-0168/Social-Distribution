@@ -16,6 +16,7 @@ from .serializers import UserSettingsForm
 from django.contrib import messages
 from django.conf import settings
 from .models import Author, Following
+from inbox.models import Inbox
 import json
 
 
@@ -214,7 +215,7 @@ def api_author_detail(request, author_id):
         full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
         
         # Handle the serialization of ImageField (use URL or None if not available)
-        profile_image_url = author.profile_image.url if author.profile_image else None
+        profileImage_url = author.profileImage.url if author.profileImage else None
 
         # Get the host with the postfix
         host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
@@ -225,7 +226,7 @@ def api_author_detail(request, author_id):
             "host": host_with_postfix,
             "displayName": author.displayName,
             "github": author.github,
-            "profile_image": profile_image_url,
+            "profileImage": profileImage_url,
             "page": author.page,
         }
         return Response(data, status=status.HTTP_200_OK)
@@ -242,9 +243,9 @@ def api_author_detail(request, author_id):
             author.page = data.get('page', author.page)
 
             # Handle image update - in PUT requests, this typically requires a multipart form-data request
-            profile_image = data.get('profile_image')
-            if profile_image:
-                author.profile_image = profile_image
+            profileImage = data.get('profileImage')
+            if profileImage:
+                author.profileImage = profileImage
 
             author.save()
 

@@ -10,8 +10,8 @@
 <body>
     <div class="header">
         <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
-            {% if request.user.profile_image %}
-                <img src="{{ request.user.profile_image.url }}" 
+            {% if request.user.profileImage %}
+                <img src="{{ request.user.profileImage.url }}" 
                 style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
             {% else %}
                 <img src="{% static 'avatar.png' %}" 

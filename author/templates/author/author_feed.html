@@ -8,8 +8,8 @@
                 <!-- 1st row: Profile info and action buttons -->
                 <div class="post-header">
                     <div class="profile-info">
-                        {% if author.profile_image %}
-                            <img src="{{ author.profile_image.url }}" alt="Profile Picture" class="profile-pic-small">
+                        {% if author.profileImage %}
+                            <img src="{{ author.profileImage.url }}" alt="Profile Picture" class="profile-pic-small">
                         {% else %}
                             <img src="{% static 'avatar.png' %}" alt="Default Profile Picture" class="profile-pic-small">
                         {% endif %}

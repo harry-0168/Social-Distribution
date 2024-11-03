@@ -66,12 +66,13 @@
         const displayName = document.getElementById("signupUsername").value;
         const password = document.getElementById("signupPassword").value;
         // url should be "host+ api/signup"
-        
+        let host = window.location.host;
+        host = "http://"+host;
         
         const response = await fetch(origin+"/api/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
-          body: JSON.stringify({ displayName, password })
+          body: JSON.stringify({ displayName, password, host })
         });
   
         if (response.ok) {

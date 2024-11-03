@@ -10,8 +10,8 @@
 <body>
     <div class="header">
         <a href="{% url 'author_profile' author.id %}"> <!-- TO-DO replace with actual author id-->
-            {% if author.profile_image %}
-                <img src="{{ author.profile_image.url }}" 
+            {% if author.profileImage %}
+                <img src="{{ author.profileImage.url }}" 
                     class="profile-pic-header">
             {% else %}
                 <img src="{% static 'avatar.png' %}" 
@@ -39,8 +39,8 @@
     <div class="container">
  
         <div class="profile-area">
-            {% if author.profile_image %}
-            <img class="profile-pic" src="{{ author.profile_image.url }}" alt="Profile Picture">
+            {% if author.profileImage %}
+            <img class="profile-pic" src="{{ author.profileImage.url }}" alt="Profile Picture">
             {% else %}
             <img class="profile-pic" src="{% static 'avatar.png' %}" alt="Default Profile Picture">
         {% endif %}            
@@ -53,14 +53,14 @@
                 data-author-host="{{ author.host }}"
                 data-author-name="{{ author.displayName }}"
                 data-author-github="{{ author.user.github }}"
-                data-author-profile-image="{{ author.user.profile_image.url }}"
+                data-author-profile-image="{{ author.user.profileImage.url }}"
 
                 data-actor-id="{{ request.user.id }}"
                 data-actor-fqid="{{ request.user.FQID }}"
                 data-actor-name="{{ request.user.displayName }}"
                 data-actor-host="{{ request.user.host }}"
                 data-actor-github="{{ request.user.github }}"
-                data-actor-profile-image="{% if request.user.profile_image %}{{ request.user.profile_image.url }}{% else %}None{% endif %}">
+                data-actor-profile-image="{% if request.user.profileImage %}{{ request.user.profileImage.url }}{% else %}None{% endif %}">
             {% csrf_token %}
             {% if is_following %}
                 <button type="button" class="unfollow-button">Unfollow</button>
