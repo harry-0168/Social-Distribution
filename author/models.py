@@ -46,6 +46,10 @@ class Author(AbstractUser):
             self.page = f"{self.host}/authors/{self.displayName}"
         
         super().save(*args, **kwargs)
+        
+    def is_friend(self, other_author):
+        """ Check if there is a mutual following relationship with another author, indicating friendship. """
+        return Following.are_friends(self, other_author)
 
 # New FollowRequest Model
 class FollowRequest(models.Model):

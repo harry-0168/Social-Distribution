@@ -117,9 +117,17 @@ def following_list(request, author_id):
     # Get all authors that the current author is following
     follow_relationships = Following.objects.filter(author1=author).select_related('author2')
 
+    following = []
+    for rel in follow_relationships:
+        user = rel.author2
+        following.append({
+            'user': user,
+            'is_friend': author.is_friend(user)  # Check if the author and the following author are mutual friends
+        })
+
     context = {
         'author': author,
-        'following': [rel.author2 for rel in follow_relationships],  # List of authors being followed
+        'following': following,  # List of authors being followed with friend status
         'followers_count': Following.objects.filter(author2=author).count(),  # Count of followers
         'following_count': follow_relationships.count(),  # Count of following
     }
@@ -136,12 +144,20 @@ def followers_list(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     
     # Get all authors who follow this author
-    followers = Following.objects.filter(author2=author).select_related('author1')
+    followers_relationships = Following.objects.filter(author2=author).select_related('author1')
+
+    followers = []
+    for rel in followers_relationships:
+        follower = rel.author1
+        followers.append({
+            'user': follower,
+            'is_friend': author.is_friend(follower)  # Check if the author and the follower are mutual friends
+        })
 
     context = {
         'author': author,
-        'followers': [rel.author1 for rel in followers],  # List of authors who follow the target
-        'followers_count': followers.count(),  # Number of followers
+        'followers': followers,  # List of authors who follow the target with friend status
+        'followers_count': followers_relationships.count(),  # Number of followers
         'following_count': Following.objects.filter(author1=author).count(),  # Number of authors this user is following
     }
 
@@ -149,15 +165,31 @@ def followers_list(request, author_id):
 
 @api_view(['GET'])
 def api_list_authors(request):
-    # Fetch all authors from the database
+    paginator = AuthorPagination()  # Use the custom pagination class
     authors = Author.objects.all()
+    result_page = paginator.paginate_queryset(authors, request)
 
-    # Serialize the authors using a serializer
-    serializer = AuthorSerializer(authors, many=True)
+    # Format author data as per your required structure
+    formatted_authors = []
+    for author in result_page:
+        profile_image_url = author.profile_image.url if author.profile_image else None
+        full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
+        host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
 
-    # Return the serialized data using Response, which will be displayed in the browsable API
-    return Response({"type": "authors", "authors": serializer.data}, status=status.HTTP_200_OK)
+        formatted_authors.append({
+            "type": "author",
+            "id": full_id_url,
+            "host": host_with_postfix,
+            "displayName": author.displayName,
+            "github": author.github,
+            "profileImage": profile_image_url,
+            "page": author.page,
+        })
 
+    # Return the customized paginated response
+    return paginator.get_paginated_response(formatted_authors)
+    
+    
 @api_view(['POST'])
 def api_add_author(request):
     # Deserialize the incoming request data using the AuthorSerializer
@@ -179,13 +211,19 @@ def api_author_detail(request, author_id):
     if request.method == 'GET':
         author = get_object_or_404(Author, id=author_id)
         
+        # Construct the full ID URL
+        full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
+        
         # Handle the serialization of ImageField (use URL or None if not available)
         profileImage_url = author.profileImage.url if author.profileImage else None
 
+        # Get the host with the postfix
+        host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
+        
         data = {
             "type": "author",
-            "id": str(author.id),
-            "host": author.host,
+            "id": full_id_url,
+            "host": host_with_postfix,
             "displayName": author.displayName,
             "github": author.github,
             "profileImage": profileImage_url,
@@ -226,9 +264,16 @@ def api_author_detail(request, author_id):
 
 
 class AuthorPagination(PageNumberPagination):
-    page_size = 10
-    page_size_query_param = 'size'
-    max_page_size = 500
+    page_size = 100 # Default number of items per page
+    page_size_query_param = 'size' # Custom query parameter for page size
+    max_page_size = 1000 # Maximum number of items per page
+
+    def get_paginated_response(self, data):
+        # Customize the response format to only include `type` and `authors`
+        return Response({
+            "type": "authors",
+            "authors": data
+        })
 
 class AuthorViewSet(viewsets.ModelViewSet):
     queryset = Author.objects.all()
