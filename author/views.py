@@ -163,6 +163,7 @@ def followers_list(request, author_id):
 
     return render(request, 'author/followers_list.html', context)
 
+
 @api_view(['GET'])
 def api_list_authors(request):
     paginator = AuthorPagination()  # Use the custom pagination class
@@ -172,7 +173,7 @@ def api_list_authors(request):
     # Format author data as per your required structure
     formatted_authors = []
     for author in result_page:
-        profile_image_url = author.profile_image.url if author.profile_image else None
+        profile_image_url = author.profileImage.url if author.profileImage else None  # Updated field name
         full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
         host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
 
@@ -214,8 +215,8 @@ def api_author_detail(request, author_id):
         # Construct the full ID URL
         full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
         
-        # Handle the serialization of ImageField (use URL or None if not available)
-        profileImage_url = author.profileImage.url if author.profileImage else None
+        # Handle the profileImage field, using it directly if it's a string path
+        profileImage_url = author.profileImage.url if hasattr(author.profileImage, 'url') else author.profileImage
 
         # Get the host with the postfix
         host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
