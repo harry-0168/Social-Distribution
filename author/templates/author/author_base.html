@@ -11,11 +11,9 @@
     <div class="header">
         <a href="{% url 'author_profile' author.id %}"> <!-- TO-DO replace with actual author id-->
             {% if author.profileImage %}
-                <img src="{{ author.profileImage.url }}" 
-                    class="profile-pic-header">
+            <img class="profile-pic-header" src="data:image/png;base64,{{ author.profileImage }}">
             {% else %}
-                <img src="{% static 'avatar.png' %}" 
-                    class="profile-pic-header">
+            <img class="profile-pic-header" src="{% static 'avatar.png' %}">
             {% endif %}
         </a>
         <form method="GET" action="{% url 'search_results' %}" class="search-form">
@@ -40,10 +38,10 @@
  
         <div class="profile-area">
             {% if author.profileImage %}
-            <img class="profile-pic" src="{{ author.profileImage.url }}" alt="Profile Picture">
+            <img class="profile-pic" src="data:image/png;base64,{{ author.profileImage }}">
             {% else %}
-            <img class="profile-pic" src="{% static 'avatar.png' %}" alt="Default Profile Picture">
-        {% endif %}            
+            <img class="profile-pic" src="{% static 'avatar.png' %}">
+            {% endif %}          
         <h2 class="profile-name">{{ author.displayName }}</h2>
         
         <!-- Get all the information of the user and author -->
