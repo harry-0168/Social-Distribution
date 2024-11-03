@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404, reverse, get_object_or_404
-from .models import Post, Comment, Like, Author
+from .models import Post, Comment, Like, Author, Following
 import base64
 import jwt
 import markdown
@@ -144,6 +144,7 @@ def get_posts_create_post(request, author_id):
         visibility = request.POST.get('visibility')
         content = request.POST.get('content', '')
         image = request.FILES.get('img')
+        type = 'post'
 
         if content_type and content_type.startswith('image/') and image:
             # Read the image file and encode it as base64
@@ -153,6 +154,7 @@ def get_posts_create_post(request, author_id):
 
         # Create a new post associated with the current author
         post = Post(
+            type=type,
             title=title,
             description=description,
             content_type=content_type,
@@ -259,16 +261,24 @@ def get_edit_delete_post(request, author_id, post_id):
     method = request.POST.get('_method', '').upper()
     try:
         # Make sure user who is not the author can't edit/delete the post
-        if author_id != post.author.id:
-            return Response({"error": "Unauthorized to edit other author's post"}, status=status.HTTP_403_FORBIDDEN)
+        if author_id != post.author.id and (method in ["PUT", "DELETE"] or request.method in ["PUT", "DELETE"]):
+            return Response({"error": "Unauthorized to edit/delete other author's post"}, status=status.HTTP_403_FORBIDDEN)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
     except Author.DoesNotExist:
         return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
-    if method == 'GET':
-        serializer = PostSerializer(post)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    if method == 'PUT':
+    if method == 'GET' or request.method == 'GET':
+        if post.visibility == 'PUBLIC':
+            serializer = PostSerializer(post)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        # Check for authentication and friendship for "friends-only" posts
+        if post.visibility == 'FRIENDS':
+            if request.user.is_authenticated and Following.are_friends(request.user, post.author):
+                serializer = PostSerializer(post)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "Unauthorized to view friends-only post"}, status=status.HTTP_403_FORBIDDEN)
+    if method == 'PUT' or request.method == 'PUT':
         data = request.data.copy()  # Safely copy the data
         image = request.FILES.get('img')
 
@@ -291,7 +301,7 @@ def get_edit_delete_post(request, author_id, post_id):
             return redirect(reverse('author_profile', args=[author_id]))
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    if method == 'DELETE':
+    if method == 'DELETE' or request.method == 'DELETE':
         # Ensure that only the author of the post or an admin can delete the post
         if post.author == request.user or request.user.is_superuser:
             post.visibility = 'DELETED'  # Mark the post as 'DELETED'
@@ -339,7 +349,23 @@ def get_post_image(request, author_id=None, post_id=None, FQID=None):
         # If the content is not an image, return a 404 or error response
         return Response({'error': 'Image not found or content type is not an image', 'post.content_type': post.content_type}, status=status.HTTP_404_NOT_FOUND)
 
-
+@api_view(['GET'])
+def get_post_FQID(request, FQID=None):
+    if FQID:
+        post = get_object_or_404(Post, id=FQID)
+        if post.visibility == 'PUBLIC':
+            serializer = PostSerializer(post)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        # Check for authentication and friendship for "friends-only" posts
+        if post.visibility == 'FRIENDS':
+            if request.user.is_authenticated and Following.are_friends(request.user, post.author):
+                serializer = PostSerializer(post)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "Unauthorized to view friends-only post"}, status=status.HTTP_403_FORBIDDEN)
+    else:
+        return Response({'error': 'FQID must be provided'}, status=status.HTTP_400_BAD_REQUEST)
+    
 def view_post(request, id):
     post = get_object_or_404(Post, pk=id)
 
