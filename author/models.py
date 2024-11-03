@@ -10,12 +10,14 @@ class Author(AbstractUser):
     Custom User model to represent an author in the system
     The model extends the AbstractUser model and overrides the username field with displayName
     '''
+    # set type to author and make it read only
+    type = "author"
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     FQID = models.CharField(max_length= 1000, unique=True, null=True)
     host = models.CharField(max_length=255, null=False)
     displayName = models.CharField(_("displayName"),max_length=100, unique=True)
     github = models.CharField(max_length=255, blank=True, null=True)
-    profile_image = models.ImageField(upload_to='profile_images/', blank=True, null=True)
+    profileImage = models.ImageField(upload_to='profileImages/', blank=True, null=True)
     page = models.CharField( max_length=1000,blank=True, null=True)
     isVerified = models.BooleanField(default=False)
     username = None
@@ -33,10 +35,13 @@ class Author(AbstractUser):
         '''
         Override the save method to set the host field if not already set
         '''
+        
         if not self.host:  # Only set if host is not already set
             self.host = f"http://{kwargs.get('request_host', 'localhost')}"
         if not self.FQID:  # Only set if FQID is not already set
             self.FQID = f"{self.host}/api/authors/{self.id}"
+        if not self.profileImage.url:
+            self.profileImage = f"{self.host}/static/avatar.png"
         if not self.page:
             self.page = f"{self.host}/authors/{self.displayName}"
         
@@ -59,9 +64,10 @@ class Following(models.Model):
     Exist(a,b) AND not exist (b,a) --> a is follower of b or b is followed by a
     This is all we need to fetch the relation between authors'''
 
+    type = "follow"
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    author1 = models.ForeignKey(Author, related_name='author', on_delete=models.CASCADE)
-    author2 = models.ForeignKey(Author, related_name='following', on_delete=models.CASCADE)
+    author1 = models.ForeignKey(Author, related_name='author', on_delete=models.CASCADE) # actor
+    author2 = models.ForeignKey(Author, related_name='following', on_delete=models.CASCADE) # object
     status = models.CharField(max_length=50, choices=[('pending', 'Pending'), ('accepted', 'Accepted')], default='pending')
     date = models.DateTimeField(default=timezone.now)
 
@@ -86,10 +92,18 @@ class Following(models.Model):
         if not Following.objects.filter(author1=author1, author2=author2).exists():
             new = Following.objects.create(author1=author1, author2=author2)
         return new
-        
-        
-
+    
     @staticmethod
     def unfollow(author1, author2):
         """Unfollow an author and potentially unfriend."""
         Following.objects.filter(author1=author1, author2=author2).delete()
+    
+    @staticmethod
+    def get_followers(author):
+        """Get all authors following an author."""
+        return Following.objects.filter(author2=author, status='accepted')
+    
+    @staticmethod
+    def get_following(author):
+        """Get all authors an author is following."""
+        return Following.objects.filter(author1=author, status='accepted')

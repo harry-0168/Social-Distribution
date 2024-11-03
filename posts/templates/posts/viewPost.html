@@ -13,8 +13,8 @@
 
     <div class="header">
         <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
-            {% if request.user.profile_image %}
-                <img src="{{ request.user.profile_image.url }}" 
+            {% if request.user.profileImage %}
+                <img src="{{ request.user.profileImage.url }}" 
                     class="profile-pic">
             {% else %}
                 <img src="{% static 'avatar.png' %}" 
@@ -173,8 +173,8 @@
                 <ol class="carousel-container">
                     {% for comment in post.comment_set.all %}
                         <div class="comment">
-                            {% if comment.author.profile_image %}
-                                <img src="{{ comment.author.profile_image.url }}" 
+                            {% if comment.author.profileImage %}
+                                <img src="{{ comment.author.profileImage.url }}" 
                                     class="profile-pic-small">
                             {% else %}
                                 <img src="{% static 'avatar.png' %}" 
