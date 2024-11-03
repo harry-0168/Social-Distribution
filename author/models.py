@@ -40,8 +40,8 @@ class Author(AbstractUser):
             self.host = f"http://{kwargs.get('request_host', 'localhost')}"
         if not self.FQID:  # Only set if FQID is not already set
             self.FQID = f"{self.host}/api/authors/{self.id}"
-        if not self.profileImage.url:
-            self.profileImage = f"{self.host}/static/avatar.png"
+        if not self.profileImage:
+            self.profileImage = f"../static/avatar.png"
         if not self.page:
             self.page = f"{self.host}/authors/{self.displayName}"
         
