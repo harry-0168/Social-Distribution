@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404, reverse, get_object_or_404
-from .models import Post, Comment, Like, Author, Following
+from .models import Post, Comment, Like, Author, githubPostIds, Following
 import base64
 import jwt
 import markdown
@@ -427,3 +427,24 @@ def view_postLikes(request, id):
     author = post.author
 
     return render(request, "posts/viewPostLikes.html", {"id":id, "post":post, "author":author})
+
+@api_view(['POST'])
+def github_post(request, author_id):
+    author = get_object_or_404(Author, id=author_id)
+    data = request.data
+    check = githubPostIds.objects.filter(id=data['id'])
+    if check:
+        return Response({"error": "Post already exists"}, status=status.HTTP_200_OK)
+    post = Post(
+        title=data['title'],
+        description=data['description'],
+        content_type=data['content_type'],
+        content=data['content'],
+        visibility=data['visibility'],
+        author=author
+    )
+    post.save()
+    githubPost = githubPostIds(id=data['id'], post=post)
+    githubPost.save()
+
+    return Response(data, status=status.HTTP_200_OK)
