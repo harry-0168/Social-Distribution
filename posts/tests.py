@@ -2,68 +2,176 @@ import base64
 import uuid
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIClient
 from .models import Post, Author
 from django.test import TestCase, Client
 from django.urls import reverse
 from author.models import Author
-from .models import Post
+from .models import Post, Following
 import jwt
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from unittest.mock import patch
+from .serializers import PostSerializer
+from rest_framework.test import APIRequestFactory
+from .views import get_post_FQID
 
-class EditPostAPITest(APITestCase):
+User = get_user_model()
+# Test case for ://service/api/authors/{AUTHOR_SERIAL}/posts/{POST_SERIAL}
+class GetEditDeletePostAPITest(APITestCase):
     def setUp(self):
-        # Create an Author for testing
-        self.author = Author.objects.create_user(
-            displayName='testauthor',
-            password='password123',
-            host='http://localhost'
-        )
+        self.user1 = User.objects.create_user(displayName="testuser", password="password")
+        self.user2 = User.objects.create_user(displayName="user2", password="password")
+        self.client1 = APIClient()
+        self.client1.force_authenticate(user=self.user1)
+        self.client2 = APIClient()
+        self.client2.force_authenticate(user=self.user2)
+        # Set up authors, posts, and client for test cases
+        self.author1 = self.user1
+        self.author2 = self.user2
         
-        # Create a post for the author
-        self.post = Post.objects.create(
+        self.public_post = Post.objects.create(
             id=uuid.uuid4(),
-            title='Original Title',
-            description='Original Description',
-            content_type='text/plain',
-            content='Original Content',
-            visibility='public',
-            author=self.author
+            title="Public Post",
+            description="Test Description",
+            content_type="text/plain",
+            content="This is a test post",
+            visibility="PUBLIC",
+            author=self.author1,
         )
-        
-        # API URL for editing the post
-        self.url = reverse('edit_post', args=[str(self.post.id)])
+        self.friends_post = Post.objects.create(
+            id=uuid.uuid4(),
+            title="Friends Post",
+            description="This is a friends-only post",
+            content_type="text/plain",
+            content="Friends content",
+            visibility="FRIENDS",
+            author=self.author1,
+        )
+        self.public_post_url = reverse('edit_post', args=[self.author1.id, self.public_post.id])
+        self.friends_post_url = reverse('edit_post', args=[self.author1.id, self.friends_post.id])
+        self.delete_post_url = reverse('delete_post', args=[self.author1.id, self.public_post.id])
 
-    def test_successful_update(self):
-        # Data to update the post
+    def test_get_public_post_as_anonymous(self):
+        response = self.client.get(self.public_post_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['title'], "Public Post")
+
+    def test_get_public_post_as_authenticated_user(self):
+        response = self.client1.get(self.public_post_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['title'], "Public Post")
+
+    def test_get_friends_post_as_friend(self):
+        # Set up friendship
+        Following.objects.create(author1=self.author1, author2=self.author2)
+        Following.objects.create(author1=self.author2, author2=self.author1)
+        response = self.client2.get(self.friends_post_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['title'], "Friends Post")
+
+    def test_get_friends_post_as_non_friend(self):
+        response = self.client2.get(self.friends_post_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_edit_post_successful(self):
+        # Author1 updates their own post
         data = {
-            'title': 'Updated Title',
+            'title': 'Updated Test Post',
             'description': 'Updated Description',
-            'content_type': 'text/plain',
-            'content': 'Updated Content',
+            'content_type': 'text/markdown',
+            'content': 'Updated content',
+            '_method': 'PUT'
         }
-        response = self.client.post(self.url, data)
-        
-        # Assert the post was updated successfully
-        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
-        self.post.refresh_from_db()
-        self.assertEqual(self.post.title, 'Updated Title')
-        self.assertEqual(self.post.description, 'Updated Description')
+        response = self.client1.post(self.public_post_url, data)
+        self.public_post.refresh_from_db()
+        self.assertEqual(self.public_post.title, 'Updated Test Post')
 
+    def test_edit_post_unauthorized(self):
+        # Author2 tries to update Author1's post
+        self.public_post_url = reverse('edit_post', kwargs={'author_id': self.author2.id, 'post_id': self.public_post.id})
+        data = {'title': 'Unauthorized Update', '_method': 'PUT'}
+        response = self.client.post(self.public_post_url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_invalid_method(self):
-        response = self.client.get(self.url)  # GET method instead of POST
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+    def test_delete_post_successful(self):
+        # Author1 deletes their own post
+        response = self.client1.post(self.delete_post_url, {'_method': 'DELETE'}, follow=True)
+        self.public_post.refresh_from_db()
+        self.assertEqual(self.public_post.visibility, 'DELETED')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_partial_update(self):
-        # Test updating only the title field
-        data = {'title': 'Partially Updated Title'}
-        response = self.client.post(self.url, data)
+    def test_delete_post_unauthorized(self):
+        # Author2 tries to delete Author1's post
+        unauthorized_delete_url = reverse('delete_post', args=[self.user2.id, self.public_post.id])
+        response = self.client2.post(unauthorized_delete_url, {'_method': 'DELETE'}, follow=True)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(self.public_post.visibility, 'PUBLIC')
 
-        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
-        self.post.refresh_from_db()
-        self.assertEqual(self.post.title, 'Partially Updated Title')
-        self.assertEqual(self.post.description, 'Original Description')
+# Test case for ://service/api/posts/{POST_FQID}
+class GetPostFQIDTestCase(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        # Create a user and authenticate
+        self.user = User.objects.create_user(displayName='testuser', password='password')
+        self.client.login(displayName='testuser', password='password')
+
+        # Create a public post and a friends-only post
+        self.public_post = Post.objects.create(id=uuid.uuid4(), visibility="PUBLIC", author=self.user)
+        self.friends_only_post = Post.objects.create(id=uuid.uuid4(), visibility="FRIENDS", author=self.user)
+
+    def test_no_FQID_provided(self):
+        factory = APIRequestFactory()
+        request = factory.get('/api/posts/')  # Simulate a GET request
+        response = get_post_FQID(request)  # Call the view directly without FQID
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, {'error': 'FQID must be provided'})
+
+    def test_non_existent_FQID(self):
+        # Generate a random UUID for non-existent FQID
+        non_existent_uuid = uuid.uuid4()
+        url = reverse('get_post_FQID', args=[non_existent_uuid])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_public_post_access(self):
+        url = reverse('get_post_FQID', args=[self.public_post.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        serializer = PostSerializer(self.public_post)
+        self.assertEqual(response.data, serializer.data)
+
+    @patch('author.models.Following.are_friends', return_value=True)
+    def test_friends_only_post_authenticated_friend(self, mock_are_friends):
+        url = reverse('get_post_FQID', args=[self.friends_only_post.id])
+        # Ensure the test user is logged in and authenticated
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        serializer = PostSerializer(self.friends_only_post)
+        self.assertEqual(response.data, serializer.data)
+        mock_are_friends.assert_called_once_with(self.user, self.friends_only_post.author)
+
+    @patch('author.models.Following.are_friends', return_value=False)
+    def test_friends_only_post_authenticated_non_friend(self, mock_are_friends):
+        url = reverse('get_post_FQID', args=[self.friends_only_post.id])
+        self.client.force_authenticate(user=self.user)  # Ensure user is authenticated
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data, {"error": "Unauthorized to view friends-only post"})
+        mock_are_friends.assert_called_once_with(self.user, self.friends_only_post.author)
+
+    def test_friends_only_post_unauthenticated_user(self):
+        self.client.logout()  # Make the request as an unauthenticated user
+        url = reverse('get_post_FQID', args=[self.friends_only_post.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data, {"error": "Unauthorized to view friends-only post"})
 
 class CreatePostAPITest(TestCase):
 
