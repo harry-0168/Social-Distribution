@@ -87,7 +87,9 @@
                 <li><a href="{% url 'author-about' author.id %}">About</a></li>
                 <!-- <li><a href="#">Photo</a></li>
                 <li><a href="#">Video</a></li> -->
-                <li><a href="{% url 'user-settings' author.id %}">Settings</a></li>
+                {% if request.user.id == author.id %}
+                    <li><a href="{% url 'user-settings' author.id %}">Settings</a></li>
+                {% endif %}
 
                   <!-- Add the logout form below the settings option -->
                 <li>
@@ -122,6 +124,19 @@
             }
             return cookieValue;
         }
+        document.addEventListener('DOMContentLoaded', function() {
+            const followForm = document.querySelector('.follow-form');
+
+            if (followForm) {
+                const authorId = followForm.getAttribute('data-author-id');
+                const actorId = followForm.getAttribute('data-actor-id');
+                const Button = followForm.querySelector('button');
+                //Hide follow and unfollow buttons if the profile page belongs to the logged-in user
+                if (authorId === actorId) {
+                    Button.style.display = 'none';
+                }
+            }
+        });
         const currentHost = window.location.origin;
         const csrftoken = getToken('csrftoken');
         document.addEventListener('DOMContentLoaded', function () {
