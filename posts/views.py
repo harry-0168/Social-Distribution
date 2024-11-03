@@ -93,6 +93,26 @@ def get_comment(request, FQID):
     # Return the comment data as a JSON response
     return Response(comment_data, status=status.HTTP_200_OK)
 
+@api_view(['GET'])
+def get_posts_comments(request, author_id=None, post_id=None, FQID=None):
+    if FQID:
+        # Decode the FQID to find the post ID
+        decoded_FQID = unquote(FQID)
+        #post_id = decoded_FQID.split('/')[-1]  # Extract the post_id from the FQID
+        post = get_object_or_404(Post, FQID=decoded_FQID)
+    else:
+        # Fetch the post using author_id and post_id
+        post = get_object_or_404(Post, id=post_id)
+
+    # Retrieve comments for the post
+    comments = Comment.objects.filter(post=post)
+
+    # Serialize the comments
+    serializer = CommentSerializer(comments, many=True)
+
+    # Return the comments
+    return Response({"comments": serializer.data}, status=status.HTTP_200_OK)
+
 # API to create a like
 @api_view(['POST'])
 def create_like(request, post_id):
