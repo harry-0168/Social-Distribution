@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Post
+from .models import Post, Comment
 
 
 class PostAdmin(admin.ModelAdmin):
@@ -14,5 +14,8 @@ class PostAdmin(admin.ModelAdmin):
     def delete_queryset(self, request, queryset):
         queryset.update(visibility='DELETED')
         
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ('username', 'published', 'content', 'post', 'author')  # Add fields you want to display
         
 admin.site.register(Post, PostAdmin)
+admin.site.register(Comment, CommentAdmin)
