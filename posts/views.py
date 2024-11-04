@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404, reverse, get_object_or_404
-from .models import Post, Comment, Like, Author, githubPostIds, Following
+from .models import Post, Comment, Like, Author, githubPostIds, Following, Likes
 import base64
 import jwt
 import markdown
@@ -230,9 +230,8 @@ def create_like(request, post_id):
 
 @api_view(['POST'])
 def api_create_like(request, author_id):
-    # Debugging: Print the entire request.POST
+    # Debugging: Print the entire request data
     print("Request Data:", request.data)
-    print("Request POST Data:", request.POST)  # Add this line to check what is in POST data
 
     # Get the author based on the provided author_id
     author = get_object_or_404(Author, id=author_id)
@@ -256,12 +255,17 @@ def api_create_like(request, author_id):
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
-    # Check if the user has already liked the post
     if Like.objects.filter(username=username, object=post).exists():
         return redirect(request.META.get('HTTP_REFERER'))
 
+    # Create or get the Likes instance for the post
+    likes_collection = Likes()
+    post.likes_collection=likes_collection
+
+    # Create a new Like instance
     like = Like(username=username, object=post, author=user)
     like.save()
+    post.likes_collection.add_like(like)  # Ensure that add_like method is defined in Likes model
 
     like_serializer = LikeSerializer(like)
     return redirect(request.META.get('HTTP_REFERER'))
@@ -340,10 +344,10 @@ def get_posts_create_post(request, author_id):
             visibility=visibility,
             author=author,  # Use the author from the token
         )
-        object.save()
+        post.save()
 
         # Serialize the post and return the response
-        serializer = PostSerializer(object)
+        serializer = PostSerializer(post)
         return redirect('home_page')
 
 @api_view(['POST'])

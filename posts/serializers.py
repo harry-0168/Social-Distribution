@@ -46,4 +46,4 @@ class LikeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Like
         # specifies which fields to serialize
-        fields = ['username', 'object', 'published']
+        fields = ['type','username', 'object', 'published','author','id']
