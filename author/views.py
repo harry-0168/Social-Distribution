@@ -215,9 +215,13 @@ def api_author_detail(request, author_id):
         # Construct the full ID URL
         full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
         
-        # Handle the profileImage field, using it directly if it's a string path
-        profileImage_url = author.profileImage.url if hasattr(author.profileImage, 'url') else author.profileImage
-
+        # Use static default image if profileImage has no file
+        if author.profileImage and hasattr(author.profileImage, 'url'):
+            profileImage_url = author.profileImage.url
+        else:
+            profileImage_url = f"{request.scheme}://{request.get_host()}/static/avatar.png"  # Default static image path
+        
+    
         # Get the host with the postfix
         host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
         
