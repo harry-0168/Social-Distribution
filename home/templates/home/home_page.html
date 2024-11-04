@@ -8,12 +8,13 @@
     <link rel="stylesheet" href="{% static 'home_page.css' %}">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{% static 'home_page.js' %}"></script>
 </head>
 <body>
     <div class="header">
         <a href="{% url 'author_profile' request.user.id %}">
-            {% if request.user.profile_image %}
-                <img src="{{ request.user.profile_image.url }}" class="profile-pic">
+            {% if request.user.profileImage %}
+                <img src="{{ request.user.profileImage.url }}" class="profile-pic">
             {% else %}
                 <img src="{% static 'avatar.png' %}" class="profile-pic">
             {% endif %}
@@ -23,7 +24,6 @@
             <button type="submit" class="search-button">Search</button>
         </form>
         <div class="icons">
-            <a href="{% url 'home_page' %}"><button class="private-button">Public</button></a> <!-- Added Private Button -->
             <a href="{% url 'home_page' %}"><img src="{% static 'home.png' %}"></a>
             <a href="{% url 'create_post' %}"><img src="{% static 'add_post.png' %}"></a>
             <a href="{% url 'inbox' %}"><img src="{% static 'inbox.png' %}"></a>
@@ -45,16 +45,15 @@
                 .then(response => response.json())
                 .then(data => {
                     const postContainer = document.getElementById('post-container');
-                    const friendsOnlyPosts = data.src.filter(post => post.visibility === 'FRIENDS');
 
-                    friendsOnlyPosts.forEach((post, index) => {
+                    data.src.forEach((post, index) => {
                         const isFollowing = followingList[index]; // Match follow status by index
 
                         const postElement = `
                             <a href="/post/${post.id}/viewPost/" style="text-decoration: none; color: inherit;">
                                 <div class="post">
                                     <div class="post-header">
-                                        <img src="${post.author.profile_image || '{% static "avatar.png" %}'}" class="profile-pic-small">
+                                        <img src="${post.author.profileImage || '{% static "avatar.png" %}'}" class="profile-pic-small">
                                         <div>
                                             <p class="username">${post.author.displayName}</p>
                                             <p class="date-posted">${new Date(post.published).toLocaleDateString()}</p>

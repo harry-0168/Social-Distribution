@@ -13,8 +13,8 @@
 
     <div class="header">
         <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
-            {% if request.user.profile_image %}
-                <img src="{{ request.user.profile_image.url }}" 
+            {% if request.user.profileImage %}
+                <img src="{{ request.user.profileImage.url }}" 
                     class="profile-pic">
             {% else %}
                 <img src="{% static 'avatar.png' %}" 
@@ -171,10 +171,10 @@
             <h3 class="commentAreaTitle">Comments</h3>
             <div class="carousel">
                 <ol class="carousel-container">
-                    {% for comment in post.comment_set.all %}
+                    {% for comment in comments %}
                         <div class="comment">
-                            {% if comment.author.profile_image %}
-                                <img src="{{ comment.author.profile_image.url }}" 
+                            {% if comment.author.profileImage %}
+                                <img src="{{ comment.author.profileImage.url }}" 
                                     class="profile-pic-small">
                             {% else %}
                                 <img src="{% static 'avatar.png' %}" 
@@ -186,13 +186,139 @@
                 </ol>
             </div>
             <section class="commentInput">
-                <form action="{% url 'create_comment' post.id %}" method="POST"> <!-- Updated the form action URL to post comments to the appropriate endpoint -->
+                <form id="commentForm" action="{% url 'create_comment' post.id %}" method="POST"> <!-- Updated the form action URL to post comments to the appropriate endpoint -->
                     {% csrf_token %}
                     <div class="commentInputWrapper">
                         <input id="comment-input" class="commentInputTextbox" type="text" name="content" placeholder="Add a comment ..." required>
                         <input class="commentInputSubmit" type="submit" value="Add Comment">
                     </div>            
                 </form>
+                <script>
+                    function getToken(name) {
+                        let cookieValue = null;
+                        if (document.cookie && document.cookie != '') {
+                        const cookies = document.cookie.split(';');
+                        for (let i = 0; i < cookies.length; i++) {
+                            const cookie = cookies[i].trim();
+                            // Does this cookie string begin with the name we want?
+                            if (cookie.substring(0,name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                            }
+                        }
+                        }
+                        return cookieValue;
+                    }
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const commentForm = document.getElementById('commentForm');
+                        const currentHost = window.location.origin;
+                        const csrftoken = getToken('csrftoken');
+
+                        commentForm.addEventListener('submit', function (event) {
+                            event.preventDefault();
+
+                            // Get the comment content from the input field
+                            const content = document.getElementById('comment-input').value;
+                            const postId = "{{ post.id }}";  // Assuming post.id is passed to the template context
+                            const authorId = "{{ author.id }}";  // Current user's ID
+                            
+                            // Construct the comment object to send
+                            const commentData = {
+                                "content": content,
+                                "post": postId,
+                                "author": authorId
+                            };
+
+                            // Send comment creation request to the backend
+                            fetch(commentForm.action, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': csrftoken
+                                },
+                                body: JSON.stringify(commentData)
+                            })
+                            .then(response => {
+                                console.log("response:", response);
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! Status: ${response.status}`);
+                                }
+                                return response.json();
+                            })
+                            .then(comment => {
+                                console.log("Created Comment Object:", comment);
+
+                                // Append the new comment to the DOM
+                                const commentList = document.querySelector('.carousel-container');
+                                const newComment = document.createElement('div');
+                                newComment.classList.add('comment');
+                                newComment.innerHTML = `
+                                    <img src="${comment.author.profileImage ? comment.author.profileImage : '/static/avatar.png'}" class="profile-pic-small">
+                                    <h5 class="commentUsername">${comment.username}<div class="commentContent">${comment.content}</div></h5>
+                                `;
+
+                                commentList.appendChild(newComment);
+
+                                document.getElementById('comment-input').value = ''; // Clear the input field
+                                
+                                // Now construct the inbox request payload
+                                const inboxRequest = {
+                                    "type": "comment",
+                                    "summary": `${comment.username} commented on your post`,
+                                    "actor": {
+                                        "type": "author",
+                                        "id": comment.author.id,
+                                        "host": comment.author.host,
+                                        "displayName": comment.author.displayName,
+                                        "profileImage": comment.author.profileImage
+                                    },
+                                    "object": {
+                                        "type": "comment",
+                                        "FQID": comment.FQID,
+                                        "id": comment.id,
+                                        "content": comment.content,
+                                        "contentType": "text/markdown",
+                                        "published": comment.published,
+                                        "post": {
+                                            "type": "post",
+                                            "id": comment.post.id,
+                                            "author": "{{ post.author.id }}"
+                                        }
+                                    }
+                                };
+                                console.log("inbox Request:", inboxRequest);
+
+                                // Send the comment object to the author's inbox
+                                const inboxUrl = `${currentHost}/inbox/api/authors/${"{{ post.author.id }}"}/inbox/`;
+
+                                fetch(inboxUrl, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRFToken': csrftoken
+                                    },
+                                    body: JSON.stringify(inboxRequest)
+                                })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error(`HTTP error! Status: ${response.status}`);
+                                    }
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    console.log("Inbox Response Data:", data);
+                                    if (data.message) {
+                                        console.log("Comment sent to inbox successfully!");
+                                    } else {
+                                        alert("Failed to send comment to inbox.");
+                                    }
+                                })
+                                .catch(error => console.error('Inbox Error:', error));
+                            })
+                            .catch(error => console.error('Comment Creation Error:', error));
+                        });
+                    });
+                </script>
             </section>
         </section>
     </section>

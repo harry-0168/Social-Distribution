@@ -5,14 +5,17 @@
 
 <div class="following-list-container">
     <div class="following-list">
-        {% for user in following %}
+        {% for item in following %}
             <div class="following-box">
                 <div class="following-info">
-                    <span>{{ user.displayName }}</span>
+                    <span>{{ item.user.displayName }}</span>
+                    {% if item.is_friend %}
+                        <span class="friend-tag">Friend</span> <!-- Add the "Friend" tag -->
+                    {% endif %}
                 </div>
 
                 <div class="unfollow-button">
-                    <form action="{% url 'unfollow-author' user.id %}" method="post">
+                    <form action="{% url 'unfollow-author' item.user.id %}" method="post">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-danger">Unfollow</button>
                     </form>

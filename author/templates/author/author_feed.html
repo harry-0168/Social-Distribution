@@ -1,6 +1,9 @@
 {% extends 'author/author_base.html' %}
 {% load static %}
 {% block content %}
+<div class="feed-header">
+    <h1>{{ author.displayName }}'s posts</h1>
+</div>
 <div class="posts-container">
     {% if posts %}
         {% for post in posts %}
@@ -8,8 +11,8 @@
                 <!-- 1st row: Profile info and action buttons -->
                 <div class="post-header">
                     <div class="profile-info">
-                        {% if author.profile_image %}
-                            <img src="{{ author.profile_image.url }}" alt="Profile Picture" class="profile-pic-small">
+                        {% if author.profileImage %}
+                            <img src="{{ author.profileImage.url }}" alt="Profile Picture" class="profile-pic-small">
                         {% else %}
                             <img src="{% static 'avatar.png' %}" alt="Default Profile Picture" class="profile-pic-small">
                         {% endif %}

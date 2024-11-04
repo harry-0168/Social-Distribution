@@ -20,21 +20,20 @@ function getToken(name) {
    }
 const csrftoken = getToken('csrftoken');
 
-function sendRequest(followRequestsData,status, index) {
-    const data = {
-        id: followRequestsData[index].id,
-        status: status
-    };
-    // I want to send a POST request to the endpoint current URL + '/follow'
-    const currentUrl = window.location.href;
+function sendRequest(followRequestsData,methodd, index) {
+    // Send a PUT request to the server
+    // percent encode the author1__FQID , author1__FQID is object or author who sent the request, we approve or decline the request
+    let author1 = encodeURIComponent(followRequestsData[index].author1__FQID)
+    
+    const currentUrl = followRequestsData[index].author2__FQID + '/followers/' + author1 
 
-    fetch(`${currentUrl}follow`, {
-        method: 'POST',
+    fetch(`${currentUrl}`, {
+        method: methodd,
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken':csrftoken
         },
-        body: JSON.stringify(data)
+        body: {}
     })
     .then(response => {
         if (!response.ok) {
@@ -81,14 +80,14 @@ function main() {
 
     buttonsAccept.forEach(button => {
         button.addEventListener('click', function() {
-            sendRequest(followRequestsData,'accept', parseInt(button.closest('.action-buttons').getAttribute('data-index')));
+            sendRequest(followRequestsData,'PUT', parseInt(button.closest('.action-buttons').getAttribute('data-index')));
             
         });
     });
 
     buttonsDecline.forEach(button => {
         button.addEventListener('click', function() {
-            sendRequest(followRequestsData,'decline', parseInt(button.closest('.action-buttons').getAttribute('data-index')));
+            sendRequest(followRequestsData,'DELETE', parseInt(button.closest('.action-buttons').getAttribute('data-index')));
         });
     });
     
