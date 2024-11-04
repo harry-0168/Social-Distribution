@@ -514,7 +514,7 @@ def get_post_image(request, author_id=None, post_id=None, FQID=None):
 @api_view(['GET'])
 def get_post_FQID(request, FQID=None):
     if FQID:
-        post = get_object_or_404(Post, id=FQID)
+        post = get_object_or_404(Post, FQID=FQID)
         if post.visibility == 'PUBLIC':
             serializer = PostSerializer(post)
             return Response(serializer.data, status=status.HTTP_200_OK)

@@ -1,4 +1,4 @@
-from django.urls import path, include
+from django.urls import path, include,re_path
 from rest_framework.routers import DefaultRouter
 from .views import AuthorViewSet, profile_view, author_about, loginPage, user_settings, follow_author,followers_list,following_list,unfollow_author
 from posts.views import PostViewSet
@@ -33,5 +33,10 @@ urlpatterns = [
     # Route for user settings
     path('<uuid:author_id>/settings', user_settings, name= 'user-settings' ),
     
+    re_path(
+        r'^(?P<author_id>[0-9a-f-]+)/followers/(?P<foreign_author_fqid>.+)/$',
+        views.manage_follower,
+        name='manage_follower'
+    ),
 
 ]
