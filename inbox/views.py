@@ -92,17 +92,17 @@ def inboxApi(request, object_author_id):
                 print(parsed_data['actor']['id'], author.FQID)
                 if author.FQID != parsed_data['actor']['id']:
                     return Response({"error": "Invalid request"}, status=401)
-                if parsed_data['object']['host'] != parsed_data['actor']['host']:
-                    # create object author and following object, then forward the request to the next host server
-                    AuthorSerializer = AuthorSerializer(id=parsed_data['object']['id'], host=parsed_data['object']['host'], displayName=parsed_data['object']['displayName'], github=parsed_data['object']['github'], profileImage=parsed_data['object']['profileImage'], page=parsed_data['object']['url'])
-                    if AuthorSerializer.is_valid():
-                        AuthorSerializer.save()
-                    else:
-                        return Response({"error": "Invalid object author data"}, status=400)
-                    object_author = Author.objects.get(id=parsed_data['object']['id'])
-                    if not Following.follow(actor, object_author):
-                        return Response({"error": "Already following"}, status=400)
-                    return Response({"error": "Forwarding request to the next host server"}, status=200)
+                # if parsed_data['object']['host'] != parsed_data['actor']['host']:
+                #     # create object author and following object, then forward the request to the next host server
+                #     AuthorSerializer = AuthorSerializer(id=parsed_data['object']['id'], host=parsed_data['object']['host'], displayName=parsed_data['object']['displayName'], github=parsed_data['object']['github'], profileImage=parsed_data['object']['profileImage'], page=parsed_data['object']['url'])
+                #     if AuthorSerializer.is_valid():
+                #         AuthorSerializer.save()
+                #     else:
+                #         return Response({"error": "Invalid object author data"}, status=400)
+                #     object_author = Author.objects.get(id=parsed_data['object']['id'])
+                #     if not Following.follow(actor, object_author):
+                #         return Response({"error": "Already following"}, status=400)
+                #     return Response({"error": "Forwarding request to the next host server"}, status=200)
                 actor = get_object_or_404(Author, FQID=parsed_data['actor']['id'])
                 object_author = get_object_or_404(Author, FQID=parsed_data['object']['id'])
                 # check if the actor is already following the object_author

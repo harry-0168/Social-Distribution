@@ -60,6 +60,7 @@ MIDDLEWARE = [
     'author.middleware.JWTAuthenticationMiddleware', 
 ]
 
+
 ROOT_URLCONF = 'socialDistribution.urls'
 
 TEMPLATES = [
