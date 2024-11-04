@@ -234,7 +234,6 @@
  .carousel-container {
     display: flex;
     flex-direction: column; /* Stack comments vertically */
-    width: 100%; 
  }
  
  
