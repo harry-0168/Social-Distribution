@@ -29,10 +29,10 @@ def profile_view(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     
     # Get the follower count (authors who follow this author)
-    followers_count = Following.objects.filter(author2=author).count()  # Count of followers
+    followers_count = Following.objects.filter(author2=author, status = 'accepted').count()  # Count of followers
     
     # Get the Following count (authors this author is Following)
-    following_count = Following.objects.filter(author1=author).count()  # Count of people this author is following
+    following_count = Following.objects.filter(author1=author, status='accepted').count()  # Count of people this author is following
     
     # Fetch the author's posts
     posts = Post.objects.filter(author=author).exclude(visibility='DELETED').order_by('-published')
@@ -118,7 +118,7 @@ def following_list(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     
     # Get all authors that the current author is following
-    follow_relationships = Following.objects.filter(author1=author).select_related('author2')
+    follow_relationships = Following.objects.filter(author1=author, status='accepted').select_related('author2')
 
     following = []
     for rel in follow_relationships:
@@ -147,7 +147,7 @@ def followers_list(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     
     # Get all authors who follow this author
-    followers_relationships = Following.objects.filter(author2=author).select_related('author1')
+    followers_relationships = Following.objects.filter(author2=author, status='accepted').select_related('author1')
 
     followers = []
     for rel in followers_relationships:

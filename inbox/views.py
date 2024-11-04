@@ -55,7 +55,7 @@ def inbox(request):
         for repost in repost_data:
             repost['author__profileImage'] = author.host + settings.MEDIA_URL + repost['author__profileImage']
         
-        print(repost_data)
+        
         context = {
             'follow_requests': follow_requests_data,
             'comments': comment_data,
