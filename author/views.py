@@ -134,7 +134,7 @@ def following_list(request, author_id):
 
     return render(request, 'author/following_list.html', context)
 
-# View to get the list of followers of the given author
+@api_view(['GET'])
 def followers_list(request, author_id):
     '''
     View to get the list of authors that follow the given author
@@ -146,22 +146,100 @@ def followers_list(request, author_id):
     # Get all authors who follow this author
     followers_relationships = Following.objects.filter(author2=author).select_related('author1')
 
-    followers = []
-    for rel in followers_relationships:
-        follower = rel.author1
-        followers.append({
-            'user': follower,
-            'is_friend': author.is_friend(follower)  # Check if the author and the follower are mutual friends
+    formatted_followers = []
+    following_count = Following.objects.filter(author1=author).count()
+
+
+    for follower_rel in followers_relationships:
+        follower = follower_rel.author1
+        profile_image_url = follower.profileImage.url if follower.profileImage else None
+        full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{follower.id}"
+        host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
+
+        formatted_followers.append({
+            "type": "author",
+            "id": full_id_url,
+            "host": host_with_postfix,
+            "displayName": follower.displayName,
+            "github": follower.github,
+            "profileImage": profile_image_url,
+            "page": follower.page,
         })
 
+    response_data = {
+        "type": "followers",
+        "followers": formatted_followers,
+        "followers_count": followers_relationships.count(),
+        "following_count": following_count,  
+    }
     context = {
         'author': author,
-        'followers': followers,  # List of authors who follow the target with friend status
-        'followers_count': followers_relationships.count(),  # Number of followers
-        'following_count': Following.objects.filter(author1=author).count(),  # Number of authors this user is following
+        'followers': formatted_followers,
+        'followers_count': followers_relationships.count(), 
+        'following_count': Following.objects.filter(author1=author).count(), 
     }
-
+    #If the request is an API request, return response 200
+    if request.headers.get('Accept') == 'application/json':
+        return Response(response_data, status=200)
+    #Otherwise, render the html template
     return render(request, 'author/followers_list.html', context)
+
+
+@api_view(['GET','DELETE','PUT'])
+def manage_follower(request, author_id, foreign_author_fqid):
+    author = get_object_or_404(Author, id=author_id)
+
+    from urllib.parse import unquote
+    foreign_author_fqid = unquote(foreign_author_fqid)
+
+    try:
+        foreign_author = Author.objects.get(FQID=foreign_author_fqid)
+    except Author.DoesNotExist:
+        return Response({"detail": "Foreign author not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Handle GET request: Check if foreign author is following the author
+    if request.method =='GET':
+        is_follower = Following.is_following(foreign_author, author)
+        if is_follower:
+            follower_data = {
+                "type": "author",
+                "id": foreign_author_fqid,
+                "host": foreign_author.host,
+                "displayName": foreign_author.displayName,
+                "page": f"{foreign_author.host}/authors/{foreign_author.id}",
+                "github": foreign_author.github,
+                "profileImage": foreign_author.profileImage.url
+            }
+            return Response(follower_data, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Handle DELETE request: Remove the follower relationship
+    elif request.method =='DELETE':
+        if Following.is_following(foreign_author, author):
+            Following.unfollow(foreign_author, author)
+            return Response({"detail": "Follower removed"}, status=status.HTTP_200_OK)
+        else:
+            return Response({"detail": "No follower relationship exists"}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Handle PUT request: Add a follower relationship
+    elif request.method =='PUT':
+        new_following = Following.follow(foreign_author, author)
+        if new_following:
+            follower_data = {
+                "type": "author",
+                "id": foreign_author_fqid,
+                "host": foreign_author.host,
+                "displayName": foreign_author.displayName,
+                "page": f"{foreign_author.host}/authors/{foreign_author.id}",
+                "github": foreign_author.github,
+                "profileImage": foreign_author.profileImage.url,
+                "message": f"New follower created for author {author.displayName}"
+            }
+            return Response(follower_data, status=status.HTTP_201_CREATED)
+        else:
+            return Response({"detail": "Already following"}, status=status.HTTP_200_OK)
+
 
 
 @api_view(['GET'])

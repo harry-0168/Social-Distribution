@@ -213,7 +213,37 @@
                     .catch(error => console.error('Error:', error));
                 });
             });
-        });
+            document.querySelectorAll('.unfollow-button').forEach(function (button){
+                button.addEventListener('click', function () {
+                    const form = button.closest('.follow-form');
+
+                    const authorId = form.getAttribute('data-author-id');
+                    const actorFQID = form.getAttribute('data-actor-fqid');
+                    const unfollowUrl = `/api/authors/${authorId}/followers/${encodeURIComponent(actorFQID)}/`;
+
+                    console.log("Attempting to send DELETE request to:", unfollowUrl);
+
+                    //Send the DELETE request to the API
+                    fetch(unfollowUrl, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        //Hide Unfollow button and show Follow button
+                        button.style.display = 'none';
+                        form.querySelector('.follow-button').style.display = 'inline-block';
+                        alert("Unfollowed user successfully");
+                    })
+                    .catch(error => console.error('Error:', error));
+                });
+            });
+        })
     </script>
 </body>
 </html>
