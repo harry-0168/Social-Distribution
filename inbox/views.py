@@ -28,7 +28,7 @@ def inbox(request):
         follow_req_notifications = Following.objects.filter(author2=author, status='pending')
         posts = Post.objects.filter(author=author)
         comment_notifications = Comment.objects.filter(post__in=posts)
-        like_notifications = Like.objects.filter(post__in=posts)
+        like_notifications = Like.objects.filter(object__in=posts)
         
         # Get the list of authors that the current user is following
         followed_authors = Following.objects.filter(author1=author).values_list('author2', flat=True)
