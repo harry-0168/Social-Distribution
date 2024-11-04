@@ -20,7 +20,7 @@ urlpatterns = [
     path("authors/<uuid:author_id>/posts/", get_posts_create_post, name="create"),
     path('authors/<uuid:author_id>/posts/<uuid:post_id>', get_edit_delete_post, name='delete_post'),
     path('authors/<uuid:author_id>/gitPost/', github_post, name='github_post'),
-
+    
     path('posts/<str:FQID>/image/', get_post_image, name='post_image_FQID'),
     path('authors/<uuid:author_id>/posts/<uuid:post_id>/image', get_post_image, name='post_image_SERIAL'),
 
