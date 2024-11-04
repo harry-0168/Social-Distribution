@@ -523,7 +523,7 @@ def view_post(request, id):
             return redirect('login')
 
     author = post.author
-    comments = post.comment_set.all()
+    comments = post.comments.all()
 
     # Extract the author from the JWT token
     token = request.COOKIES.get('jwt')

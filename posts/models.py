@@ -69,7 +69,7 @@ class Comment(models.Model):
     username = models.CharField(max_length=32) 
     published = models.DateTimeField("date created", default=timezone.now) 
     content =  models.TextField()
-    post = models.ForeignKey(Post, on_delete=models.CASCADE) # all comments belong to a post
+    post = models.ForeignKey(Post, related_name='comments', on_delete=models.CASCADE) # all comments belong to a post
     author = models.ForeignKey(Author, related_name='comments', on_delete=models.CASCADE)
     FQID = models.CharField(max_length=1000, unique=True, null=True)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
