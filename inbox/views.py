@@ -12,6 +12,7 @@ import json
 from author.models import Following
 from .models import Inbox
 from django.utils import timezone
+import logging
 
 
 @api_view(['GET'])
@@ -194,9 +195,9 @@ def handle_follow_request_response(request, author_id, foreign_author_fqid):
             return Response({"error": "Unauthorized"}, status=401)
         
         # foreign_author_fqid will be percent encoded, so we need to decode it
-        foreign_author_fqid = foreign_author_fqid.replace('%2F', '/')
-        foreign_author_fqid = foreign_author_fqid.replace('%3A', ':')
-        
+        from urllib.parse import unquote
+        foreign_author_fqid = unquote(foreign_author_fqid).rstrip('/')
+        print(f"Decoded foreign_author_fqid: {foreign_author_fqid}")
         foreign_author = get_object_or_404(Author, FQID=foreign_author_fqid)
         if request.method == 'PUT':
             # Accept follow request from foreign_author 
@@ -206,7 +207,7 @@ def handle_follow_request_response(request, author_id, foreign_author_fqid):
             return Response({"message": "Follow request accepted"}, status=200)
         elif request.method == 'DELETE':
             # Reject follow request from foreign_authorm, status can be 'pending' or 'accepted'
-            follow_request = get_object_or_404(Following, author1 = foreign_author, author2 = author)
+            follow_request = get_object_or_404(Following, author1 = author, author2 = foreign_author)
             follow_request.delete()
             return Response({"message": "Follow request rejected"}, status=200)
         elif request.method == 'GET':
