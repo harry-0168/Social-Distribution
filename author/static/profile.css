@@ -210,6 +210,15 @@ body {
 .action-buttons .edit-button:hover {
     background-color: #6d4f8d;
 }
+.logout-button {
+    background-color: rgb(209, 31, 31); /* Soft red background */
+    color: #ffffff; /* White text */
+    padding: 8px 20px; /* Padding for size */
+    font-size: 16px; /* Font size */
+    border: none; /* Remove default border */
+    border-radius: 5px; /* Rounded corners */
+    cursor: pointer;
+}
 
 /* Post Content */
 .post-content img {
@@ -427,4 +436,41 @@ body {
     margin-left: 10px;
     border-radius: 3px;
     font-size: 0.9em;
+}
+
+.author-details {
+    background-color: #f9f9f9; /* Light grey background */
+    padding: 20px; /* Padding around the content */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Soft shadow */
+    max-width: 600px; /* Restrict width */
+    margin: 20px auto; /* Center the container */
+    font-family: Arial, sans-serif; /* Font for content */
+}
+
+.author-details h2 {
+    color: #333333; /* Dark grey for the heading */
+    font-size: 24px; /* Slightly larger heading font */
+    margin-bottom: 15px; /* Space below the heading */
+}
+
+.author-info p {
+    color: #555555; /* Medium grey for text */
+    font-size: 16px; /* Font size for paragraphs */
+    margin: 8px 0; /* Space between paragraphs */
+}
+
+.author-info p strong {
+    color: #333333; /* Darker color for labels */
+}
+
+.author-info a {
+    color: #0066cc; /* Link color */
+    text-decoration: none; /* Remove underline */
+    transition: color 0.3s; /* Smooth color transition */
+}
+
+.feed-header {
+    text-align: center;
+    margin: 0px 00px 20px 0px;
 }

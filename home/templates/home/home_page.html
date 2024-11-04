@@ -13,8 +13,8 @@
 <body>
     <div class="header">
         <a href="{% url 'author_profile' request.user.id %}">
-            {% if request.user.profile_image %}
-                <img src="{{ request.user.profile_image.url }}" class="profile-pic">
+            {% if request.user.profileImage %}
+                <img src="{{ request.user.profileImage.url }}" class="profile-pic">
             {% else %}
                 <img src="{% static 'avatar.png' %}" class="profile-pic">
             {% endif %}
@@ -53,7 +53,7 @@
                             <a href="/post/${post.id}/viewPost/" style="text-decoration: none; color: inherit;">
                                 <div class="post">
                                     <div class="post-header">
-                                        <img src="${post.author.profile_image || '{% static "avatar.png" %}'}" class="profile-pic-small">
+                                        <img src="${post.author.profileImage || '{% static "avatar.png" %}'}" class="profile-pic-small">
                                         <div>
                                             <p class="username">${post.author.displayName}</p>
                                             <p class="date-posted">${new Date(post.published).toLocaleDateString()}</p>
