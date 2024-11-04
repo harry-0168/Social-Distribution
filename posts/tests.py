@@ -180,11 +180,17 @@ class CreatePostAPITest(TestCase):
         self.author1 = Author.objects.create(displayName="Author1", host='http://localhost', FQID='http://localhost/api/authors/1')
         self.author2 = Author.objects.create(displayName="Author2", host='http://localhost', FQID='http://localhost/api/authors/2')
         
-        # Create a JWT token for the first author
-        self.token = jwt.encode({'id': self.author1.displayName}, settings.SECRET_KEY, algorithm='HS256')
+        # Generate a JWT token with both 'author_id' and 'displayName'
+        self.token = jwt.encode({
+            'id': self.author1.displayName,   # Use displayName as 'id' for the view
+            'author_id': str(self.author1.id) # Use actual ID as 'author_id' for the middleware
+        }, settings.SECRET_KEY, algorithm='HS256')
 
         # Create a client instance
         self.client = Client()
+        
+        # Set JWT token in cookies as the view expects it there
+        self.client.cookies['jwt'] = self.token
     
     def test_authors_creation(self):
         """Test that authors are created successfully."""
@@ -222,6 +228,34 @@ class CreatePostAPITest(TestCase):
         # Check that the post was created successfully
         self.assertEqual(response.status_code, 404)  # Fails as the author is not verified
         
+    def test_create_post(self):
+        # Post data for creating a post
+        post_data = {
+            'title': 'Test Post',
+            'description': 'This is a test post.',
+            'content_type': 'text/plain',
+            'visibility': 'PUBLIC',
+            'content': 'This is some test content.',
+        }
+
+        # Generate URL for creating the post
+        url = reverse('create', args=[self.author1.id])  # Ensure URL name matches configuration
+        print("Generated URL:", url)
+
+        # Send a POST request
+        response = self.client.post(url, data=post_data, follow=False)
+
+        # Check for expected 200 after redirect
+        self.assertEqual(response.status_code, 302)
+
+        # Validate the created post
+        post = Post.objects.filter(author=self.author1, title='Test Post').first()
+        self.assertIsNotNone(post)
+        self.assertEqual(post.description, 'This is a test post.')
+        self.assertEqual(post.visibility, 'PUBLIC')
+        self.assertEqual(post.content, 'This is some test content.')
+
+
        
 class CreatePostCheckTest(APITestCase):
     def setUp(self):
