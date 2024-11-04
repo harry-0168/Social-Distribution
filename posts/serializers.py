@@ -6,7 +6,7 @@ class PostSerializer(serializers.ModelSerializer):
     author = AuthorSerializer(read_only=True) # So the response actually return the author object instead of just id
     class Meta:
         model = Post
-        fields = ['id', 'title', 'description', 'content_type', 'content', 'visibility', 'author', 'published']
+        fields = ['id','type','FQID', 'title', 'description', 'content_type', 'content', 'visibility', 'author', 'published']
     
     def validate_title(self, value):
         if not value:

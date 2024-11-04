@@ -93,4 +93,13 @@ class Like(models.Model):
 
     def __str__(self):
         return f"{self.username} liked {self.post.title}"
+
+class githubPostIds(models.Model):
+    '''
+    This model is used to store the post id of the posts that are created in github
+    '''
+    id = models.IntegerField(primary_key=True)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    
+
     

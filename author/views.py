@@ -163,6 +163,7 @@ def followers_list(request, author_id):
 
     return render(request, 'author/followers_list.html', context)
 
+
 @api_view(['GET'])
 def api_list_authors(request):
     paginator = AuthorPagination()  # Use the custom pagination class
@@ -172,7 +173,7 @@ def api_list_authors(request):
     # Format author data as per your required structure
     formatted_authors = []
     for author in result_page:
-        profile_image_url = author.profile_image.url if author.profile_image else None
+        profile_image_url = author.profileImage.url if author.profileImage else None  # Updated field name
         full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
         host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
 
@@ -214,9 +215,13 @@ def api_author_detail(request, author_id):
         # Construct the full ID URL
         full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
         
-        # Handle the serialization of ImageField (use URL or None if not available)
-        profileImage_url = author.profileImage.url if author.profileImage else None
-
+        # Use static default image if profileImage has no file
+        if author.profileImage and hasattr(author.profileImage, 'url'):
+            profileImage_url = author.profileImage.url
+        else:
+            profileImage_url = f"{request.scheme}://{request.get_host()}/static/avatar.png"  # Default static image path
+        
+    
         # Get the host with the postfix
         host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
         
@@ -400,17 +405,39 @@ def user_settings(request, author_id):
 
     if request.method == 'POST':
         form = UserSettingsForm(request.POST, request.FILES, instance=author)
+        new_display_name = form.data.get('displayName')
+        if new_display_name and new_display_name != author.displayName:
+            if Author.objects.filter(displayName=new_display_name).exclude(id=author.id).exists():
+                messages.error(request, 'This display name is already taken. Please choose another.')
+                return render(request, 'author/user_settings.html', {
+                    'form': form,
+                    'author': author,
+                    'redirect_url': request.build_absolute_uri(
+                        redirect('author_profile', author_id=author.id).url
+                    )
+                })
         if form.is_valid():
             form.save()
             messages.success(request, 'Profile changes saved successfully!')
-            # Pass the redirect URL to the template
-            return render(request, 'author/user_settings.html', {
+            payload = {
+                'id': author.displayName,
+                'author_id': str(author.id),
+                'exp': datetime.now() + timedelta(days=1),  # Token expiration
+                'iat': datetime.now()
+            }
+            newToken = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+
+            #Redirect and set the new JWT token in a cookie
+            response = render(request, 'author/user_settings.html', {
                 'form': form,
                 'author': author,
                 'redirect_url': request.build_absolute_uri(
                     redirect('author_profile', author_id=author.id).url
                 )
             })
+            response.set_cookie(key=settings.JWT_AUTH_COOKIE, value=newToken, httponly=True)
+            return response
+
 
     else:
         form = UserSettingsForm(instance=author)
