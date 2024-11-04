@@ -58,6 +58,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'author.middleware.JWTAuthenticationMiddleware', 
+    'csp.middleware.CSPMiddleware',
 ]
 
 ROOT_URLCONF = 'socialDistribution.urls'
@@ -114,6 +115,10 @@ AUTH_USER_MODEL = "author.Author"
 CORS_ORIGIN_ALLOW_ALL = True   # allow all frontend ports to access all our routes
 CORS_ALLOW_CREDENTIALS = True  # allow cookies to be sent with requests
 
+# CORS_ORIGIN_ALLOW_ALL = False
+# SESSION_COOKIE_SECURE = True
+# SESSION_COOKIE_SAMESITE = 'Strict'
+
 JWT_AUTH_COOKIE = 'jwt'  # The name of the cookie where the JWT is stored
 SESSION_COOKIE_HTTPONLY = True  # Make sure the session cookie is HTTP-only for security
 
@@ -149,3 +154,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 
+#Content Security Policy, help prevent XSS
+CSP_DEFAULT_SRC = ["'self'"]  #Allow content only from the same origin
+CSP_SCRIPT_SRC = ["'self'"]   #Allow scripts only from the same origin
+CSP_STYLE_SRC = ["'self'"]    #Allow styles only from the same origin
+CSP_IMG_SRC = ["'self'"]      #Allow images only from the same origin
+CSP_CONNECT_SRC = ["'self'"]  #Allow AJAX/Fetch/XHR only to the same origin
