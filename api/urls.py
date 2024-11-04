@@ -1,4 +1,5 @@
 from django.urls import path
+from posts.views import get_author_comments, get_comment, get_commented_comment, get_edit_delete_post, get_posts_comments,get_posts_create_post,get_post_image
 from posts.views import get_edit_delete_post,get_posts_create_post,get_post_image, github_post
 from author.views import api_list_authors, api_add_author, api_author_detail, login, signup, get_author_from_cookie, logout
 from inbox.views import get_followers, get_following
@@ -21,8 +22,20 @@ urlpatterns = [
     path('authors/<uuid:author_id>/posts/<uuid:post_id>', get_edit_delete_post, name='delete_post'),
     path('authors/<uuid:author_id>/gitPost/', github_post, name='github_post'),
     
-    path('posts/<str:FQID>/image/', get_post_image, name='post_image_FQID'),
+    # Image Posts API
+    path('posts/<path:FQID>/image/', get_post_image, name='post_image_FQID'),
     path('authors/<uuid:author_id>/posts/<uuid:post_id>/image', get_post_image, name='post_image_SERIAL'),
+
+    # Comments API
+    path('comment/<path:FQID>', get_comment, name='get_comment'),
+    path('authors/<uuid:author_id>/posts/<uuid:post_id>/comments', get_posts_comments, name='SERIAL_get_posts_comments'),
+    path('posts/<path:FQID>/comments', get_posts_comments, name='FQID_get_posts_comments'),
+
+    # Commented API
+    path('authors/<uuid:author_id>/commented', get_author_comments, name='SERIAL_get_author_comments'),
+    path('authors/<path:FQID>/commented', get_author_comments, name='FQID_get_author_comments'),
+    path('authors/<uuid:author_id>/commented/<uuid:comment_id>', get_commented_comment, name='author_serial_get_comment'),
+    path('commented/<path:FQID>', get_commented_comment, name='author_FQID_get_comment'),
 
     # Author API endpoints
     path('authors/', api_list_authors, name='api_list_authors'), 

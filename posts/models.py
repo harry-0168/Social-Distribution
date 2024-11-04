@@ -67,14 +67,27 @@ class Post(models.Model):
 
 class Comment(models.Model):
     username = models.CharField(max_length=32) 
-    created_at = models.DateTimeField("date created", default=timezone.now)
+    published = models.DateTimeField("date created", default=timezone.now) 
     content =  models.TextField()
-    post = models.ForeignKey(Post, on_delete=models.CASCADE) # all comments belong to a post
+    post = models.ForeignKey(Post, related_name='comments', on_delete=models.CASCADE) # all comments belong to a post
     author = models.ForeignKey(Author, related_name='comments', on_delete=models.CASCADE)
+    FQID = models.CharField(max_length=1000, unique=True, null=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    type = models.CharField(max_length=20)
+    contentType = "text/markdown"
+    #likes
+
+    def save(self, *args, **kwargs):
+        ''' Override the save method to set the FQID field before saving '''
+        if not self.FQID:  # Only set if FQID is not already set
+            host = kwargs.get('request_host', 'localhost')
+            self.FQID = f"http://{host}/api/comments/{self.id}"
+        
+        super().save(*args, **kwargs)
 
 class Like(models.Model):
     username = models.CharField(max_length=255,default="1")  # Store the display name instead of Author object
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)  # All likes belong to a post
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)  # All likes belong to a post  TODO: REFACTOR to "object"
     like_date = models.DateTimeField(default=timezone.now)
     author = models.ForeignKey(Author, related_name='likes', on_delete=models.CASCADE)
 
