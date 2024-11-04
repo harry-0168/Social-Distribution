@@ -33,7 +33,7 @@ function sendRequest(followRequestsData,methodd, index) {
             'Content-Type': 'application/json',
             'X-CSRFToken':csrftoken
         },
-        body: JSON.stringify({status: method})
+        body: {}
     })
     .then(response => {
         if (!response.ok) {
