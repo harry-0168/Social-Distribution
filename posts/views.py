@@ -103,9 +103,9 @@ def get_comment(request, FQID):
     return Response(comment_data, status=status.HTTP_200_OK)
 
 class CommentPagination(PageNumberPagination):
-    page_size = 100
+    page_size = 5
     page_size_query_param = 'size'
-    max_page_size = 100
+    max_page_size = 5
 
     def get_paginated_response(self, data):
         return Response({
@@ -127,7 +127,7 @@ def get_posts_comments(request, author_id=None, post_id=None, FQID=None):
         post = get_object_or_404(Post, id=post_id)
 
     # Retrieve comments for the post
-    comments = Comment.objects.filter(post=post)
+    comments = Comment.objects.filter(post=post).order_by('-published')
 
     # Create an instance of the pagination class
     paginator = CommentPagination()

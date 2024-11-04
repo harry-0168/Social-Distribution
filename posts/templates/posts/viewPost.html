@@ -174,20 +174,52 @@
             <h3 class="commentAreaTitle">Comments</h3>
             <div class="carousel">
                 <ol class="carousel-container">
-                    {% for comment in comments %}
-                        <div class="comment">
-                            {% if comment.author.profileImage %}
-                                <img src="{{ comment.author.profileImage.url }}" 
-                                    class="profile-pic-small">
-                            {% else %}
-                                <img src="{% static 'avatar.png' %}" 
-                                    class="profile-pic-small">
-                            {% endif %}
-                            <h5 class="commentUsername">{{ comment.username }}<div class="commentContent">{{ comment.content }}</div></h5> 
-                        </div>
-                    {% endfor %}
+                    <!-- JavaScript will populate comments -->
                 </ol>
             </div>
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    loadComments();
+                });
+
+                function loadComments() {
+                    const url = `/api/posts/${encodeURIComponent("{{ post.FQID }}")}/comments`; // Replace with the actual endpoint URL
+                    fetch(url)
+                        .then(response => response.json())
+                        .then(data => {
+                            const commentsContainer = document.querySelector('.carousel-container');
+                            commentsContainer.innerHTML = ''; // Clear existing comments
+                            data.src.forEach(comment => {
+                                const commentElement = createCommentElement(comment);
+                                commentsContainer.appendChild(commentElement);
+                            });
+                        })
+                        .catch(error => console.error('Error loading comments:', error));
+                }
+
+                function createCommentElement(comment) {
+                    const commentDiv = document.createElement('div');
+                    commentDiv.classList.add('comment');
+
+                    const img = document.createElement('img');
+                    img.classList.add('profile-pic-small');
+                    img.src = comment.author.profileImage ? comment.author.profileImage : '/static/avatar.png';
+
+                    const h5 = document.createElement('h5');
+                    h5.classList.add('commentUsername');
+                    h5.textContent = comment.author.displayName;
+
+                    const contentDiv = document.createElement('div');
+                    contentDiv.classList.add('commentContent');
+                    contentDiv.textContent = comment.content;
+
+                    h5.appendChild(contentDiv);
+                    commentDiv.appendChild(img);
+                    commentDiv.appendChild(h5);
+
+                    return commentDiv;
+                }
+            </script>
             <section class="commentInput">
                 <form id="commentForm" action="{% url 'create_comment' post.id %}" method="POST"> <!-- Updated the form action URL to post comments to the appropriate endpoint -->
                     {% csrf_token %}
