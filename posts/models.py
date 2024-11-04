@@ -75,7 +75,7 @@ class Comment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     type = models.CharField(max_length=20)
     contentType = "text/markdown"
-    # #likes
+    #likes
 
     def save(self, *args, **kwargs):
         ''' Override the save method to set the FQID field before saving '''
