@@ -36,7 +36,7 @@ def inbox(request):
 
         # Serialize the querysets to JSON-serializable data
         follow_requests_data = list(follow_req_notifications.values('id', 'author1__FQID', 'author2__FQID','date'))
-        comment_data = list(comment_notifications.values('id', 'username', 'content', 'created_at', 'post__title'))
+        comment_data = list(comment_notifications.values('id', 'username', 'content', 'published', 'post__title'))
         like_data = list(like_notifications.values('id', 'username', 'post__title', 'like_date'))
         repost_data = list(repost_notifications.values('id', 'author__displayName', 'content', 'title'))
 
@@ -110,12 +110,8 @@ def inboxApi(request, object_author_id):
                 return Response({"error": "Actor not found"}, status=404)
             
         elif parsed_data['type'] == 'comment':
-            print("parsed_data: ", parsed_data)
-            print("sending comment to inbox")
             object_author = Author.objects.get(id=parsed_data['object']['post']['author'])
-            print("object_author: ",object_author)
             Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['object']['FQID'], received_at=timezone.now()).save()
-            print("comment message sent to inbox")
             return Response({"message": "Comment sent"}, status=200)
 
     except jwt.ExpiredSignatureError:

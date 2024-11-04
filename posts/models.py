@@ -67,9 +67,9 @@ class Post(models.Model):
 
 class Comment(models.Model):
     username = models.CharField(max_length=32) 
-    created_at = models.DateTimeField("date created", default=timezone.now) # TODO: refactor to "published"
-    content =  models.TextField()   # TODO: refactor to "comment"
-    post = models.ForeignKey(Post, on_delete=models.CASCADE) # all comments belong to a post TODO: refactor to "object"
+    published = models.DateTimeField("date created", default=timezone.now) 
+    content =  models.TextField()
+    post = models.ForeignKey(Post, on_delete=models.CASCADE) # all comments belong to a post
     author = models.ForeignKey(Author, related_name='comments', on_delete=models.CASCADE)
     FQID = models.CharField(max_length=1000, unique=True, null=True)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

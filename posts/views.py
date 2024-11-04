@@ -85,7 +85,7 @@ def get_comment(request, FQID):
         "type": comment.type,
         "contentType": comment.contentType,
         "username": comment.username,
-        "created_at": comment.created_at,
+        "published": comment.published,
         "content": comment.content,
         "post": comment.post.FQID,
         "FQID": comment.FQID,
