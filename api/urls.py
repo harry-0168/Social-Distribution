@@ -1,5 +1,5 @@
 from django.urls import path
-from posts.views import get_edit_delete_post,get_posts_create_post,get_post_image
+from posts.views import get_edit_delete_post,get_posts_create_post,get_post_image, api_create_like, api_view_postLikes, api_view_Likes
 from author.views import api_list_authors, api_add_author, api_author_detail, login, signup, get_author_from_cookie, logout
 
 
@@ -20,5 +20,13 @@ urlpatterns = [
     # Author API endpoints
     path('authors/', api_list_authors, name='api_list_authors'), 
     path('authors/add/', api_add_author, name='api_add_author'),  
-    path('authors/<uuid:author_id>/', api_author_detail, name='api_author_detail'),  
+    path('authors/<uuid:author_id>/', api_author_detail, name='api_author_detail'), 
+    
+    # Post API endpoints
+    path("authors/<uuid:author_id>/inbox", api_create_like, name="api_create_like"),  # API for liking a post
+    path("authors/<uuid:author_id>/posts/<uuid:post_id>/likes", api_view_postLikes, name="api_likes"), # path to posts view likes
+    path("posts/<uuid:post_id>/likes",api_view_Likes,name="api_view_Likes")
+    
+
+    
 ]

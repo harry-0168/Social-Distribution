@@ -67,8 +67,9 @@
                 {% endif %}        
             </div>
             <section class="likeCommentShare">
-                <form action="{% url 'create_like' post.id %}" method="POST">
+                <form action="{% url 'api_create_like' post.author.id %}" method="POST">
                     {% csrf_token %}
+                    <input type="hidden" name="post_id" value="{{ post.id }}"> <!-- Use post.id here -->
                     <button type="submit" class="like-button">
                         <img class="heart" src="{% static 'heart.png' %}" alt="Like">
                     </button>
@@ -162,7 +163,7 @@
             </script>
             
             <section class="viewLikesComments">
-                <a href="{% url 'likes' id=post.id %}" class="viewLikes">view likes</a>
+                <a href="{% url 'api_likes' author_id=post.author.id post_id=post.id %}" class="viewLikes">view likes</a>
                 <a class="viewComments">view comments</a>
             </section>
         </section>

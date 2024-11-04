@@ -45,7 +45,7 @@
                 .then(response => response.json())
                 .then(data => {
                     const postContainer = document.getElementById('post-container');
-                    const friendsOnlyPosts = data.src.filter(post => post.visibility === 'FRIENDS');
+                    const friendsOnlyPosts = data.src.filter(post => ['FRIENDS', 'UNLISTED'].includes(post.visibility));
 
                     friendsOnlyPosts.forEach((post, index) => {
                         const isFollowing = followingList[index]; // Match follow status by index

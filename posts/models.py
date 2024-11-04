@@ -73,9 +73,10 @@ class Comment(models.Model):
     author = models.ForeignKey(Author, related_name='comments', on_delete=models.CASCADE)
 
 class Like(models.Model):
+    type = models.CharField(max_length=255,default="like")
     username = models.CharField(max_length=255,default="1")  # Store the display name instead of Author object
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)  # All likes belong to a post
-    like_date = models.DateTimeField(default=timezone.now)
+    object = models.ForeignKey(Post, on_delete=models.CASCADE)  # All likes belong to a post
+    published = models.DateTimeField(default=timezone.now)
     author = models.ForeignKey(Author, related_name='likes', on_delete=models.CASCADE)
 
     def __str__(self):
