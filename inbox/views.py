@@ -108,6 +108,16 @@ def inboxApi(request, object_author_id):
                 # if actor does not exist create it and send a follow request to the object_author
                 # if object_author does not exist forward the request to the next host server inbox
                 return Response({"error": "Actor not found"}, status=404)
+            
+        elif parsed_data['type'] == 'comment':
+            print("parsed_data: ", parsed_data)
+            print("sending comment to inbox")
+            object_author = Author.objects.get(id=parsed_data['object']['post']['author'])
+            print("object_author: ",object_author)
+            Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['object']['FQID'], received_at=timezone.now()).save()
+            print("comment message sent to inbox")
+            return Response({"message": "Comment sent"}, status=200)
+
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=401)
     except jwt.InvalidTokenError:

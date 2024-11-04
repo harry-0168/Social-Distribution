@@ -52,13 +52,22 @@ def create_comment(request, post_id):
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
-    content = request.POST['content']
-    comment = Comment(username=username, content=content, post=post, author=user)
+    # Process the comment data
+    content = request.data.get('content')
+    if not content:
+        return Response({"error": "Content is required"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    comment = Comment(username=username, content=content, post=post, author=user, type='comment')
     comment.save()
+    
+    # Serialize the created comment
     comment_serializer = CommentSerializer(comment)
-    # Return a response with the created comment
-    # return Response(comment_serializer.data, status=status.HTTP_201_CREATED)
-    return redirect('viewPost', id=post.id) 
+
+    # Returning JSON for Ajax or redirect
+    if request.accepts('application/json'):
+        return Response(comment_serializer.data, status=status.HTTP_201_CREATED)
+    else:
+        return redirect('viewPost', id=post.id)
 
 @api_view(['GET'])
 def get_comment(request, FQID):
