@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404, reverse, get_object_or_404
-from .models import Post, Comment, Like, Author, githubPostIds, Following
+from .models import Post, Comment, Like, Author, githubPostIds, Following, Likes
 import base64
 import jwt
 import markdown
@@ -197,9 +197,51 @@ def get_commented_comment(request, author_id=None, comment_id=None, FQID=None):
     serializer = CommentSerializer(comment)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
-# API to create a like
+
 @api_view(['POST'])
 def create_like(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    token = request.COOKIES.get('jwt')
+    print("Request Data:", request.data)
+    print("Request POST Data:", request.POST)  # Add this line to check what is in POST data
+
+    if not token:
+        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+        username = payload['id']  # Assuming 'id' is the username or display name
+        user = Author.objects.get(displayName=username)
+    except jwt.ExpiredSignatureError:
+        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # Check if the user has already liked the post
+    if Like.objects.filter(username=username, object=post).exists():
+        #return Response({"error": "Post already liked"}, status=status.HTTP_400_BAD_REQUEST)
+        #messages.error(request, "You have already liked this post.")
+        return redirect(request.META.get('HTTP_REFERER'))
+
+    like = Like(username=username, object=post, author=user)
+    like.save()
+    #messages.success(request, "Liked successfully!")
+    like_serializer = LikeSerializer(like)
+    # return Response(like_serializer.data, status=status.HTTP_201_CREATED)
+    return redirect(request.META.get('HTTP_REFERER'))
+
+@api_view(['POST'])
+def api_create_like(request, author_id):
+    # Debugging: Print the entire request data
+    print("Request Data:", request.data)
+
+    # Get the author based on the provided author_id
+    author = get_object_or_404(Author, id=author_id)
+
+    # Get the post_id from form data
+    post_id = request.POST.get('post_id')  
+    
+    if not post_id:
+        return Response({"error": "Post ID not found"}, status=status.HTTP_400_BAD_REQUEST)
+    
     post = get_object_or_404(Post, id=post_id)
     token = request.COOKIES.get('jwt')
 
@@ -213,17 +255,19 @@ def create_like(request, post_id):
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
-    # Check if the user has already liked the post
-    if Like.objects.filter(username=username, post=post).exists():
-        #return Response({"error": "Post already liked"}, status=status.HTTP_400_BAD_REQUEST)
-        #messages.error(request, "You have already liked this post.")
+    if Like.objects.filter(username=username, object=post).exists():
         return redirect(request.META.get('HTTP_REFERER'))
 
-    like = Like(username=username, post=post, author=user)
+    # Create or get the Likes instance for the post
+    likes_collection = Likes()
+    post.likes_collection=likes_collection
+
+    # Create a new Like instance
+    like = Like(username=username, object=post, author=user)
     like.save()
-    #messages.success(request, "Liked successfully!")
+    post.likes_collection.add_like(like)  # Ensure that add_like method is defined in Likes model
+
     like_serializer = LikeSerializer(like)
-    # return Response(like_serializer.data, status=status.HTTP_201_CREATED)
     return redirect(request.META.get('HTTP_REFERER'))
 
 # Construct posts object for home page
@@ -555,16 +599,29 @@ def view_post(request, id):
 
     return render(request, "posts/viewPost.html", {"id": id, "post": post, "author": author, "comments": comments})
 
-def view_postLikes(request, id):
-    post = get_object_or_404(Post, pk=id)
+@api_view(['GET'])
+def api_view_postLikes(request, author_id,post_id):
+    post = get_object_or_404(Post, pk=post_id)
 
     if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
         # Non-admin users should not see deleted posts
         return redirect('home_page')  # Redirect to index or a 404 page
 
-    author = post.author
+    author = get_object_or_404(Author, id=author_id)
 
-    return render(request, "posts/viewPostLikes.html", {"id":id, "post":post, "author":author})
+    return render(request, "posts/viewPostLikes.html", {"post_id": post_id, "post": post, "author": author})
+
+@api_view(['GET'])
+def api_view_Likes(request, post_id):
+    post = get_object_or_404(Post, pk=post_id)
+
+    if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
+        # Non-admin users should not see deleted posts
+        return redirect('home_page')  # Redirect to index or a 404 page
+
+    author = post.author.id
+
+    return render(request, "posts/viewPostLikes.html", {"post_id": post_id, "post": post, "author": author})
 
 @api_view(['POST'])
 def github_post(request, author_id):

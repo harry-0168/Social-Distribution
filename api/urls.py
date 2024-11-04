@@ -1,7 +1,7 @@
 from django.urls import path
 from posts.views import get_author_comments, get_comment, get_commented_comment, get_edit_delete_post, get_posts_comments,get_posts_create_post,get_post_image
-from posts.views import get_edit_delete_post,get_posts_create_post,get_post_image, github_post
-from author.views import api_list_authors, api_add_author, api_author_detail, login, signup, get_author_from_cookie, logout
+from posts.views import get_edit_delete_post,get_posts_create_post,get_post_image, github_post, api_create_like, api_view_postLikes, api_view_Likes
+from author.views import api_list_authors, api_add_author, api_author_detail, login, signup, get_author_from_cookie, logout, get_likes_by_author, get_single_like, api_get_like
 from inbox.views import get_followers, get_following
 from inbox.views import handle_follow_request_response, inboxApi
 
@@ -40,5 +40,17 @@ urlpatterns = [
     # Author API endpoints
     path('authors/', api_list_authors, name='api_list_authors'), 
     path('authors/add/', api_add_author, name='api_add_author'),  
-    path('authors/<uuid:author_id>/', api_author_detail, name='api_author_detail'),  
+    path('authors/<uuid:author_id>/', api_author_detail, name='api_author_detail'), 
+    path('authors/<uuid:author_serial>/liked', get_likes_by_author, name='get_likes_by_author'),
+    path("authors/<uuid:author_serial>/liked/<uuid:like_serial>",get_single_like,name="single_like"),
+    path("liked/<uuid:like_fqid>",api_get_like,name="get_like"),
+
+    
+    # Post API endpoints
+    path("authors/<uuid:author_id>/inbox", api_create_like, name="api_create_like"),  # API for liking a post
+    path("authors/<uuid:author_id>/posts/<uuid:post_id>/likes", api_view_postLikes, name="api_likes"), # path to posts view likes
+    path("posts/<uuid:post_id>/likes",api_view_Likes,name="api_view_Likes")
+    
+
+    
 ]
