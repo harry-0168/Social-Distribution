@@ -13,6 +13,7 @@ from author.models import Following
 from .models import Inbox
 from django.utils import timezone
 
+
 @api_view(['GET'])
 def inbox(request):
     token = request.COOKIES.get('jwt')
@@ -27,7 +28,7 @@ def inbox(request):
         follow_req_notifications = Following.objects.filter(author2=author, status='pending')
         posts = Post.objects.filter(author=author)
         comment_notifications = Comment.objects.filter(post__in=posts)
-        like_notifications = Like.objects.filter(post__in=posts)
+        like_notifications = Like.objects.filter(object__in=posts)
         
         # Get the list of authors that the current user is following
         followed_authors = Following.objects.filter(author1=author).values_list('author2', flat=True)
@@ -35,12 +36,26 @@ def inbox(request):
         repost_notifications = Post.objects.filter(author__in=followed_authors, type="repost")
 
         # Serialize the querysets to JSON-serializable data
-        follow_requests_data = list(follow_req_notifications.values('id', 'author1__FQID', 'author2__FQID','date'))
-        comment_data = list(comment_notifications.values('id', 'username', 'content', 'created_at', 'post__title'))
-        like_data = list(like_notifications.values('id', 'username', 'post__title', 'like_date'))
-        repost_data = list(repost_notifications.values('id', 'author__displayName', 'content', 'title'))
+        
+        follow_requests_data = list(follow_req_notifications.values('id', 'author1__FQID', 'author2__FQID', 'author1__displayName','author1__profileImage','date'))
+        comment_data = list(comment_notifications.values('id', 'username', 'content', 'published', 'post__title', 'author__profileImage', 'author__displayName'))
+        like_data = list(like_notifications.values('id', 'username', 'post__title', 'like_date', 'author__displayName', 'author__profileImage'))
+        repost_data = list(repost_notifications.values('id', 'author__displayName', 'content', 'title', 'author__profileImage'))
 
         # Send the data to the template
+        for follow_request in follow_requests_data:
+            follow_request['author1__profileImage'] = author.host + settings.MEDIA_URL +follow_request['author1__profileImage']
+        
+        for comment in comment_data:
+            comment['author__profileImage'] = author.host + settings.MEDIA_URL + comment['author__profileImage']
+        
+        for like in like_data:
+            like['author__profileImage'] = author.host + settings.MEDIA_URL + like['author__profileImage']
+
+        for repost in repost_data:
+            repost['author__profileImage'] = author.host + settings.MEDIA_URL + repost['author__profileImage']
+        
+        
         context = {
             'follow_requests': follow_requests_data,
             'comments': comment_data,
@@ -108,6 +123,12 @@ def inboxApi(request, object_author_id):
                 # if actor does not exist create it and send a follow request to the object_author
                 # if object_author does not exist forward the request to the next host server inbox
                 return Response({"error": "Actor not found"}, status=404)
+            
+        elif parsed_data['type'] == 'comment':
+            object_author = Author.objects.get(id=parsed_data['object']['post']['author'])
+            Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['object']['FQID'], received_at=timezone.now()).save()
+            return Response({"message": "Comment sent"}, status=200)
+
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=401)
     except jwt.InvalidTokenError:

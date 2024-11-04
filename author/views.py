@@ -17,6 +17,8 @@ from django.contrib import messages
 from django.conf import settings
 from .models import Author, Following
 from inbox.models import Inbox
+from posts.models import Like
+from posts.serializers import LikeSerializer
 import json
 
 
@@ -29,10 +31,10 @@ def profile_view(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     
     # Get the follower count (authors who follow this author)
-    followers_count = Following.objects.filter(author2=author).count()  # Count of followers
+    followers_count = Following.objects.filter(author2=author, status = 'accepted').count()  # Count of followers
     
     # Get the Following count (authors this author is Following)
-    following_count = Following.objects.filter(author1=author).count()  # Count of people this author is following
+    following_count = Following.objects.filter(author1=author, status='accepted').count()  # Count of people this author is following
     
     # Fetch the author's posts
     posts = Post.objects.filter(author=author).exclude(visibility='DELETED').order_by('-published')
@@ -63,6 +65,79 @@ def author_about(request, author_id):
     # Get the Following count (authors this author is Following)
     following_count = Following.objects.filter(author1=author).count()  # Count of people this author is following
     return render(request, 'author/author_about.html', {'author': author, 'followers_count': followers_count, 'following_count': following_count})
+
+@api_view(['GET'])
+def api_get_like(request, like_fqid):
+    """
+    Retrieve a single like by its fully qualified ID (LIKE_FQID).
+    """
+    try:
+        # Fetch the Like instance using the LIKE_FQID
+        like = Like.objects.get(id=like_fqid)
+        
+        # Serialize the Like object
+        like_data = {
+            'id': like.id,
+            'username': like.username,
+            'post_id': like.object.id,
+            'author_id': like.author.id,
+            'published': like.published,
+            'type': like.type,
+        }
+
+        return Response(like_data, status=status.HTTP_200_OK)
+    except Like.DoesNotExist:
+        return Response({"error": "Like not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_single_like(request, author_serial, like_serial):
+    print("Requested Author Serial:", author_serial)
+    print("Requested Like Serial:", like_serial)
+
+    # Get the author based on the provided author_serial
+    author = get_object_or_404(Author, id=author_serial)
+
+    # Get the specific like by LIKE_SERIAL and ensure it belongs to the author
+    like = get_object_or_404(Like, id=like_serial, author=author)
+
+    # Serialize the like object
+    like_serializer = LikeSerializer(like)
+
+    # Return the serialized data
+    return Response(like_serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def get_likes_by_author(request, author_serial):
+    print("Requested Author Serial:", author_serial)
+
+    # Get the author based on the provided author_serial
+    author = get_object_or_404(Author, id=author_serial)
+
+    # Retrieve all likes by the author
+    likes = Like.objects.filter(author=author)
+
+    # Create a dictionary to store the latest likes per post
+    latest_likes_dict = {}
+
+    for like in likes:
+        post_id = like.object.id
+        if post_id not in latest_likes_dict:
+            latest_likes_dict[post_id] = like
+        else:
+            # Compare published dates to find the latest like
+            if like.published > latest_likes_dict[post_id].published:
+                latest_likes_dict[post_id] = like
+
+    # Get the latest likes as a list
+    latest_likes = list(latest_likes_dict.values())
+
+    # Serialize the latest likes queryset
+    like_serializer = LikeSerializer(latest_likes, many=True)
+
+    # Return the serialized data
+    return Response(like_serializer.data, status=status.HTTP_200_OK)
 
 
 def follow_author(request, object_author_id):
@@ -118,7 +193,7 @@ def following_list(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     
     # Get all authors that the current author is following
-    follow_relationships = Following.objects.filter(author1=author).select_related('author2')
+    follow_relationships = Following.objects.filter(author1=author, status='accepted').select_related('author2')
 
     following = []
     for rel in follow_relationships:
@@ -147,7 +222,7 @@ def followers_list(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     
     # Get all authors who follow this author
-    followers_relationships = Following.objects.filter(author2=author).select_related('author1')
+    followers_relationships = Following.objects.filter(author2=author, status='accepted').select_related('author1')
 
     followers = []
     for rel in followers_relationships:
