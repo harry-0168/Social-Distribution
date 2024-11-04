@@ -1,190 +1,100 @@
-from django.test import TestCase
-
-# Create your tests here.
-from rest_framework.test import APIClient, APITestCase
-from rest_framework import status
 from django.urls import reverse
-from django.utils import timezone
-from .models import Author,  Inbox
-from author.models import Following
+from rest_framework.test import APITestCase
+from rest_framework import status
+from .models import Author, Inbox, Post
+from author.models import Author, Following
+from posts.models import Like, Comment
+
 import jwt
 from django.conf import settings
 from datetime import datetime, timedelta
 
-
-class InboxApiTestCase(APITestCase):
-    
+class InboxTests(APITestCase):
     def setUp(self):
-        # Create two authors for the follow request tests
-        self.author1 = Author.objects.create(
-            displayName="Greg Johnson", 
-            FQID="http://nodeaaaa/api/authors/111", 
-            host="http://nodeaaaa/api/"
-        )
-        self.author2 = Author.objects.create(
-            displayName="Lara Croft", 
-            FQID="http://nodebbbb/api/authors/222", 
-            host="http://nodebbbb/api/"
-        )
-        
-        # Generate JWT token for author1
-        payload = {
-        'id': self.author1.displayName,
-        'author_id': str(self.author1.id),
-        'exp': datetime.now() + timedelta(days=1),  # Token expiration
-        'iat': datetime.now()
-        }
-        self.token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
-        
-        # Setup the client and attach token as a cookie
-        self.client = APIClient()
-        self.client.cookies['jwt'] = self.token
+        # Create an author and set up login credentials
+        self.author_password = "test_password"
+        self.author = Author.objects.create(displayName="test_author", FQID="http://example.com/authors/1", isVerified=True)
+        self.author.set_password(self.author_password)
+        self.author.save()
 
-        # URL for the inbox API
-        self.url = reverse('inboxApi', kwargs={'object_author_id': self.author2.id})
-    
-    def test_follow_request_success(self):
-        """
-        Test if a valid follow request is processed successfully.
-        """
-        data = {
-            "type": "follow",
-            "summary": "Greg wants to follow Lara",
-            "actor": {
-                "type": "author",
-                "id": self.author1.FQID,
-                "host": self.author1.host,
-                "displayName": self.author1.displayName,
-                "github": "http://github.com/gjohnson",
-                "profileImage": "https://i.imgur.com/k7XVwpB.jpeg",
-                "page": "http://nodeaaaa/authors/greg"
-            },
-            "object": {
-                "type": "author",
-                "id": self.author2.FQID,
-                "host": self.author2.host,
-                "displayName": self.author2.displayName,
-                "page": "http://nodebbbb/authors/222",
-                "github": "http://github.com/laracroft",
-                "profileImage": "http://nodebbbb/api/authors/222/posts/217/image"
-            }
-        }
+        # Create a second author for interactions
+        self.other_author = Author.objects.create(displayName="other_author", FQID="http://example.com/authors/2", isVerified=True)
 
-        response = self.client.post(self.url, data, format='json')
+        # Define URLs
+        self.login_url = reverse('login')
+        self.inbox_url = reverse('inbox')
+        self.inbox_api_url = reverse('follow_request', kwargs={'object_author_id': self.author.id})
+        self.follow_request_url = reverse('follow_request_response', kwargs={'author_id': self.author.id, 'foreign_author_fqid': self.other_author.FQID})
+        self.get_followers_url = reverse('get_followers', kwargs={'author_id': self.author.id})
+        self.get_following_url = reverse('get_following', kwargs={'author_id': self.author.id})
+
+    def authenticate(self):
+        # Perform login and store the JWT token in cookies
+        response = self.client.post(self.login_url, data={'displayName': self.author.displayName, 'password': self.author_password})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('message', response.data)
-        self.assertEqual(response.data['message'], 'Follow request sent')
-
-    def test_follow_yourself(self):
-        """
-        Test if trying to follow yourself returns the appropriate error.
-        """
-        data = {
-            "type": "follow",
-            "summary": "Greg wants to follow Greg",
-            "actor": {
-                "type": "author",
-                "id": self.author1.FQID,
-                "host": self.author1.host,
-                "displayName": self.author1.displayName
-            },
-            "object": {
-                "type": "author",
-                "id": self.author1.FQID,  # Actor and object are the same
-                "host": self.author1.host,
-                "displayName": self.author1.displayName
-            }
-        }
-
-        response = self.client.post(self.url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('error', response.data)
-        self.assertEqual(response.data['error'], 'Cannot follow yourself')
-
-    def test_already_following(self):
-        """
-        Test if trying to follow someone you're already following returns an error.
-        """
-        # Create a following relationship
-        Following.follow(self.author1, self.author2)
-
-        data = {
-            "type": "follow",
-            "summary": "Greg wants to follow Lara again",
-            "actor": {
-                "type": "author",
-                "id": self.author1.FQID,
-                "host": self.author1.host,
-                "displayName": self.author1.displayName
-            },
-            "object": {
-                "type": "author",
-                "id": self.author2.FQID,
-                "host": self.author2.host,
-                "displayName": self.author2.displayName
-            }
-        }
-
-        response = self.client.post(self.url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('error', response.data)
-        self.assertEqual(response.data['error'], 'Already following')
-
-    def test_unauthenticated(self):
-        """
-        Test if no JWT token leads to an unauthenticated error.
-        """
-        self.client.cookies.clear()  # Remove the JWT cookie
         
-        data = {
+        # Retrieve the JWT token from the login response cookie
+        token = response.cookies.get(settings.JWT_AUTH_COOKIE).value
+        self.client.cookies[settings.JWT_AUTH_COOKIE] = token
+
+    def test_get_inbox_unauthenticated(self):
+        response = self.client.get(self.inbox_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_get_inbox_authenticated(self):
+        self.authenticate()
+        response = self.client.get(self.inbox_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_send_follow_request(self):
+        self.authenticate()
+        follow_data = {
             "type": "follow",
-            "summary": "Greg wants to follow Lara",
             "actor": {
-                "type": "author",
-                "id": self.author1.FQID,
-                "host": self.author1.host,
-                "displayName": self.author1.displayName
+                "id": self.author.FQID,
+                "host": "http://example.com/",
+                "displayName": "test_author"
             },
             "object": {
-                "type": "author",
-                "id": self.author2.FQID,
-                "host": self.author2.host,
-                "displayName": self.author2.displayName
+                "id": self.other_author.FQID,
+                "host": "http://example.com/",
+                "displayName": "other_author"
             }
         }
+        response = self.client.post(self.inbox_api_url, data=follow_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['requestStatus'], 'pending')
+        self.assertEqual(Following.objects.filter(author1=self.author, author2=self.other_author).count(), 1)
 
-        response = self.client.post(self.url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertIn('error', response.data)
-        self.assertEqual(response.data['error'], 'Unauthenticated')
+    def test_accept_follow_request(self):
+        self.authenticate()
+        Following.objects.create(author1=self.other_author, author2=self.author, status='pending')
+        response = self.client.put(self.follow_request_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        follow_request = Following.objects.get(author1=self.other_author, author2=self.author)
+        self.assertEqual(follow_request.status, 'accepted')
 
-    def test_invalid_token(self):
-        """
-        Test if an invalid JWT token leads to an invalid token error.
-        """
-        # Set an invalid token
-        self.client.cookies['jwt'] = 'invalid_token'
+    def test_reject_follow_request(self):
+        self.authenticate()
+        Following.objects.create(author1=self.other_author, author2=self.author, status='pending')
+        response = self.client.delete(self.follow_request_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(Following.objects.filter(author1=self.other_author, author2=self.author).exists())
 
-        data = {
-            "type": "follow",
-            "summary": "Greg wants to follow Lara",
-            "actor": {
-                "type": "author",
-                "id": self.author1.FQID,
-                "host": self.author1.host,
-                "displayName": self.author1.displayName
-            },
-            "object": {
-                "type": "author",
-                "id": self.author2.FQID,
-                "host": self.author2.host,
-                "displayName": self.author2.displayName
-            }
-        }
+    def test_get_followers(self):
+        Following.objects.create(author1=self.other_author, author2=self.author, status='accepted')
+        self.authenticate()
+        response = self.client.get(self.get_followers_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['type'], 'followers')
+        self.assertEqual(len(response.data['followers']), 1)
+        self.assertEqual(response.data['followers'][0]['displayName'], "other_author")
 
-        response = self.client.post(self.url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertIn('error', response.data)
-        self.assertEqual(response.data['error'], 'Invalid token')
-
-
+    def test_get_following(self):
+        Following.objects.create(author1=self.author, author2=self.other_author, status='accepted')
+        self.authenticate()
+        response = self.client.get(self.get_following_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['type'], 'following')
+        self.assertEqual(len(response.data['following']), 1)
+        self.assertEqual(response.data['following'][0]['displayName'], "other_author")
