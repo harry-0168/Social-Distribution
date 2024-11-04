@@ -184,7 +184,7 @@
                 });
 
                 function loadComments() {
-                    const url = `/api/posts/${encodeURIComponent("{{ post.FQID }}")}/comments`; // Replace with the actual endpoint URL
+                    const url = `/api/authors/${encodeURIComponent("{{ post.author_id }}")}/posts/${encodeURIComponent("{{ post.id }}")}/image`;
                     fetch(url)
                         .then(response => response.json())
                         .then(data => {
