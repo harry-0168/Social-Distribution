@@ -253,7 +253,7 @@
                                 const newComment = document.createElement('div');
                                 newComment.classList.add('comment');
                                 newComment.innerHTML = `
-                                    <img src="${comment.author.profileImage ? comment.author.profileImage.url : '/static/avatar.png'}" class="profile-pic-small">
+                                    <img src="${comment.author.profileImage ? comment.author.profileImage : '/static/avatar.png'}" class="profile-pic-small">
                                     <h5 class="commentUsername">${comment.username}<div class="commentContent">${comment.content}</div></h5>
                                 `;
 
@@ -267,7 +267,7 @@
                                     "summary": `${comment.username} commented on your post`,
                                     "actor": {
                                         "type": "author",
-                                        "id": comment.author.FQID,
+                                        "id": comment.author.id,
                                         "host": comment.author.host,
                                         "displayName": comment.author.displayName,
                                         "profileImage": comment.author.profileImage
@@ -278,14 +278,15 @@
                                         "id": comment.id,
                                         "content": comment.content,
                                         "contentType": "text/markdown",
-                                        "published": comment.created_at,
+                                        "published": comment.published,
                                         "post": {
                                             "type": "post",
-                                            "id": comment.post.FQID,
+                                            "id": comment.post.id,
                                             "author": "{{ post.author.id }}"
                                         }
                                     }
                                 };
+                                console.log("inbox Request:", inboxRequest);
 
                                 // Send the comment object to the author's inbox
                                 const inboxUrl = `${currentHost}/inbox/api/authors/${"{{ post.author.id }}"}/inbox/`;
