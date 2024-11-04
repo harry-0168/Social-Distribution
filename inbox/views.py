@@ -13,6 +13,7 @@ from author.models import Following
 from .models import Inbox
 from django.utils import timezone
 
+
 @api_view(['GET'])
 def inbox(request):
     token = request.COOKIES.get('jwt')
@@ -35,12 +36,26 @@ def inbox(request):
         repost_notifications = Post.objects.filter(author__in=followed_authors, type="repost")
 
         # Serialize the querysets to JSON-serializable data
-        follow_requests_data = list(follow_req_notifications.values('id', 'author1__FQID', 'author2__FQID','date'))
-        comment_data = list(comment_notifications.values('id', 'username', 'content', 'created_at', 'post__title'))
-        like_data = list(like_notifications.values('id', 'username', 'post__title', 'like_date'))
-        repost_data = list(repost_notifications.values('id', 'author__displayName', 'content', 'title'))
+        
+        follow_requests_data = list(follow_req_notifications.values('id', 'author1__FQID', 'author2__FQID', 'author1__displayName','author1__profileImage','date'))
+        comment_data = list(comment_notifications.values('id', 'username', 'content', 'created_at', 'post__title', 'author__profileImage', 'author__displayName'))
+        like_data = list(like_notifications.values('id', 'username', 'post__title', 'like_date', 'author__displayName', 'author__profileImage'))
+        repost_data = list(repost_notifications.values('id', 'author__displayName', 'content', 'title', 'author__profileImage'))
 
         # Send the data to the template
+        for follow_request in follow_requests_data:
+            follow_request['author1__profileImage'] = author.host + settings.MEDIA_URL +follow_request['author1__profileImage']
+        
+        for comment in comment_data:
+            comment['author__profileImage'] = author.host + settings.MEDIA_URL + comment['author__profileImage']
+        
+        for like in like_data:
+            like['author__profileImage'] = author.host + settings.MEDIA_URL + like['author__profileImage']
+
+        for repost in repost_data:
+            repost['author__profileImage'] = author.host + settings.MEDIA_URL + repost['author__profileImage']
+        
+        print(repost_data)
         context = {
             'follow_requests': follow_requests_data,
             'comments': comment_data,

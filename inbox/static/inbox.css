@@ -98,3 +98,10 @@ body {
     background-color: #9b6cd2;
     color: white;
 }
+
+.profileImage{
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
