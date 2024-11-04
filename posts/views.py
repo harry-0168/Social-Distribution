@@ -461,7 +461,7 @@ def get_post_image(request, author_id=None, post_id=None, FQID=None):
         # Retrieve the post using both author_id and post_id
         post = get_object_or_404(Post, id=post_id, author__id=author_id)
     elif FQID:
-        post = get_object_or_404(Post, id=FQID)
+        post = get_object_or_404(Post, FQID=FQID)
     else:
         return Response({'error': 'Post ID or FQID must be provided'}, status=status.HTTP_400_BAD_REQUEST)
     
