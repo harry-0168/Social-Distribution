@@ -202,76 +202,53 @@ def get_commented_comment(request, author_id=None, comment_id=None, FQID=None):
 
 
 @api_view(['POST'])
-def create_like(request, post_id):
-    post = get_object_or_404(Post, id=post_id)
-    token = request.COOKIES.get('jwt')
-    print("Request Data:", request.data)
-    print("Request POST Data:", request.POST)  # Add this line to check what is in POST data
-
-    if not token:
-        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
-
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        username = payload['id']  # Assuming 'id' is the username or display name
-        user = Author.objects.get(displayName=username)
-    except jwt.ExpiredSignatureError:
-        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
-
-    # Check if the user has already liked the post
-    if Like.objects.filter(username=username, object=post).exists():
-        #return Response({"error": "Post already liked"}, status=status.HTTP_400_BAD_REQUEST)
-        #messages.error(request, "You have already liked this post.")
-        return redirect(request.META.get('HTTP_REFERER'))
-
-    like = Like(username=username, object=post, author=user)
-    like.save()
-    #messages.success(request, "Liked successfully!")
-    like_serializer = LikeSerializer(like)
-    # return Response(like_serializer.data, status=status.HTTP_201_CREATED)
-    return redirect(request.META.get('HTTP_REFERER'))
-
-@api_view(['POST'])
 def api_create_like(request, author_id):
-    # Debugging: Print the entire request data
-    print("Request Data:", request.data)
+    print("Request Data:", request.data)  # Debugging line to see the request data
 
-    # Get the author based on the provided author_id
+    # Validate and retrieve the author
     author = get_object_or_404(Author, id=author_id)
 
     # Get the post_id from form data
-    post_id = request.POST.get('post_id')  
-    
+    post_id = request.POST.get('post_id')
     if not post_id:
         return Response({"error": "Post ID not found"}, status=status.HTTP_400_BAD_REQUEST)
     
     post = get_object_or_404(Post, id=post_id)
-    token = request.COOKIES.get('jwt')
 
+    token = request.COOKIES.get('jwt')
     if not token:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         username = payload['id']  # Assuming 'id' is the username or display name
-        user = Author.objects.get(displayName=username)
+        user = get_object_or_404(Author, displayName=username)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
+    # Check if a like already exists
     if Like.objects.filter(username=username, object=post).exists():
         return redirect(request.META.get('HTTP_REFERER'))
 
-    # Create or get the Likes instance for the post
-    likes_collection = Likes()
-    post.likes_collection=likes_collection
+    try:
+        # Ensure post has a likes collection or create one
+        if not post.likes_collection:
+            likes_collection = Likes.objects.create()
+            post.likes_collection = likes_collection
+            post.save()
 
-    # Create a new Like instance
-    like = Like(username=username, object=post, author=user)
-    like.save()
-    post.likes_collection.add_like(like)  # Ensure that add_like method is defined in Likes model
+        # Create and save the new Like instance
+        like = Like(username=username, object=post, author=user)
+        like.save()
 
-    like_serializer = LikeSerializer(like)
-    return redirect(request.META.get('HTTP_REFERER'))
+        # Add the like to the post's likes collection
+        post.likes_collection.add_like(like)
+
+        # Serialize and return the response
+        return redirect(request.META.get('HTTP_REFERER'))
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # Construct posts object for home page
 class PostPagination(PageNumberPagination):

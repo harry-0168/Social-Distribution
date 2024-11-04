@@ -72,6 +72,7 @@
                 <form action="{% url 'api_create_like' post.author.id %}" method="POST">
                     {% csrf_token %}
                     <input type="hidden" name="post_id" value="{{ post.id }}"> <!-- Use post.id here -->
+                    <input type="hidden" name="type" value="like">
                     <button type="submit" class="like-button">
                         <img class="heart" src="{% static 'heart.png' %}" alt="Like">
                     </button>
