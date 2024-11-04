@@ -6,7 +6,7 @@ from django.conf import settings
 from .models import Notification
 from rest_framework.decorators import api_view
 from author.models import Author, FollowRequest
-from posts.models import Post, Comment, Like
+from posts.models import Post, Comment, Like, Likes
 from django.conf import settings
 import json
 from author.models import Following
@@ -39,7 +39,7 @@ def inbox(request):
         
         follow_requests_data = list(follow_req_notifications.values('id', 'author1__FQID', 'author2__FQID', 'author1__displayName','author1__profileImage','date'))
         comment_data = list(comment_notifications.values('id', 'username', 'content', 'published', 'post__title', 'author__profileImage', 'author__displayName'))
-        like_data = list(like_notifications.values('id', 'username', 'post__title', 'like_date', 'author__displayName', 'author__profileImage'))
+        like_data = list(like_notifications.values('id', 'username', 'object__title', 'published', 'author__displayName', 'author__profileImage'))
         repost_data = list(repost_notifications.values('id', 'author__displayName', 'content', 'title', 'author__profileImage'))
 
         # Send the data to the template
@@ -128,6 +128,51 @@ def inboxApi(request, object_author_id):
             object_author = Author.objects.get(id=parsed_data['object']['post']['author'])
             Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['object']['FQID'], received_at=timezone.now()).save()
             return Response({"message": "Comment sent"}, status=200)
+        
+        elif parsed_data['type'] == 'like':
+            author = get_object_or_404(Author, id=object_author_id)
+
+            # Get the post_id from form data
+            post_id = request.POST.get('post_id')
+            if not post_id:
+                return Response({"error": "Post ID not found"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            post = get_object_or_404(Post, id=post_id)
+
+            token = request.COOKIES.get('jwt')
+            if not token:
+                return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+
+            try:
+                payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+                username = payload['id']  # Assuming 'id' is the username or display name
+                user = get_object_or_404(Author, displayName=username)
+            except jwt.ExpiredSignatureError:
+                return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if a like already exists
+            if Like.objects.filter(username=username, object=post).exists():
+                return redirect(request.META.get('HTTP_REFERER'))
+
+            try:
+                # Ensure post has a likes collection or create one
+                if not post.likes_collection:
+                    likes_collection = Likes.objects.create()
+                    post.likes_collection = likes_collection
+                    post.save()
+
+                # Create and save the new Like instance
+                like = Like(username=username, object=post, author=user)
+                like.save()
+
+                # Add the like to the post's likes collection
+                post.likes_collection.add_like(like)
+
+                # Serialize and return the response
+                return redirect(request.META.get('HTTP_REFERER'))
+
+            except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=401)
