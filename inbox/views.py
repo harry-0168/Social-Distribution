@@ -94,9 +94,9 @@ def inboxApi(request, object_author_id):
                     return Response({"error": "Invalid request"}, status=401)
                 if parsed_data['object']['host'] != parsed_data['actor']['host']:
                     # create object author and following object, then forward the request to the next host server
-                    AuthorSerializer = AuthorSerializer(id=parsed_data['object']['id'], host=parsed_data['object']['host'], displayName=parsed_data['object']['displayName'], github=parsed_data['object']['github'], profileImage=parsed_data['object']['profileImage'], page=parsed_data['object']['url'])
-                    if AuthorSerializer.is_valid():
-                        AuthorSerializer.save()
+                    authorSerializer = AuthorSerializer(id=parsed_data['object']['id'], host=parsed_data['object']['host'], displayName=parsed_data['object']['displayName'], github=parsed_data['object']['github'], profileImage=parsed_data['object']['profileImage'], page=parsed_data['object']['url'])
+                    if authorSerializer.is_valid():
+                        authorSerializer.save()
                     else:
                         return Response({"error": "Invalid object author data"}, status=400)
                     object_author = Author.objects.get(id=parsed_data['object']['id'])
