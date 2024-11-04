@@ -1,5 +1,6 @@
 from django.urls import path
-from posts.views import get_author_comments, get_comment, get_commented_comment, get_edit_delete_post, get_posts_comments,get_posts_create_post,get_post_image, github_post
+from posts.views import get_author_comments, get_comment, get_commented_comment, get_edit_delete_post, get_posts_comments,get_posts_create_post,get_post_image
+from posts.views import get_edit_delete_post,get_posts_create_post,get_post_image, github_post
 from author.views import api_list_authors, api_add_author, api_author_detail, login, signup, get_author_from_cookie, logout
 from inbox.views import get_followers, get_following
 from inbox.views import handle_follow_request_response, inboxApi
