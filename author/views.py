@@ -401,17 +401,39 @@ def user_settings(request, author_id):
 
     if request.method == 'POST':
         form = UserSettingsForm(request.POST, request.FILES, instance=author)
+        new_display_name = form.data.get('displayName')
+        if new_display_name and new_display_name != author.displayName:
+            if Author.objects.filter(displayName=new_display_name).exclude(id=author.id).exists():
+                messages.error(request, 'This display name is already taken. Please choose another.')
+                return render(request, 'author/user_settings.html', {
+                    'form': form,
+                    'author': author,
+                    'redirect_url': request.build_absolute_uri(
+                        redirect('author_profile', author_id=author.id).url
+                    )
+                })
         if form.is_valid():
             form.save()
             messages.success(request, 'Profile changes saved successfully!')
-            # Pass the redirect URL to the template
-            return render(request, 'author/user_settings.html', {
+            payload = {
+                'id': author.displayName,
+                'author_id': str(author.id),
+                'exp': datetime.now() + timedelta(days=1),  # Token expiration
+                'iat': datetime.now()
+            }
+            newToken = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+
+            #Redirect and set the new JWT token in a cookie
+            response = render(request, 'author/user_settings.html', {
                 'form': form,
                 'author': author,
                 'redirect_url': request.build_absolute_uri(
                     redirect('author_profile', author_id=author.id).url
                 )
             })
+            response.set_cookie(key=settings.JWT_AUTH_COOKIE, value=newToken, httponly=True)
+            return response
+
 
     else:
         form = UserSettingsForm(instance=author)
