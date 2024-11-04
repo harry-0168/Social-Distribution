@@ -1,6 +1,6 @@
 from django.urls import path
 from posts.views import get_author_comments, get_comment, get_commented_comment, get_edit_delete_post, get_posts_comments,get_posts_create_post,get_post_image
-from posts.views import get_edit_delete_post,get_posts_create_post,get_post_image, github_post, api_create_like, api_view_postLikes, api_view_Likes
+from posts.views import get_edit_delete_post,get_posts_create_post,get_post_image, github_post, api_create_like, api_view_postLikes, api_view_Likes, get_post_FQID
 from author.views import api_list_authors, api_add_author, api_author_detail, login, signup, get_author_from_cookie, logout, get_likes_by_author, get_single_like, api_get_like
 from inbox.views import get_followers, get_following
 from inbox.views import handle_follow_request_response, inboxApi
@@ -20,6 +20,7 @@ urlpatterns = [
     path('authors/<uuid:author_id>/posts/', get_posts_create_post, name='get_posts'),
     path("authors/<uuid:author_id>/posts/", get_posts_create_post, name="create"),
     path('authors/<uuid:author_id>/posts/<uuid:post_id>', get_edit_delete_post, name='delete_post'),
+    path('posts/<path:FQID>', get_post_FQID, name='get_post_FQID'),
     path('authors/<uuid:author_id>/gitPost/', github_post, name='github_post'),
     
     # Image Posts API

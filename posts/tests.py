@@ -118,8 +118,8 @@ class GetPostFQIDTestCase(APITestCase):
         self.client.login(displayName='testuser', password='password')
 
         # Create a public post and a friends-only post
-        self.public_post = Post.objects.create(id=uuid.uuid4(), visibility="PUBLIC", author=self.user)
-        self.friends_only_post = Post.objects.create(id=uuid.uuid4(), visibility="FRIENDS", author=self.user)
+        self.public_post = Post.objects.create(id=uuid.uuid4(), FQID='http://localhost/api/authors/1', visibility="PUBLIC", author=self.user)
+        self.friends_only_post = Post.objects.create(id=uuid.uuid4(), FQID='http://localhost/api/authors/2', visibility="FRIENDS", author=self.user)
 
     def test_no_FQID_provided(self):
         factory = APIRequestFactory()
@@ -136,7 +136,7 @@ class GetPostFQIDTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_public_post_access(self):
-        url = reverse('get_post_FQID', args=[self.public_post.id])
+        url = reverse('get_post_FQID', args=[self.public_post.FQID])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -145,7 +145,7 @@ class GetPostFQIDTestCase(APITestCase):
 
     @patch('author.models.Following.are_friends', return_value=True)
     def test_friends_only_post_authenticated_friend(self, mock_are_friends):
-        url = reverse('get_post_FQID', args=[self.friends_only_post.id])
+        url = reverse('get_post_FQID', args=[self.friends_only_post.FQID])
         # Ensure the test user is logged in and authenticated
         self.client.force_authenticate(user=self.user)
 
@@ -158,7 +158,7 @@ class GetPostFQIDTestCase(APITestCase):
 
     @patch('author.models.Following.are_friends', return_value=False)
     def test_friends_only_post_authenticated_non_friend(self, mock_are_friends):
-        url = reverse('get_post_FQID', args=[self.friends_only_post.id])
+        url = reverse('get_post_FQID', args=[self.friends_only_post.FQID])
         self.client.force_authenticate(user=self.user)  # Ensure user is authenticated
 
         response = self.client.get(url)
@@ -168,7 +168,7 @@ class GetPostFQIDTestCase(APITestCase):
 
     def test_friends_only_post_unauthenticated_user(self):
         self.client.logout()  # Make the request as an unauthenticated user
-        url = reverse('get_post_FQID', args=[self.friends_only_post.id])
+        url = reverse('get_post_FQID', args=[self.friends_only_post.FQID])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.data, {"error": "Unauthorized to view friends-only post"})
