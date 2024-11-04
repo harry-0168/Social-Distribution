@@ -210,6 +210,15 @@ body {
 .action-buttons .edit-button:hover {
     background-color: #6d4f8d;
 }
+.logout-button {
+    background-color: rgb(209, 31, 31); /* Soft red background */
+    color: #ffffff; /* White text */
+    padding: 8px 20px; /* Padding for size */
+    font-size: 16px; /* Font size */
+    border: none; /* Remove default border */
+    border-radius: 5px; /* Rounded corners */
+    cursor: pointer;
+}
 
 /* Post Content */
 .post-content img {
@@ -300,71 +309,46 @@ body {
     background-color: #388e3c;
 }
 
-.followers-list {
-    margin-top: 20px;
-}
-
-.follower-box {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    background-color: #f9f9f9;
-}
-
-.follower-info {
-    font-size: 18px;
-    font-weight: bold;
-}
-
-.unfollow-button button {
-    background-color: #d9534f;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.unfollow-button button:hover {
-    background-color: #c9302c;
-}
-
-
-/* The overall container for the following list */
-
-
-/* List of following items */
-.following-list {
+/* General styles for list boxes */
+.following-list, .followers-list {
     display: flex;
     flex-direction: column;
-    align-items: center; /* Center the child elements horizontally */
+    align-items: center;
     margin-top: 20px;
 }
 
-/* Each following item box */
-.following-box {
+/* List box styling */
+.following-box, .follower-box {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 80%; /* Set fixed width */
+    max-width: 600px; /* Ensure consistent max width */
+    min-height: 70px; /* Fixed height for consistency */
     padding: 15px;
     border: 1px solid #ccc;
     border-radius: 5px;
     margin-bottom: 15px;
     background-color: #fff;
-    width: 80%;
 }
 
-/* Styling for the name of the following user */
-.following-info {
+/* Info and friend tag alignment within the box */
+.following-info, .follower-info {
     font-size: 18px;
     font-weight: bold;
 }
 
-/* Unfollow button */
+/* Friend tag styling */
+.friend-tag {
+    background-color: #4CAF50;
+    color: white;
+    padding: 2px 5px;
+    margin-left: 10px;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+/* Unfollow button styling */
 .unfollow-button button {
     background-color: #d9534f;
     color: white;
@@ -378,8 +362,20 @@ body {
     background-color: #c9302c;
 }
 
+/* Additional margin for friend tag to align properly */
+.following-info span.friend-tag,
+.follower-info span.friend-tag {
+    margin-left: 10px;
+}
 
-.follow-button, .unfollow-button {
+/* Optional: Flex-grow adjustment for consistent spacing */
+.following-info, .follower-info {
+    flex-grow: 1;
+}
+
+
+
+.follow-button {
     padding: 6px 14px;
     font-size: 16px;
     border: 2px solid purple; 
@@ -392,7 +388,7 @@ body {
 
 }
 
-.follow-button:hover, .unfollow-button:hover {
+.follow-button:hover {
     background-color: purple;
     color: white; 
 }
@@ -431,4 +427,50 @@ body {
     max-width: 100%;
     height: auto;
     display: block;
+}
+
+.friend-tag {
+    background-color: #4CAF50;
+    color: white;
+    padding: 2px 5px;
+    margin-left: 10px;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.author-details {
+    background-color: #f9f9f9; /* Light grey background */
+    padding: 20px; /* Padding around the content */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Soft shadow */
+    max-width: 600px; /* Restrict width */
+    margin: 20px auto; /* Center the container */
+    font-family: Arial, sans-serif; /* Font for content */
+}
+
+.author-details h2 {
+    color: #333333; /* Dark grey for the heading */
+    font-size: 24px; /* Slightly larger heading font */
+    margin-bottom: 15px; /* Space below the heading */
+}
+
+.author-info p {
+    color: #555555; /* Medium grey for text */
+    font-size: 16px; /* Font size for paragraphs */
+    margin: 8px 0; /* Space between paragraphs */
+}
+
+.author-info p strong {
+    color: #333333; /* Darker color for labels */
+}
+
+.author-info a {
+    color: #0066cc; /* Link color */
+    text-decoration: none; /* Remove underline */
+    transition: color 0.3s; /* Smooth color transition */
+}
+
+.feed-header {
+    text-align: center;
+    margin: 0px 00px 20px 0px;
 }

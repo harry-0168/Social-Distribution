@@ -37,8 +37,8 @@
                 {% for user in results %}
                     <a href="{% url 'author_profile' user.id %}" class="result-box">
                         <div class="profile-image-container">
-                            {% if user.profile_image %}
-                                <img src="{{ user.profile_image.url }}" alt="{{ user.displayName }}" class="profile-image">
+                            {% if user.profileImage %}
+                                <img src="{{ user.profileImage.url }}" alt="{{ user.displayName }}" class="profile-image">
                             {% else %}
                                 <img src="{% static 'avatar.png' %}" alt="Default Profile" class="profile-image">
                             {% endif %}

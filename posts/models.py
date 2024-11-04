@@ -67,10 +67,23 @@ class Post(models.Model):
 
 class Comment(models.Model):
     username = models.CharField(max_length=32) 
-    created_at = models.DateTimeField("date created", default=timezone.now)
+    published = models.DateTimeField("date created", default=timezone.now) 
     content =  models.TextField()
-    post = models.ForeignKey(Post, on_delete=models.CASCADE) # all comments belong to a post
+    post = models.ForeignKey(Post, related_name='comments', on_delete=models.CASCADE) # all comments belong to a post
     author = models.ForeignKey(Author, related_name='comments', on_delete=models.CASCADE)
+    FQID = models.CharField(max_length=1000, unique=True, null=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    type = models.CharField(max_length=20)
+    contentType = "text/markdown"
+    #likes
+
+    def save(self, *args, **kwargs):
+        ''' Override the save method to set the FQID field before saving '''
+        if not self.FQID:  # Only set if FQID is not already set
+            host = kwargs.get('request_host', 'localhost')
+            self.FQID = f"http://{host}/api/comments/{self.id}"
+        
+        super().save(*args, **kwargs)
 
 class Like(models.Model):
     type = models.CharField(max_length=255,default="like")
@@ -81,4 +94,13 @@ class Like(models.Model):
 
     def __str__(self):
         return f"{self.username} liked {self.post.title}"
+
+class githubPostIds(models.Model):
+    '''
+    This model is used to store the post id of the posts that are created in github
+    '''
+    id = models.IntegerField(primary_key=True)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    
+
     

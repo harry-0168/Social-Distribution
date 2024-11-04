@@ -10,8 +10,8 @@
 <body>
     <div class="header">
         <a href="{% url 'author_profile' author.id %}"> <!-- TO-DO replace with actual author id-->
-            {% if author.profile_image %}
-                <img src="{{ author.profile_image.url }}" 
+            {% if author.profileImage %}
+                <img src="{{ author.profileImage.url }}" 
                     class="profile-pic-header">
             {% else %}
                 <img src="{% static 'avatar.png' %}" 
@@ -39,8 +39,8 @@
     <div class="container">
  
         <div class="profile-area">
-            {% if author.profile_image %}
-            <img class="profile-pic" src="{{ author.profile_image.url }}" alt="Profile Picture">
+            {% if author.profileImage %}
+            <img class="profile-pic" src="{{ author.profileImage.url }}" alt="Profile Picture">
             {% else %}
             <img class="profile-pic" src="{% static 'avatar.png' %}" alt="Default Profile Picture">
         {% endif %}            
@@ -53,14 +53,14 @@
                 data-author-host="{{ author.host }}"
                 data-author-name="{{ author.displayName }}"
                 data-author-github="{{ author.user.github }}"
-                data-author-profile-image="{{ author.user.profile_image.url }}"
+                data-author-profile-image="{{ author.user.profileImage.url }}"
 
                 data-actor-id="{{ request.user.id }}"
                 data-actor-fqid="{{ request.user.FQID }}"
                 data-actor-name="{{ request.user.displayName }}"
                 data-actor-host="{{ request.user.host }}"
                 data-actor-github="{{ request.user.github }}"
-                data-actor-profile-image="{% if request.user.profile_image %}{{ request.user.profile_image.url }}{% else %}None{% endif %}">
+                data-actor-profile-image="{% if request.user.profileImage %}{{ request.user.profileImage.url }}{% else %}None{% endif %}">
             {% csrf_token %}
             {% if is_following %}
                 <button type="button" class="unfollow-button">Unfollow</button>
@@ -87,13 +87,15 @@
                 <li><a href="{% url 'author-about' author.id %}">About</a></li>
                 <!-- <li><a href="#">Photo</a></li>
                 <li><a href="#">Video</a></li> -->
-                <li><a href="{% url 'user-settings' author.id %}">Settings</a></li>
+                {% if request.user.id == author.id %}
+                    <li><a href="{% url 'user-settings' author.id %}">Settings</a></li>
+                {% endif %}
 
                   <!-- Add the logout form below the settings option -->
                 <li>
                     <form action="{% url 'logout' %}" method="POST">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">Logout</button>
+                        <button type="submit" class="logout-button">Logout</button>
                     </form>
                     
                 </li>
@@ -122,6 +124,19 @@
             }
             return cookieValue;
         }
+        document.addEventListener('DOMContentLoaded', function() {
+            const followForm = document.querySelector('.follow-form');
+
+            if (followForm) {
+                const authorId = followForm.getAttribute('data-author-id');
+                const actorId = followForm.getAttribute('data-actor-id');
+                const Button = followForm.querySelector('button');
+                //Hide follow and unfollow buttons if the profile page belongs to the logged-in user
+                if (authorId === actorId) {
+                    Button.style.display = 'none';
+                }
+            }
+        });
         const currentHost = window.location.origin;
         const csrftoken = getToken('csrftoken');
         document.addEventListener('DOMContentLoaded', function () {

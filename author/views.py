@@ -16,6 +16,7 @@ from .serializers import UserSettingsForm
 from django.contrib import messages
 from django.conf import settings
 from .models import Author, Following
+from inbox.models import Inbox
 import json
 
 
@@ -28,10 +29,10 @@ def profile_view(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     
     # Get the follower count (authors who follow this author)
-    followers_count = Following.objects.filter(author2=author).count()  # Count of followers
+    followers_count = Following.objects.filter(author2=author, status = 'accepted').count()  # Count of followers
     
     # Get the Following count (authors this author is Following)
-    following_count = Following.objects.filter(author1=author).count()  # Count of people this author is following
+    following_count = Following.objects.filter(author1=author, status='accepted').count()  # Count of people this author is following
     
     # Fetch the author's posts
     posts = Post.objects.filter(author=author).exclude(visibility='DELETED').order_by('-published')
@@ -58,7 +59,10 @@ def author_about(request, author_id):
     This view fetches the author by ID and renders the author's about page.
     '''
     author = Author.objects.get(id=author_id)  
-    return render(request, 'author/author_about.html', {'author': author})
+    followers_count = Following.objects.filter(author2=author).count()  # Count of followers
+    # Get the Following count (authors this author is Following)
+    following_count = Following.objects.filter(author1=author).count()  # Count of people this author is following
+    return render(request, 'author/author_about.html', {'author': author, 'followers_count': followers_count, 'following_count': following_count})
 
 
 def follow_author(request, object_author_id):
@@ -114,11 +118,19 @@ def following_list(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     
     # Get all authors that the current author is following
-    follow_relationships = Following.objects.filter(author1=author).select_related('author2')
+    follow_relationships = Following.objects.filter(author1=author, status='accepted').select_related('author2')
+
+    following = []
+    for rel in follow_relationships:
+        user = rel.author2
+        following.append({
+            'user': user,
+            'is_friend': author.is_friend(user)  # Check if the author and the following author are mutual friends
+        })
 
     context = {
         'author': author,
-        'following': [rel.author2 for rel in follow_relationships],  # List of authors being followed
+        'following': following,  # List of authors being followed with friend status
         'followers_count': Following.objects.filter(author2=author).count(),  # Count of followers
         'following_count': follow_relationships.count(),  # Count of following
     }
@@ -135,28 +147,53 @@ def followers_list(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     
     # Get all authors who follow this author
-    followers = Following.objects.filter(author2=author).select_related('author1')
+    followers_relationships = Following.objects.filter(author2=author, status='accepted').select_related('author1')
+
+    followers = []
+    for rel in followers_relationships:
+        follower = rel.author1
+        followers.append({
+            'user': follower,
+            'is_friend': author.is_friend(follower)  # Check if the author and the follower are mutual friends
+        })
 
     context = {
         'author': author,
-        'followers': [rel.author1 for rel in followers],  # List of authors who follow the target
-        'followers_count': followers.count(),  # Number of followers
+        'followers': followers,  # List of authors who follow the target with friend status
+        'followers_count': followers_relationships.count(),  # Number of followers
         'following_count': Following.objects.filter(author1=author).count(),  # Number of authors this user is following
     }
 
     return render(request, 'author/followers_list.html', context)
 
+
 @api_view(['GET'])
 def api_list_authors(request):
-    # Fetch all authors from the database
+    paginator = AuthorPagination()  # Use the custom pagination class
     authors = Author.objects.all()
+    result_page = paginator.paginate_queryset(authors, request)
 
-    # Serialize the authors using a serializer
-    serializer = AuthorSerializer(authors, many=True)
+    # Format author data as per your required structure
+    formatted_authors = []
+    for author in result_page:
+        profile_image_url = author.profileImage.url if author.profileImage else None  # Updated field name
+        full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
+        host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
 
-    # Return the serialized data using Response, which will be displayed in the browsable API
-    return Response({"type": "authors", "authors": serializer.data}, status=status.HTTP_200_OK)
+        formatted_authors.append({
+            "type": "author",
+            "id": full_id_url,
+            "host": host_with_postfix,
+            "displayName": author.displayName,
+            "github": author.github,
+            "profileImage": profile_image_url,
+            "page": author.page,
+        })
 
+    # Return the customized paginated response
+    return paginator.get_paginated_response(formatted_authors)
+    
+    
 @api_view(['POST'])
 def api_add_author(request):
     # Deserialize the incoming request data using the AuthorSerializer
@@ -178,16 +215,26 @@ def api_author_detail(request, author_id):
     if request.method == 'GET':
         author = get_object_or_404(Author, id=author_id)
         
-        # Handle the serialization of ImageField (use URL or None if not available)
-        profile_image_url = author.profile_image.url if author.profile_image else None
-
+        # Construct the full ID URL
+        full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
+        
+        # Use static default image if profileImage has no file
+        if author.profileImage and hasattr(author.profileImage, 'url'):
+            profileImage_url = author.profileImage.url
+        else:
+            profileImage_url = f"{request.scheme}://{request.get_host()}/static/avatar.png"  # Default static image path
+        
+    
+        # Get the host with the postfix
+        host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
+        
         data = {
             "type": "author",
-            "id": str(author.id),
-            "host": author.host,
+            "id": full_id_url,
+            "host": host_with_postfix,
             "displayName": author.displayName,
             "github": author.github,
-            "profile_image": profile_image_url,
+            "profileImage": profileImage_url,
             "page": author.page,
         }
         return Response(data, status=status.HTTP_200_OK)
@@ -204,9 +251,9 @@ def api_author_detail(request, author_id):
             author.page = data.get('page', author.page)
 
             # Handle image update - in PUT requests, this typically requires a multipart form-data request
-            profile_image = data.get('profile_image')
-            if profile_image:
-                author.profile_image = profile_image
+            profileImage = data.get('profileImage')
+            if profileImage:
+                author.profileImage = profileImage
 
             author.save()
 
@@ -225,9 +272,16 @@ def api_author_detail(request, author_id):
 
 
 class AuthorPagination(PageNumberPagination):
-    page_size = 10
-    page_size_query_param = 'size'
-    max_page_size = 500
+    page_size = 100 # Default number of items per page
+    page_size_query_param = 'size' # Custom query parameter for page size
+    max_page_size = 1000 # Maximum number of items per page
+
+    def get_paginated_response(self, data):
+        # Customize the response format to only include `type` and `authors`
+        return Response({
+            "type": "authors",
+            "authors": data
+        })
 
 class AuthorViewSet(viewsets.ModelViewSet):
     queryset = Author.objects.all()
@@ -351,22 +405,46 @@ def logout(request):
 
 def user_settings(request, author_id):
     author = get_object_or_404(Author, id=author_id)
-
+    followers_count = Following.objects.filter(author2=author).count()  # Count of followers
+    # Get the Following count (authors this author is Following)
+    following_count = Following.objects.filter(author1=author).count()  # Count of people this author is following
     if request.method == 'POST':
         form = UserSettingsForm(request.POST, request.FILES, instance=author)
+        new_display_name = form.data.get('displayName')
+        if new_display_name and new_display_name != author.displayName:
+            if Author.objects.filter(displayName=new_display_name).exclude(id=author.id).exists():
+                messages.error(request, 'This display name is already taken. Please choose another.')
+                return render(request, 'author/user_settings.html', {
+                    'form': form,
+                    'author': author,
+                    'redirect_url': request.build_absolute_uri(
+                        redirect('author_profile', author_id=author.id).url
+                    )
+                })
         if form.is_valid():
             form.save()
             messages.success(request, 'Profile changes saved successfully!')
-            # Pass the redirect URL to the template
-            return render(request, 'author/user_settings.html', {
+            payload = {
+                'id': author.displayName,
+                'author_id': str(author.id),
+                'exp': datetime.now() + timedelta(days=1),  # Token expiration
+                'iat': datetime.now()
+            }
+            newToken = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+
+            #Redirect and set the new JWT token in a cookie
+            response = render(request, 'author/user_settings.html', {
                 'form': form,
                 'author': author,
                 'redirect_url': request.build_absolute_uri(
                     redirect('author_profile', author_id=author.id).url
                 )
             })
+            response.set_cookie(key=settings.JWT_AUTH_COOKIE, value=newToken, httponly=True)
+            return response
+
 
     else:
         form = UserSettingsForm(instance=author)
 
-    return render(request, 'author/user_settings.html', {'form': form, 'author': author})
+    return render(request, 'author/user_settings.html', {'form': form, 'author': author, 'followers_count': followers_count, 'following_count': following_count})
