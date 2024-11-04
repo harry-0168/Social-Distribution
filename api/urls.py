@@ -11,7 +11,7 @@ urlpatterns = [
     path('author', get_author_from_cookie, name='get_author_from_cookie'),
     path('logout', logout, name='logout'),
 
-    path("authors/<uuid:object_author_id>/inbox/", inboxApi, name="follow_request"), # sender of the follow request
+    path("authors/<uuid:object_author_id>/inbox", inboxApi, name="follow_request"), # sender of the follow request
     path("authors/<uuid:author_id>/followers" , get_followers, name="get_followers"), # get followers of an author
     path("authors/<uuid:author_id>/following" , get_following, name="get_following"), # get following of an author
     path("authors/<uuid:author_id>/followers/<path:foreign_author_fqid>", handle_follow_request_response, name="follow_request_response"), # receiver of the follow request, replies to the follow request

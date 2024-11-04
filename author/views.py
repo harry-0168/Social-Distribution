@@ -206,7 +206,7 @@ def following_list(request, author_id):
     context = {
         'author': author,
         'following': following,  # List of authors being followed with friend status
-        'followers_count': Following.objects.filter(author2=author).count(),  # Count of followers
+        'followers_count': Following.objects.filter(author2=author, status='accepted').count(),  # Count of followers
         'following_count': follow_relationships.count(),  # Count of following
     }
 
@@ -236,7 +236,7 @@ def followers_list(request, author_id):
         'author': author,
         'followers': followers,  # List of authors who follow the target with friend status
         'followers_count': followers_relationships.count(),  # Number of followers
-        'following_count': Following.objects.filter(author1=author).count(),  # Number of authors this user is following
+        'following_count': Following.objects.filter(author1=author, status='accepted').count(),  # Number of authors this user is following
     }
 
     return render(request, 'author/followers_list.html', context)
