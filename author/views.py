@@ -59,7 +59,10 @@ def author_about(request, author_id):
     This view fetches the author by ID and renders the author's about page.
     '''
     author = Author.objects.get(id=author_id)  
-    return render(request, 'author/author_about.html', {'author': author})
+    followers_count = Following.objects.filter(author2=author).count()  # Count of followers
+    # Get the Following count (authors this author is Following)
+    following_count = Following.objects.filter(author1=author).count()  # Count of people this author is following
+    return render(request, 'author/author_about.html', {'author': author, 'followers_count': followers_count, 'following_count': following_count})
 
 
 def follow_author(request, object_author_id):
@@ -402,7 +405,9 @@ def logout(request):
 
 def user_settings(request, author_id):
     author = get_object_or_404(Author, id=author_id)
-
+    followers_count = Following.objects.filter(author2=author).count()  # Count of followers
+    # Get the Following count (authors this author is Following)
+    following_count = Following.objects.filter(author1=author).count()  # Count of people this author is following
     if request.method == 'POST':
         form = UserSettingsForm(request.POST, request.FILES, instance=author)
         new_display_name = form.data.get('displayName')
@@ -442,4 +447,4 @@ def user_settings(request, author_id):
     else:
         form = UserSettingsForm(instance=author)
 
-    return render(request, 'author/user_settings.html', {'form': form, 'author': author})
+    return render(request, 'author/user_settings.html', {'form': form, 'author': author, 'followers_count': followers_count, 'following_count': following_count})
