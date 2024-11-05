@@ -93,7 +93,7 @@
                 <li>
                     <form action="{% url 'logout' %}" method="POST">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">Logout</button>
+                        <button type="submit" class="logout-button">Logout</button>
                     </form>
                     
                 </li>
@@ -204,6 +204,7 @@
                         console.log("Response data:", data);
                         if (data.message) {
                             alert("Follow request sent successfully!");
+                            location.reload();
                         } else {
                             alert("Failed to send follow request.");
                         }
@@ -211,7 +212,35 @@
                     .catch(error => console.error('Error:', error));
                 });
             });
-        });
+            document.querySelectorAll('.unfollow-button').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const form = button.closest('.follow-form');
+                    const actorId = form.getAttribute('data-actor-id');
+                    const authorFQID = form.getAttribute('data-author-fqid');
+                    
+                    const unfollowUrl = `/api/authors/${actorId}/followers/${encodeURIComponent(authorFQID)}/`;
+                    console.log("Unfollow URL:", unfollowUrl);  // Log the URL to check if it matches the expected pattern
+
+
+                    fetch(unfollowUrl, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken  
+                        }
+                    })
+                    .then(response => {
+                        console.log("Response status:", response.status); 
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        alert("Unfollowed successfully!");
+                        location.reload();
+                    })
+                    .catch(error => console.error('Error:', error));
+                });
+            });
+        })
     </script>
 </body>
 </html>

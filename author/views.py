@@ -17,6 +17,8 @@ from django.contrib import messages
 from django.conf import settings
 from .models import Author, Following
 from inbox.models import Inbox
+from posts.models import Like
+from posts.serializers import LikeSerializer
 import json
 
 
@@ -29,10 +31,10 @@ def profile_view(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     
     # Get the follower count (authors who follow this author)
-    followers_count = Following.objects.filter(author2=author).count()  # Count of followers
+    followers_count = Following.objects.filter(author2=author, status = 'accepted').count()  # Count of followers
     
     # Get the Following count (authors this author is Following)
-    following_count = Following.objects.filter(author1=author).count()  # Count of people this author is following
+    following_count = Following.objects.filter(author1=author, status='accepted').count()  # Count of people this author is following
     
     # Fetch the author's posts
     posts = Post.objects.filter(author=author).exclude(visibility='DELETED').order_by('-published')
@@ -59,7 +61,83 @@ def author_about(request, author_id):
     This view fetches the author by ID and renders the author's about page.
     '''
     author = Author.objects.get(id=author_id)  
-    return render(request, 'author/author_about.html', {'author': author})
+    followers_count = Following.objects.filter(author2=author).count()  # Count of followers
+    # Get the Following count (authors this author is Following)
+    following_count = Following.objects.filter(author1=author).count()  # Count of people this author is following
+    return render(request, 'author/author_about.html', {'author': author, 'followers_count': followers_count, 'following_count': following_count})
+
+@api_view(['GET'])
+def api_get_like(request, like_fqid):
+    """
+    Retrieve a single like by its fully qualified ID (LIKE_FQID).
+    """
+    try:
+        # Fetch the Like instance using the LIKE_FQID
+        like = Like.objects.get(id=like_fqid)
+        
+        # Serialize the Like object
+        like_data = {
+            'id': like.id,
+            'username': like.username,
+            'post_id': like.object.id,
+            'author_id': like.author.id,
+            'published': like.published,
+            'type': like.type,
+        }
+
+        return Response(like_data, status=status.HTTP_200_OK)
+    except Like.DoesNotExist:
+        return Response({"error": "Like not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_single_like(request, author_serial, like_serial):
+    print("Requested Author Serial:", author_serial)
+    print("Requested Like Serial:", like_serial)
+
+    # Get the author based on the provided author_serial
+    author = get_object_or_404(Author, id=author_serial)
+
+    # Get the specific like by LIKE_SERIAL and ensure it belongs to the author
+    like = get_object_or_404(Like, id=like_serial, author=author)
+
+    # Serialize the like object
+    like_serializer = LikeSerializer(like)
+
+    # Return the serialized data
+    return Response(like_serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def get_likes_by_author(request, author_serial):
+    print("Requested Author Serial:", author_serial)
+
+    # Get the author based on the provided author_serial
+    author = get_object_or_404(Author, id=author_serial)
+
+    # Retrieve all likes by the author
+    likes = Like.objects.filter(author=author)
+
+    # Create a dictionary to store the latest likes per post
+    latest_likes_dict = {}
+
+    for like in likes:
+        post_id = like.object.id
+        if post_id not in latest_likes_dict:
+            latest_likes_dict[post_id] = like
+        else:
+            # Compare published dates to find the latest like
+            if like.published > latest_likes_dict[post_id].published:
+                latest_likes_dict[post_id] = like
+
+    # Get the latest likes as a list
+    latest_likes = list(latest_likes_dict.values())
+
+    # Serialize the latest likes queryset
+    like_serializer = LikeSerializer(latest_likes, many=True)
+
+    # Return the serialized data
+    return Response(like_serializer.data, status=status.HTTP_200_OK)
 
 
 def follow_author(request, object_author_id):
@@ -115,7 +193,7 @@ def following_list(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     
     # Get all authors that the current author is following
-    follow_relationships = Following.objects.filter(author1=author).select_related('author2')
+    follow_relationships = Following.objects.filter(author1=author, status='accepted').select_related('author2')
 
     following = []
     for rel in follow_relationships:
@@ -128,13 +206,13 @@ def following_list(request, author_id):
     context = {
         'author': author,
         'following': following,  # List of authors being followed with friend status
-        'followers_count': Following.objects.filter(author2=author).count(),  # Count of followers
+        'followers_count': Following.objects.filter(author2=author, status='accepted').count(),  # Count of followers
         'following_count': follow_relationships.count(),  # Count of following
     }
 
     return render(request, 'author/following_list.html', context)
 
-# View to get the list of followers of the given author
+@api_view(['GET'])
 def followers_list(request, author_id):
     '''
     View to get the list of authors that follow the given author
@@ -144,24 +222,103 @@ def followers_list(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     
     # Get all authors who follow this author
-    followers_relationships = Following.objects.filter(author2=author).select_related('author1')
+    followers_relationships = Following.objects.filter(author2=author, status='accepted').select_related('author1')
 
-    followers = []
-    for rel in followers_relationships:
-        follower = rel.author1
-        followers.append({
-            'user': follower,
-            'is_friend': author.is_friend(follower)  # Check if the author and the follower are mutual friends
+    formatted_followers = []
+    following_count = Following.objects.filter(author1=author).count()
+
+
+    for follower_rel in followers_relationships:
+        follower = follower_rel.author1
+        profile_image_url = follower.profileImage.url if follower.profileImage else None
+        full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{follower.id}"
+        host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
+
+        formatted_followers.append({
+            "type": "author",
+            "id": full_id_url,
+            "host": host_with_postfix,
+            "displayName": follower.displayName,
+            "github": follower.github,
+            "profileImage": profile_image_url,
+            "page": follower.page,
         })
 
+    response_data = {
+        "type": "followers",
+        "followers": formatted_followers,
+        "followers_count": followers_relationships.count(),
+        "following_count": following_count,  
+    }
     context = {
         'author': author,
-        'followers': followers,  # List of authors who follow the target with friend status
-        'followers_count': followers_relationships.count(),  # Number of followers
-        'following_count': Following.objects.filter(author1=author).count(),  # Number of authors this user is following
+        'followers': formatted_followers,
+        'followers_count': followers_relationships.count(), 
+        'following_count': Following.objects.filter(author1=author).count(), 
     }
-
+    #If the request is an API request, return response 200
+    if request.headers.get('Accept') == 'application/json':
+        return Response(response_data, status=200)
+    #Otherwise, render the html template
     return render(request, 'author/followers_list.html', context)
+
+
+@api_view(['GET','DELETE','PUT'])
+def manage_follower(request, author_id, foreign_author_fqid):
+    author = get_object_or_404(Author, id=author_id)
+
+    from urllib.parse import unquote
+    foreign_author_fqid = unquote(foreign_author_fqid)
+
+    try:
+        foreign_author = Author.objects.get(FQID=foreign_author_fqid)
+    except Author.DoesNotExist:
+        return Response({"detail": "Foreign author not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Handle GET request: Check if foreign author is following the author
+    if request.method =='GET':
+        is_follower = Following.is_following(foreign_author, author)
+        if is_follower:
+            follower_data = {
+                "type": "author",
+                "id": foreign_author_fqid,
+                "host": foreign_author.host,
+                "displayName": foreign_author.displayName,
+                "page": f"{foreign_author.host}/authors/{foreign_author.id}",
+                "github": foreign_author.github,
+                "profileImage": foreign_author.profileImage.url
+            }
+            return Response(follower_data, status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Handle DELETE request: Remove the follower relationship
+    elif request.method =='DELETE':
+        if Following.is_following(foreign_author, author):
+            Following.unfollow(foreign_author, author)
+            return Response({"detail": "Follower removed"}, status=status.HTTP_200_OK)
+        else:
+            return Response({"detail": "No follower relationship exists"}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Handle PUT request: Add a follower relationship
+    elif request.method =='PUT':
+        new_following = Following.follow(foreign_author, author)
+        if new_following:
+            follower_data = {
+                "type": "author",
+                "id": foreign_author_fqid,
+                "host": foreign_author.host,
+                "displayName": foreign_author.displayName,
+                "page": f"{foreign_author.host}/authors/{foreign_author.id}",
+                "github": foreign_author.github,
+                "profileImage": foreign_author.profileImage.url,
+                "message": f"New follower created for author {author.displayName}"
+            }
+            return Response(follower_data, status=status.HTTP_201_CREATED)
+        else:
+            return Response({"detail": "Already following"}, status=status.HTTP_200_OK)
+
+
 
 @api_view(['GET'])
 def api_list_authors(request):
@@ -172,7 +329,7 @@ def api_list_authors(request):
     # Format author data as per your required structure
     formatted_authors = []
     for author in result_page:
-        profile_image_url = author.profile_image.url if author.profile_image else None
+        profile_image_url = author.profileImage.url if author.profileImage else None  # Updated field name
         full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
         host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
 
@@ -214,9 +371,13 @@ def api_author_detail(request, author_id):
         # Construct the full ID URL
         full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
         
-        # Handle the serialization of ImageField (use URL or None if not available)
-        profileImage_url = author.profileImage.url if author.profileImage else None
-
+        # Use static default image if profileImage has no file
+        if author.profileImage and hasattr(author.profileImage, 'url'):
+            profileImage_url = author.profileImage.url
+        else:
+            profileImage_url = f"{request.scheme}://{request.get_host()}/static/avatar.png"  # Default static image path
+        
+    
         # Get the host with the postfix
         host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
         
@@ -397,22 +558,46 @@ def logout(request):
 
 def user_settings(request, author_id):
     author = get_object_or_404(Author, id=author_id)
-
+    followers_count = Following.objects.filter(author2=author).count()  # Count of followers
+    # Get the Following count (authors this author is Following)
+    following_count = Following.objects.filter(author1=author).count()  # Count of people this author is following
     if request.method == 'POST':
         form = UserSettingsForm(request.POST, request.FILES, instance=author)
+        new_display_name = form.data.get('displayName')
+        if new_display_name and new_display_name != author.displayName:
+            if Author.objects.filter(displayName=new_display_name).exclude(id=author.id).exists():
+                messages.error(request, 'This display name is already taken. Please choose another.')
+                return render(request, 'author/user_settings.html', {
+                    'form': form,
+                    'author': author,
+                    'redirect_url': request.build_absolute_uri(
+                        redirect('author_profile', author_id=author.id).url
+                    )
+                })
         if form.is_valid():
             form.save()
             messages.success(request, 'Profile changes saved successfully!')
-            # Pass the redirect URL to the template
-            return render(request, 'author/user_settings.html', {
+            payload = {
+                'id': author.displayName,
+                'author_id': str(author.id),
+                'exp': datetime.now() + timedelta(days=1),  # Token expiration
+                'iat': datetime.now()
+            }
+            newToken = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+
+            #Redirect and set the new JWT token in a cookie
+            response = render(request, 'author/user_settings.html', {
                 'form': form,
                 'author': author,
                 'redirect_url': request.build_absolute_uri(
                     redirect('author_profile', author_id=author.id).url
                 )
             })
+            response.set_cookie(key=settings.JWT_AUTH_COOKIE, value=newToken, httponly=True)
+            return response
+
 
     else:
         form = UserSettingsForm(instance=author)
 
-    return render(request, 'author/user_settings.html', {'form': form, 'author': author})
+    return render(request, 'author/user_settings.html', {'form': form, 'author': author, 'followers_count': followers_count, 'following_count': following_count})

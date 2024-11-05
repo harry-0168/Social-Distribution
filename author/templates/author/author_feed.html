@@ -1,6 +1,9 @@
 {% extends 'author/author_base.html' %}
 {% load static %}
 {% block content %}
+<div class="feed-header">
+    <h1>{{ author.displayName }}'s posts</h1>
+</div>
 <div class="posts-container">
     {% if posts %}
         {% for post in posts %}

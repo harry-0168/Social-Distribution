@@ -6,12 +6,14 @@ from django.conf import settings
 from .models import Notification
 from rest_framework.decorators import api_view
 from author.models import Author, FollowRequest
-from posts.models import Post, Comment, Like
+from posts.models import Post, Comment, Like, Likes
 from django.conf import settings
 import json
 from author.models import Following
 from .models import Inbox
 from django.utils import timezone
+import logging
+
 
 @api_view(['GET'])
 def inbox(request):
@@ -27,7 +29,7 @@ def inbox(request):
         follow_req_notifications = Following.objects.filter(author2=author, status='pending')
         posts = Post.objects.filter(author=author)
         comment_notifications = Comment.objects.filter(post__in=posts)
-        like_notifications = Like.objects.filter(post__in=posts)
+        like_notifications = Like.objects.filter(object__in=posts)
         
         # Get the list of authors that the current user is following
         followed_authors = Following.objects.filter(author1=author).values_list('author2', flat=True)
@@ -35,12 +37,26 @@ def inbox(request):
         repost_notifications = Post.objects.filter(author__in=followed_authors, type="repost")
 
         # Serialize the querysets to JSON-serializable data
-        follow_requests_data = list(follow_req_notifications.values('id', 'author1__FQID', 'author2__FQID','date'))
-        comment_data = list(comment_notifications.values('id', 'username', 'content', 'created_at', 'post__title'))
-        like_data = list(like_notifications.values('id', 'username', 'post__title', 'like_date'))
-        repost_data = list(repost_notifications.values('id', 'author__displayName', 'content', 'title'))
+        
+        follow_requests_data = list(follow_req_notifications.values('id', 'author1__FQID', 'author2__FQID', 'author1__displayName','author1__profileImage','date'))
+        comment_data = list(comment_notifications.values('id', 'username', 'content', 'published', 'post__title', 'author__profileImage', 'author__displayName'))
+        like_data = list(like_notifications.values('id', 'username', 'object__title', 'published', 'author__displayName', 'author__profileImage'))
+        repost_data = list(repost_notifications.values('id', 'author__displayName', 'content', 'title', 'author__profileImage'))
 
         # Send the data to the template
+        for follow_request in follow_requests_data:
+            follow_request['author1__profileImage'] = author.host + settings.MEDIA_URL +follow_request['author1__profileImage']
+        
+        for comment in comment_data:
+            comment['author__profileImage'] = author.host + settings.MEDIA_URL + comment['author__profileImage']
+        
+        for like in like_data:
+            like['author__profileImage'] = author.host + settings.MEDIA_URL + like['author__profileImage']
+
+        for repost in repost_data:
+            repost['author__profileImage'] = author.host + settings.MEDIA_URL + repost['author__profileImage']
+        
+        
         context = {
             'follow_requests': follow_requests_data,
             'comments': comment_data,
@@ -77,17 +93,17 @@ def inboxApi(request, object_author_id):
                 print(parsed_data['actor']['id'], author.FQID)
                 if author.FQID != parsed_data['actor']['id']:
                     return Response({"error": "Invalid request"}, status=401)
-                if parsed_data['object']['host'] != parsed_data['actor']['host']:
-                    # create object author and following object, then forward the request to the next host server
-                    AuthorSerializer = AuthorSerializer(id=parsed_data['object']['id'], host=parsed_data['object']['host'], displayName=parsed_data['object']['displayName'], github=parsed_data['object']['github'], profileImage=parsed_data['object']['profileImage'], page=parsed_data['object']['url'])
-                    if AuthorSerializer.is_valid():
-                        AuthorSerializer.save()
-                    else:
-                        return Response({"error": "Invalid object author data"}, status=400)
-                    object_author = Author.objects.get(id=parsed_data['object']['id'])
-                    if not Following.follow(actor, object_author):
-                        return Response({"error": "Already following"}, status=400)
-                    return Response({"error": "Forwarding request to the next host server"}, status=200)
+                # if parsed_data['object']['host'] != parsed_data['actor']['host']:
+                #     # create object author and following object, then forward the request to the next host server
+                #     AuthorSerializer = AuthorSerializer(id=parsed_data['object']['id'], host=parsed_data['object']['host'], displayName=parsed_data['object']['displayName'], github=parsed_data['object']['github'], profileImage=parsed_data['object']['profileImage'], page=parsed_data['object']['url'])
+                #     if AuthorSerializer.is_valid():
+                #         AuthorSerializer.save()
+                #     else:
+                #         return Response({"error": "Invalid object author data"}, status=400)
+                #     object_author = Author.objects.get(id=parsed_data['object']['id'])
+                #     if not Following.follow(actor, object_author):
+                #         return Response({"error": "Already following"}, status=400)
+                #     return Response({"error": "Forwarding request to the next host server"}, status=200)
                 actor = get_object_or_404(Author, FQID=parsed_data['actor']['id'])
                 object_author = get_object_or_404(Author, FQID=parsed_data['object']['id'])
                 # check if the actor is already following the object_author
@@ -108,6 +124,57 @@ def inboxApi(request, object_author_id):
                 # if actor does not exist create it and send a follow request to the object_author
                 # if object_author does not exist forward the request to the next host server inbox
                 return Response({"error": "Actor not found"}, status=404)
+            
+        elif parsed_data['type'] == 'comment':
+            object_author = Author.objects.get(id=parsed_data['object']['post']['author'])
+            Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['object']['FQID'], received_at=timezone.now()).save()
+            return Response({"message": "Comment sent"}, status=200)
+        
+        elif parsed_data['type'] == 'like':
+            author = get_object_or_404(Author, id=object_author_id)
+
+            # Get the post_id from form data
+            post_id = request.POST.get('post_id')
+            if not post_id:
+                return Response({"error": "Post ID not found"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            post = get_object_or_404(Post, id=post_id)
+
+            token = request.COOKIES.get('jwt')
+            if not token:
+                return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+
+            try:
+                payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+                username = payload['id']  # Assuming 'id' is the username or display name
+                user = get_object_or_404(Author, displayName=username)
+            except jwt.ExpiredSignatureError:
+                return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if a like already exists
+            if Like.objects.filter(username=username, object=post).exists():
+                return redirect(request.META.get('HTTP_REFERER'))
+
+            try:
+                # Ensure post has a likes collection or create one
+                if not post.likes_collection:
+                    likes_collection = Likes.objects.create()
+                    post.likes_collection = likes_collection
+                    post.save()
+
+                # Create and save the new Like instance
+                like = Like(username=username, object=post, author=user)
+                like.save()
+
+                # Add the like to the post's likes collection
+                post.likes_collection.add_like(like)
+
+                # Serialize and return the response
+                return redirect(request.META.get('HTTP_REFERER'))
+
+            except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=401)
     except jwt.InvalidTokenError:
@@ -128,9 +195,9 @@ def handle_follow_request_response(request, author_id, foreign_author_fqid):
             return Response({"error": "Unauthorized"}, status=401)
         
         # foreign_author_fqid will be percent encoded, so we need to decode it
-        foreign_author_fqid = foreign_author_fqid.replace('%2F', '/')
-        foreign_author_fqid = foreign_author_fqid.replace('%3A', ':')
-        
+        from urllib.parse import unquote
+        foreign_author_fqid = unquote(foreign_author_fqid).rstrip('/')
+        print(f"Decoded foreign_author_fqid: {foreign_author_fqid}")
         foreign_author = get_object_or_404(Author, FQID=foreign_author_fqid)
         if request.method == 'PUT':
             # Accept follow request from foreign_author 
@@ -140,7 +207,7 @@ def handle_follow_request_response(request, author_id, foreign_author_fqid):
             return Response({"message": "Follow request accepted"}, status=200)
         elif request.method == 'DELETE':
             # Reject follow request from foreign_authorm, status can be 'pending' or 'accepted'
-            follow_request = get_object_or_404(Following, author1 = foreign_author, author2 = author)
+            follow_request = get_object_or_404(Following, author1 = author, author2 = foreign_author)
             follow_request.delete()
             return Response({"message": "Follow request rejected"}, status=200)
         elif request.method == 'GET':

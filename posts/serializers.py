@@ -2,11 +2,18 @@ from rest_framework import serializers
 from .models import Post, Comment, Like
 from author.serializers import AuthorSerializer
 
+class CommentSerializer(serializers.ModelSerializer):
+    author = AuthorSerializer(read_only=True)
+    class Meta:
+        model = Comment
+        # specifies which fields to serialize
+        fields = ['username', 'published', 'content', 'post', 'author', 'FQID', 'id', 'type', 'contentType']
 class PostSerializer(serializers.ModelSerializer):
     author = AuthorSerializer(read_only=True) # So the response actually return the author object instead of just id
+    comments = CommentSerializer(many=True, read_only=True)
     class Meta:
         model = Post
-        fields = ['id', 'title', 'description', 'content_type', 'content', 'visibility', 'author', 'published']
+        fields = ['id','type','FQID', 'title', 'description', 'content_type', 'content', 'visibility', 'author', 'published', 'comments']
     
     def validate_title(self, value):
         if not value:
@@ -35,18 +42,8 @@ class PostSerializer(serializers.ModelSerializer):
         instance.visibility = validated_data.get('visibility', instance.visibility)
         instance.save()
         return instance
-    
-
-class CommentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Comment
-        # specifies which fields to serialize
-        fields = ['username', 'created_at', 'content', 'post']
-
-
-
 class LikeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Like
         # specifies which fields to serialize
-        fields = ['username', 'post', 'like_date']
+        fields = ['type','username', 'object', 'published','author','id']

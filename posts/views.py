@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404, reverse, get_object_or_404
-from .models import Post, Comment, Like, Author
+from .models import Post, Comment, Like, Author, githubPostIds, Following, Likes
 import base64
 import jwt
 import markdown
@@ -15,6 +15,7 @@ from .serializers import PostSerializer, CommentSerializer, LikeSerializer
 from author.views import get_author_from_cookie
 from django.conf import settings
 from django.contrib import messages
+from urllib.parse import unquote
 # Create your views here.
 def post(request):
     author_id = get_author_from_cookie(request).data.get('id')
@@ -51,42 +52,203 @@ def create_comment(request, post_id):
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
-    content = request.POST['content']
-    comment = Comment(username=username, content=content, post=post, author=user)
+    # Process the comment data
+    content = request.data.get('content')
+    if not content:
+        return Response({"error": "Content is required"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    comment = Comment(username=username, content=content, post=post, author=user, type='comment')
     comment.save()
+    
+    # Serialize the created comment
     comment_serializer = CommentSerializer(comment)
-    # Return a response with the created comment
-    # return Response(comment_serializer.data, status=status.HTTP_201_CREATED)
-    return redirect('viewPost', id=post.id) 
 
-# API to create a like
+    # Returning JSON for Ajax or redirect
+    if request.accepts('application/json'):
+        return Response(comment_serializer.data, status=status.HTTP_201_CREATED)
+    else:
+        return redirect('viewPost', id=post.id)
+
+@api_view(['GET'])
+def get_comment(request, FQID):
+    print("in")
+    print("FQID: ", FQID)
+    # Decode the FQID to handle percent encoding
+    decoded_FQID = unquote(FQID)
+    
+    # Retrieve the comment using the decoded FQID
+    comment = get_object_or_404(Comment, FQID=decoded_FQID)
+    print("comment: ", comment)
+    # Prepare the data to be returned
+    comment_data = {
+        "id": comment.id,
+        "type": comment.type,
+        "contentType": comment.contentType,
+        "username": comment.username,
+        "published": comment.published,
+        "content": comment.content,
+        "post": comment.post.FQID,
+        "FQID": comment.FQID,
+        "author": {
+            "id": comment.author.id,
+            "host": comment.author.host,
+            "displayName": comment.author.displayName,
+            "github": comment.author.github,
+            #"profile_image": comment.author.profile_image,
+            "FQID": comment.author.FQID,  # Reference to the author's FQID
+        }
+    }
+    
+    # Return the comment data as a JSON response
+    return Response(comment_data, status=status.HTTP_200_OK)
+
+class CommentPagination(PageNumberPagination):
+    page_size = 5
+    page_size_query_param = 'size'
+    max_page_size = 5
+
+    def get_paginated_response(self, data):
+        return Response({
+            'type': 'comments',
+            'page_number': self.page.number,
+            'size': self.page.paginator.per_page,
+            'count': self.page.paginator.count,
+            'src': data,
+        })
+
+@api_view(['GET'])
+def get_posts_comments(request, author_id=None, post_id=None, FQID=None):
+    if FQID:
+        # Decode the FQID to find the post ID
+        decoded_FQID = unquote(FQID)
+        post = get_object_or_404(Post, FQID=decoded_FQID)
+    else:
+        # Fetch the post using author_id and post_id
+        post = get_object_or_404(Post, id=post_id)
+
+    # Retrieve comments for the post
+    comments = Comment.objects.filter(post=post).order_by('-published')
+
+    # Create an instance of the pagination class
+    paginator = CommentPagination()
+    paginated_comments = paginator.paginate_queryset(comments, request)
+
+    # Serialize the paginated comments
+    serializer = CommentSerializer(paginated_comments, many=True)
+
+    # Return the paginated response
+    return paginator.get_paginated_response(serializer.data)
+
+@api_view(['GET', 'POST'])
+def get_author_comments(request,  author_id=None, FQID=None):
+    # Determine if the author is specified by UUID or FQID
+    author = None
+    if author_id:
+        author = get_object_or_404(Author, id=author_id)
+    elif FQID:
+        author = get_object_or_404(Author, FQID=FQID)
+
+    if request.method == 'GET':
+        # Retrieve comments by the specified author
+        comments = Comment.objects.filter(author=author)
+        
+        # Filter comments based on the visibility of the posts (for remote access)
+        if request.user.is_anonymous:
+            comments = comments.filter(post__visibility__in=["PUBLIC", "UNLISTED"])
+
+        # Apply pagination
+        paginator = CommentPagination()
+        paginated_comments = paginator.paginate_queryset(comments, request)
+        
+        # Serialize the paginated data
+        serializer = CommentSerializer(paginated_comments, many=True)
+        
+        # Return the paginated response
+        return paginator.get_paginated_response(serializer.data)
+
+    elif request.method == 'POST':
+        # Add a new comment for the specified author on a post
+        data = request.data
+        if data.get('type') != 'comment':
+            return Response({'error': 'Invalid data type. Expected "comment".'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        post_id = data.get('post')
+        post = get_object_or_404(Post, id=post_id)
+        
+        serializer = CommentSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save(author_id=author_id, post=post)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_commented_comment(request, author_id=None, comment_id=None, FQID=None):
+    if author_id and comment_id:
+        # Get the comment by author and comment UUIDs
+        comment = get_object_or_404(Comment, id=comment_id, author__id=author_id)
+
+    # Handle URL: /api/commented/{COMMENT_FQID}
+    elif FQID:
+        # Get the comment by its FQID
+        comment = get_object_or_404(Comment, FQID=FQID)
+
+    else:
+        # If neither case matches, return a 400 error
+        return Response({'error': 'Invalid parameters.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Serialize the comment and return the response
+    serializer = CommentSerializer(comment)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 @api_view(['POST'])
-def create_like(request, post_id):
-    post = get_object_or_404(Post, id=post_id)
-    token = request.COOKIES.get('jwt')
+def api_create_like(request, author_id):
+    print("Request Data:", request.data)  # Debugging line to see the request data
 
+    # Validate and retrieve the author
+    author = get_object_or_404(Author, id=author_id)
+
+    # Get the post_id from form data
+    post_id = request.POST.get('post_id')
+    if not post_id:
+        return Response({"error": "Post ID not found"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    post = get_object_or_404(Post, id=post_id)
+
+    token = request.COOKIES.get('jwt')
     if not token:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         username = payload['id']  # Assuming 'id' is the username or display name
-        user = Author.objects.get(displayName=username)
+        user = get_object_or_404(Author, displayName=username)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
-    # Check if the user has already liked the post
-    if Like.objects.filter(username=username, post=post).exists():
-        #return Response({"error": "Post already liked"}, status=status.HTTP_400_BAD_REQUEST)
-        #messages.error(request, "You have already liked this post.")
+    # Check if a like already exists
+    if Like.objects.filter(username=username, object=post).exists():
         return redirect(request.META.get('HTTP_REFERER'))
 
-    like = Like(username=username, post=post, author=user)
-    like.save()
-    #messages.success(request, "Liked successfully!")
-    like_serializer = LikeSerializer(like)
-    # return Response(like_serializer.data, status=status.HTTP_201_CREATED)
-    return redirect(request.META.get('HTTP_REFERER'))
+    try:
+        # Ensure post has a likes collection or create one
+        if not post.likes_collection:
+            likes_collection = Likes.objects.create()
+            post.likes_collection = likes_collection
+            post.save()
+
+        # Create and save the new Like instance
+        like = Like(username=username, object=post, author=user)
+        like.save()
+
+        # Add the like to the post's likes collection
+        post.likes_collection.add_like(like)
+
+        # Serialize and return the response
+        return redirect(request.META.get('HTTP_REFERER'))
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # Construct posts object for home page
 class PostPagination(PageNumberPagination):
@@ -144,6 +306,7 @@ def get_posts_create_post(request, author_id):
         visibility = request.POST.get('visibility')
         content = request.POST.get('content', '')
         image = request.FILES.get('img')
+        type = 'post'
 
         if content_type and content_type.startswith('image/') and image:
             # Read the image file and encode it as base64
@@ -153,6 +316,7 @@ def get_posts_create_post(request, author_id):
 
         # Create a new post associated with the current author
         post = Post(
+            type=type,
             title=title,
             description=description,
             content_type=content_type,
@@ -259,16 +423,24 @@ def get_edit_delete_post(request, author_id, post_id):
     method = request.POST.get('_method', '').upper()
     try:
         # Make sure user who is not the author can't edit/delete the post
-        if author_id != post.author.id:
-            return Response({"error": "Unauthorized to edit other author's post"}, status=status.HTTP_403_FORBIDDEN)
+        if author_id != post.author.id and (method in ["PUT", "DELETE"] or request.method in ["PUT", "DELETE"]):
+            return Response({"error": "Unauthorized to edit/delete other author's post"}, status=status.HTTP_403_FORBIDDEN)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
     except Author.DoesNotExist:
         return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
-    if method == 'GET':
-        serializer = PostSerializer(post)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    if method == 'PUT':
+    if method == 'GET' or request.method == 'GET':
+        if post.visibility == 'PUBLIC':
+            serializer = PostSerializer(post)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        # Check for authentication and friendship for "friends-only" posts
+        if post.visibility == 'FRIENDS':
+            if request.user.is_authenticated and Following.are_friends(request.user, post.author):
+                serializer = PostSerializer(post)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "Unauthorized to view friends-only post"}, status=status.HTTP_403_FORBIDDEN)
+    if method == 'PUT' or request.method == 'PUT':
         data = request.data.copy()  # Safely copy the data
         image = request.FILES.get('img')
 
@@ -291,7 +463,7 @@ def get_edit_delete_post(request, author_id, post_id):
             return redirect(reverse('author_profile', args=[author_id]))
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    if method == 'DELETE':
+    if method == 'DELETE' or request.method == 'DELETE':
         # Ensure that only the author of the post or an admin can delete the post
         if post.author == request.user or request.user.is_superuser:
             post.visibility = 'DELETED'  # Mark the post as 'DELETED'
@@ -313,7 +485,7 @@ def get_post_image(request, author_id=None, post_id=None, FQID=None):
         # Retrieve the post using both author_id and post_id
         post = get_object_or_404(Post, id=post_id, author__id=author_id)
     elif FQID:
-        post = get_object_or_404(Post, id=FQID)
+        post = get_object_or_404(Post, FQID=FQID)
     else:
         return Response({'error': 'Post ID or FQID must be provided'}, status=status.HTTP_400_BAD_REQUEST)
     
@@ -339,7 +511,23 @@ def get_post_image(request, author_id=None, post_id=None, FQID=None):
         # If the content is not an image, return a 404 or error response
         return Response({'error': 'Image not found or content type is not an image', 'post.content_type': post.content_type}, status=status.HTTP_404_NOT_FOUND)
 
-
+@api_view(['GET'])
+def get_post_FQID(request, FQID=None):
+    if FQID:
+        post = get_object_or_404(Post, FQID=FQID)
+        if post.visibility == 'PUBLIC':
+            serializer = PostSerializer(post)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        # Check for authentication and friendship for "friends-only" posts
+        if post.visibility == 'FRIENDS':
+            if request.user.is_authenticated and Following.are_friends(request.user, post.author):
+                serializer = PostSerializer(post)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "Unauthorized to view friends-only post"}, status=status.HTTP_403_FORBIDDEN)
+    else:
+        return Response({'error': 'FQID must be provided'}, status=status.HTTP_400_BAD_REQUEST)
+    
 def view_post(request, id):
     post = get_object_or_404(Post, pk=id)
 
@@ -359,7 +547,7 @@ def view_post(request, id):
             return redirect('login')
 
     author = post.author
-    comments = post.comment_set.all()
+    comments = post.comments.all()
 
     # Extract the author from the JWT token
     token = request.COOKIES.get('jwt')
@@ -391,13 +579,47 @@ def view_post(request, id):
 
     return render(request, "posts/viewPost.html", {"id": id, "post": post, "author": author, "comments": comments})
 
-def view_postLikes(request, id):
-    post = get_object_or_404(Post, pk=id)
+@api_view(['GET'])
+def api_view_postLikes(request, author_id,post_id):
+    post = get_object_or_404(Post, pk=post_id)
 
     if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
         # Non-admin users should not see deleted posts
         return redirect('home_page')  # Redirect to index or a 404 page
 
-    author = post.author
+    author = get_object_or_404(Author, id=author_id)
 
-    return render(request, "posts/viewPostLikes.html", {"id":id, "post":post, "author":author})
+    return render(request, "posts/viewPostLikes.html", {"post_id": post_id, "post": post, "author": author})
+
+@api_view(['GET'])
+def api_view_Likes(request, post_id):
+    post = get_object_or_404(Post, pk=post_id)
+
+    if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
+        # Non-admin users should not see deleted posts
+        return redirect('home_page')  # Redirect to index or a 404 page
+
+    author = post.author.id
+
+    return render(request, "posts/viewPostLikes.html", {"post_id": post_id, "post": post, "author": author})
+
+@api_view(['POST'])
+def github_post(request, author_id):
+    author = get_object_or_404(Author, id=author_id)
+    data = request.data
+    check = githubPostIds.objects.filter(id=data['id'])
+    if check:
+        return Response({"error": "Post already exists"}, status=status.HTTP_200_OK)
+    post = Post(
+        title=data['title'],
+        description=data['description'],
+        content_type=data['content_type'],
+        content=data['content'],
+        visibility=data['visibility'],
+        author=author
+    )
+    post.save()
+    githubPost = githubPostIds(id=data['id'], post=post)
+    githubPost.save()
+
+    return Response(data, status=status.HTTP_200_OK)

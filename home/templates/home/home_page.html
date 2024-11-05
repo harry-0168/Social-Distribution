@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="{% static 'home_page.css' %}">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{% static 'home_page.js' %}"></script>
 </head>
 <body>
     <div class="header">
@@ -57,7 +58,9 @@
                             <a href="/post/${post.id}/viewPost/" style="text-decoration: none; color: inherit;">
                                 <div class="post">
                                     <div class="post-header">
+
                                         <img src="${profileImageUrl}" class="profile-pic-small">
+
                                         <div>
                                             <p class="username">${post.author.displayName}</p>
                                             <p class="date-posted">${new Date(post.published).toLocaleDateString()}</p>
