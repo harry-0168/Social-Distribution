@@ -61,7 +61,7 @@
                 {% elif post.content_type == "text/markdown" %}
                     <div id="markdown-content-{{ post.id }}" class="markdown-content" data-content="{{ post.content }}"></div>
                 {% elif post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
-                    <a href="{% url 'post_image_FQID' post.FQID %}" id="post-image-link">
+                    <a href="{% url 'post_image_SERIAL' author.id post.id %}" id="post-image-link">
                         <img src="{{ post.content }}" alt="Post Image" class="postImage">
                     </a>
                 {% else %}
@@ -184,7 +184,7 @@
                 });
 
                 function loadComments() {
-                    const url = `/api/authors/${encodeURIComponent("{{ post.author_id }}")}/posts/${encodeURIComponent("{{ post.id }}")}/image`;
+                    const url = `/api/posts/${encodeURIComponent("{{ post.FQID }}")}/comments`; 
                     fetch(url)
                         .then(response => response.json())
                         .then(data => {
