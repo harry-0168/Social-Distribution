@@ -14,24 +14,6 @@ class LikeSerializer(serializers.ModelSerializer):
         # specifies which fields to serialize
         fields = ['type','username', 'object', 'published','author','id']
 
-class CommentListSerializer(serializers.Serializer):
-    type = serializers.CharField(default="comments")
-    id = serializers.CharField()
-    page = serializers.URLField()
-    page_number = serializers.IntegerField(default=1)
-    size = serializers.IntegerField()
-    count = serializers.IntegerField()
-    src = CommentSerializer(many=True, read_only=True)
-
-class LikeListSerializer(serializers.Serializer):
-    type = serializers.CharField(default="likes")
-    id = serializers.CharField()
-    page = serializers.URLField()
-    page_number = serializers.IntegerField(default=1)
-    size = serializers.IntegerField()
-    count = serializers.IntegerField()
-    src = LikeSerializer(many=True, read_only=True)
-
 class PostSerializer(serializers.ModelSerializer):
     author = AuthorSerializer(read_only=True) # So the response actually return the author object instead of just id
     comments = CommentSerializer(many=True, read_only=True)
