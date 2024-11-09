@@ -138,7 +138,7 @@ def inboxApi(request, object_author_id):
             if not post_id:
                 return Response({"error": "Post ID not found"}, status=status.HTTP_400_BAD_REQUEST)
             
-            post = get_object_or_404(Post, id=post_id)
+            post = get_object_or_404(Post, uuid=post_id)
 
             token = request.COOKIES.get('jwt')
             if not token:

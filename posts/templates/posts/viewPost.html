@@ -45,7 +45,7 @@
                 <!-- <button class="followButton">Follow</button> -->
                 <!-- Only the author can delete their own posts -->
                 {% if user.id == post.author.id %}
-                    <form action="{% url 'delete_post' request.user.id post.id %}" method="POST">
+                    <form action="{% url 'delete_post' request.user.id post.uuid %}" method="POST">
                         {% csrf_token %}
                         <input type="hidden" name="_method" value="DELETE"> <!--IMPORTANT: Walk around for delete method-->
                         <button style="margin-top: 20px; background-color: #f7e8d4; border-color: #f7e8d4; border-style: none;" type="submit" class="delete-button">
@@ -56,11 +56,11 @@
             </div>
             <h1 class="postTitle">{{post.title}}</h1>
             <div class="postContent">
-                {% if post.content_type == "text/plain" %}
+                {% if post.contentType == "text/plain" %}
                     {{ post.content }}
-                {% elif post.content_type == "text/markdown" %}
-                    <div id="markdown-content-{{ post.id }}" class="markdown-content" data-content="{{ post.content }}"></div>
-                {% elif post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
+                {% elif post.contentType == "text/markdown" %}
+                    <div id="markdown-content-{{ post.uuid }}" class="markdown-content" data-content="{{ post.content }}"></div>
+                {% elif post.contentType == "image/png;base64" or post.contentType == "image/jpeg;base64" %}
                     <a href="{% url 'post_image_FQID' post.FQID %}" id="post-image-link">
                         <img src="{{ post.content }}" alt="Post Image" class="postImage">
                     </a>
@@ -71,7 +71,7 @@
             <section class="likeCommentShare">
                 <form action="{% url 'api_create_like' post.author.id %}" method="POST">
                     {% csrf_token %}
-                    <input type="hidden" name="post_id" value="{{ post.id }}"> <!-- Use post.id here -->
+                    <input type="hidden" name="post_id" value="{{ post.uuid }}"> <!-- Use post.uuid here -->
                     <input type="hidden" name="type" value="like">
                     <button type="submit" class="like-button">
                         <img class="heart" src="{% static 'heart.png' %}" alt="Like">
@@ -119,9 +119,9 @@
                         
                         // Change action based on the selected option
                         if (type === 'link') {
-                            form.action = "{% url 'repost_link' post.id %}"; // Change action to repost_link
+                            form.action = "{% url 'repost_link' post.uuid %}"; // Change action to repost_link
                         } else {
-                            form.action = "{% url 'repost_post' post.id %}"; // Default action for repost_post
+                            form.action = "{% url 'repost_post' post.uuid %}"; // Default action for repost_post
                         }
                         
                         form.submit(); // Submit the form
@@ -166,7 +166,7 @@
             </script>
             
             <section class="viewLikesComments">
-                <a href="{% url 'api_likes' author_id=post.author.id post_id=post.id %}" class="viewLikes">view likes</a>
+                <a href="{% url 'api_likes' author_id=post.author.id post_id=post.uuid %}" class="viewLikes">view likes</a>
                 <a class="viewComments">view comments</a>
             </section>
         </section>
@@ -184,7 +184,7 @@
                 });
 
                 function loadComments() {
-                    const url = `/api/authors/${encodeURIComponent("{{ post.author_id }}")}/posts/${encodeURIComponent("{{ post.id }}")}/image`;
+                    const url = `/api/authors/${encodeURIComponent("{{ post.author_id }}")}/posts/${encodeURIComponent("{{ post.uuid }}")}/image`;
                     fetch(url)
                         .then(response => response.json())
                         .then(data => {
@@ -222,7 +222,7 @@
                 }
             </script>
             <section class="commentInput">
-                <form id="commentForm" action="{% url 'create_comment' post.id %}" method="POST"> <!-- Updated the form action URL to post comments to the appropriate endpoint -->
+                <form id="commentForm" action="{% url 'create_comment' post.uuid %}" method="POST"> <!-- Updated the form action URL to post comments to the appropriate endpoint -->
                     {% csrf_token %}
                     <div class="commentInputWrapper">
                         <input id="comment-input" class="commentInputTextbox" type="text" name="content" placeholder="Add a comment ..." required>
@@ -255,7 +255,7 @@
 
                             // Get the comment content from the input field
                             const content = document.getElementById('comment-input').value;
-                            const postId = "{{ post.id }}";  // Assuming post.id is passed to the template context
+                            const postId = "{{ post.uuid }}";  // Assuming post.uuid is passed to the template context
                             const authorId = "{{ author.id }}";  // Current user's ID
                             
                             // Construct the comment object to send
@@ -317,7 +317,7 @@
                                         "published": comment.published,
                                         "post": {
                                             "type": "post",
-                                            "id": comment.post.id,
+                                            "id": comment.post.uuid,
                                             "author": "{{ post.author.id }}"
                                         }
                                     }

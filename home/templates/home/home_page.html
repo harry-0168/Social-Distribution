@@ -50,7 +50,7 @@
                         const isFollowing = followingList[index]; // Match follow status by index
 
                         const postElement = `
-                            <a href="/post/${post.id}/viewPost/" style="text-decoration: none; color: inherit;">
+                            <a href="/post/${post.uuid}/viewPost/" style="text-decoration: none; color: inherit;">
                                 <div class="post">
                                     <div class="post-header">
                                         <img src="${post.author.profileImage || '{% static "avatar.png" %}'}" class="profile-pic-small">
@@ -99,9 +99,9 @@
                 });
 
             function renderPostContent(post) {
-                if (post.content_type.startsWith('image/')) {
+                if (post.contentType.startsWith('image/')) {
                     return `<img src="${post.content}" alt="Uploaded Image" style="max-width: 100%; height: auto;">`;
-                } else if (post.content_type === 'text/markdown') {
+                } else if (post.contentType === 'text/markdown') {
                     return `<div class="content markdown-content" data-content="${post.content}"></div>`;
                 } else {
                     return `<p class="content">${post.content}</p>`;

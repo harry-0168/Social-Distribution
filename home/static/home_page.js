@@ -30,7 +30,7 @@ function parseEventData(event, username) {
         title: eventType,
         description: `${username} ${action} ${eventType} on ${repoName} on ${eventDate}`,
         content:'',
-        content_type: 'text/plain',
+        contentType: 'text/plain',
         visibility: 'PUBLIC',
     }
     // if event type starts with PullRequest 

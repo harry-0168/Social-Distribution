@@ -84,7 +84,7 @@ class AuthorAPITests(TestCase):
         response = self.client.put(
             reverse('api_author_detail', args=[author_id]),
             data=update_data,
-            content_type='application/json'
+            contentType='application/json'
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["message"], "Author modified successfully")
@@ -137,7 +137,7 @@ class AuthorAPITests(TestCase):
         response = self.client.put(
             reverse('api_author_detail', args=[author_id]),
             data=update_data,
-            content_type='application/json'
+            contentType='application/json'
         )
         
         # Expecting 200 OK because there's no validation on these fields
