@@ -417,7 +417,7 @@ def view_edit_post(request, id):
     author_id = get_author_from_cookie(request).data.get('id')
     return render(request, 'posts/editPost.html', {'post': post, 'author_id': author_id})
 
-@api_view(['GET', 'POST'])
+@api_view(['GET', 'POST', 'PUT', 'DELETE'])
 def get_edit_delete_post(request, author_id, post_id):
     post = get_object_or_404(Post, uuid=post_id)
     method = request.POST.get('_method', '').upper()
