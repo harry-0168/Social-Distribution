@@ -104,7 +104,7 @@ class Post(models.Model):
 
         # Friends-only posts are visible to friends (mutual followers)
         if self.visibility == 'FRIENDS':
-            return Following.are_friends(self.author, user)
+            return Following.are_friends(self.author, user) or user == self.author
 
         # By default, the post is not visible
         return False
