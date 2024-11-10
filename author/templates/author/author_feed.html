@@ -24,12 +24,12 @@
                     <!-- Check if the logged-in user is the post author or an admin -->
                     {% if request.user.id == post.author.id or user.is_superuser %}
                     <div class="action-buttons">
-                        <form method="POST" action="{% url 'delete_post' request.user.id post.id %}" class="delete-form">
+                        <form method="POST" action="{% url 'delete_post' request.user.id post.uuid %}" class="delete-form">
                             {% csrf_token %}
                             <input type="hidden" name="_method" value="DELETE"> <!--IMPORTANT: Walk around for delete method-->
                             <button type="submit" class="delete-button">Delete</button>
                         </form>
-                        <a href="{% url 'view_edit_post' post.id %}" class="edit-button">Edit</a>  
+                        <a href="{% url 'view_edit_post' post.uuid %}" class="edit-button">Edit</a>  
                     </div>
                     {% endif %}
                 </div>
@@ -40,12 +40,12 @@
                 </div>
 
                 <!-- 2nd row: Image if exists -->
-                {% if post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
+                {% if post.contentType == "image/png;base64" or post.contentType == "image/jpeg;base64" %}
                 <div class="post-image">
                     <img src="{{ post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
                 </div>
-                {% elif post.content_type == "text/markdown" %}
-                        <div class="content markdown-content" data-content="{{post.content}}" id="markdown-content-{{ item.post.id }}"></div>
+                {% elif post.contentType == "text/markdown" %}
+                        <div class="content markdown-content" data-content="{{post.content}}" id="markdown-content-{{ item.post.uuid }}"></div>
                 {% else %}
                 <!-- 3rd row: Content of the post -->
                 <div class="post-content">

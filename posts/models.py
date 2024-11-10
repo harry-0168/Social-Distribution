@@ -59,28 +59,32 @@ class Likes(models.Model):
 
 # Create your models here.
 class Post(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(max_length=1000, primary_key=True, unique=True)
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False)
     type = models.CharField(max_length=20)
     title = models.CharField(max_length=100)
+    page = models.URLField()
     description = models.CharField(max_length=200)
-    content_type = models.CharField(max_length=100, choices=CONTENT_TYPE_CHOICES)
+    contentType = models.CharField(max_length=100, choices=CONTENT_TYPE_CHOICES)
     content = models.TextField()
     author = models.ForeignKey(Author, related_name='posts', on_delete=models.CASCADE)
     published = models.DateTimeField(auto_now_add=True)
     visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES)
-    FQID = models.CharField(max_length=1000, unique=True, null=True)
     likes_collection = models.OneToOneField(Likes, related_name='post', on_delete=models.CASCADE, null=True, blank=True)
-
     
     def __str__(self):
         return self.title
     
     def save(self, *args, **kwargs):
         # Ensure FQID is set on creation only
-        if not self.FQID:
-            # Assumes the host is accessible in kwargs;
+        if not self.id:
             host = kwargs.get('request_host', 'localhost')
-            self.FQID = f"http://{host}/api/posts/{self.id}"
+            author_id = self.author.id  # Ensure that author id is correctly set
+            self.id = f"http://{host}/api/authors/{author_id}/posts/{self.uuid}"
+        if not self.page:
+            host = kwargs.get('request_host', 'localhost')
+            author_id = self.author.id  # Ensure that author id is correctly set
+            self.page = f"http://{host}/authors/{author_id}/posts/{self.uuid}"
         
         super().save(*args, **kwargs)
     

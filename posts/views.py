@@ -39,7 +39,7 @@ class LikeViewSet(viewsets.ModelViewSet):
 # API to create a comment
 @api_view(['POST'])
 def create_comment(request, post_id):
-    post = get_object_or_404(Post, id=post_id)
+    post = get_object_or_404(Post, uuid=post_id)
     token = request.COOKIES.get('jwt')
     
     if not token:
@@ -67,7 +67,7 @@ def create_comment(request, post_id):
     if request.accepts('application/json'):
         return Response(comment_serializer.data, status=status.HTTP_201_CREATED)
     else:
-        return redirect('viewPost', id=post.id)
+        return redirect('viewPost', id=post.uuid)
 
 @api_view(['GET'])
 def get_comment(request, FQID):
@@ -98,7 +98,7 @@ def get_comment(request, FQID):
             "FQID": comment.author.FQID,  # Reference to the author's FQID
         }
     }
-    
+
     # Return the comment data as a JSON response
     return Response(comment_data, status=status.HTTP_200_OK)
 
@@ -121,10 +121,10 @@ def get_posts_comments(request, author_id=None, post_id=None, FQID=None):
     if FQID:
         # Decode the FQID to find the post ID
         decoded_FQID = unquote(FQID)
-        post = get_object_or_404(Post, FQID=decoded_FQID)
+        post = get_object_or_404(Post, id=decoded_FQID)
     else:
         # Fetch the post using author_id and post_id
-        post = get_object_or_404(Post, id=post_id)
+        post = get_object_or_404(Post, uuid=post_id)
 
     # Retrieve comments for the post
     comments = Comment.objects.filter(post=post).order_by('-published')
@@ -173,7 +173,7 @@ def get_author_comments(request,  author_id=None, FQID=None):
             return Response({'error': 'Invalid data type. Expected "comment".'}, status=status.HTTP_400_BAD_REQUEST)
         
         post_id = data.get('post')
-        post = get_object_or_404(Post, id=post_id)
+        post = get_object_or_404(Post, uuid=post_id)
         
         serializer = CommentSerializer(data=data)
         if serializer.is_valid():
@@ -213,7 +213,7 @@ def api_create_like(request, author_id):
     if not post_id:
         return Response({"error": "Post ID not found"}, status=status.HTTP_400_BAD_REQUEST)
     
-    post = get_object_or_404(Post, id=post_id)
+    post = get_object_or_404(Post, uuid=post_id)
 
     token = request.COOKIES.get('jwt')
     if not token:
@@ -302,24 +302,24 @@ def get_posts_create_post(request, author_id):
         # Extract post data from request
         title = request.POST.get('title')
         description = request.POST.get('description')
-        content_type = request.POST.get('content_type')
+        contentType = request.POST.get('contentType')
         visibility = request.POST.get('visibility')
         content = request.POST.get('content', '')
         image = request.FILES.get('img')
         type = 'post'
 
-        if content_type and content_type.startswith('image/') and image:
+        if contentType and contentType.startswith('image/') and image:
             # Read the image file and encode it as base64
             image_data = image.read()
             encoded_image = base64.b64encode(image_data).decode('utf-8')
-            content = f"data:{image.content_type};base64,{encoded_image}"
+            content = f"data:{image.contentType};base64,{encoded_image}"
 
         # Create a new post associated with the current author
         post = Post(
             type=type,
             title=title,
             description=description,
-            content_type=content_type,
+            contentType=contentType,
             content=content,
             visibility=visibility,
             author=author,  # Use the author from the token
@@ -332,7 +332,7 @@ def get_posts_create_post(request, author_id):
 
 @api_view(['POST'])
 def repost_post(request, id):
-    post = get_object_or_404(Post, pk=id)
+    post = get_object_or_404(Post, uuid=id)
 
     if request.method == 'POST':
         # Extract the author from the JWT token
@@ -352,7 +352,7 @@ def repost_post(request, id):
         new_post = Post(
             title=f"{post.title}(Reposted: {post.author.displayName})",  # Add "Reposted:" to the title
             description=post.description,
-            content_type=post.content_type,
+            contentType=post.contentType,
             content=post.content,
             visibility=post.visibility,  # You can choose to change this if needed
             author=author,  # Use the author from the token
@@ -370,7 +370,7 @@ def repost_post(request, id):
 
 @api_view(['POST'])
 def repost_link(request, id):
-    post = get_object_or_404(Post, pk=id)
+    post = get_object_or_404(Post, uuid=id)
 
     if request.method == 'POST':
         # Extract the author from the JWT token
@@ -397,7 +397,7 @@ def repost_link(request, id):
         new_post = Post(
             title=f"Repost: {post.title}",  # Repost title
             description="",  # Optional description
-            content_type="text/plain",  # Assuming you're using plain text for links
+            contentType="text/plain",  # Assuming you're using plain text for links
             #content=f"{request.build_absolute_uri(post.get_absolute_url())}",  # Set the content to the post link
             content = f"{base_url}",
             visibility=post.visibility,
@@ -413,13 +413,13 @@ def repost_link(request, id):
     return Response({"error": "Invalid request method"}, status=status.HTTP_400_BAD_REQUEST)
 
 def view_edit_post(request, id):
-    post = get_object_or_404(Post, id=id)
+    post = get_object_or_404(Post, uuid=id)
     author_id = get_author_from_cookie(request).data.get('id')
     return render(request, 'posts/editPost.html', {'post': post, 'author_id': author_id})
 
 @api_view(['GET', 'POST'])
 def get_edit_delete_post(request, author_id, post_id):
-    post = get_object_or_404(Post, id=post_id)
+    post = get_object_or_404(Post, uuid=post_id)
     method = request.POST.get('_method', '').upper()
     try:
         # Make sure user who is not the author can't edit/delete the post
@@ -450,7 +450,7 @@ def get_edit_delete_post(request, author_id, post_id):
             image_data = image.read()
             encoded_image = base64.b64encode(image_data).decode('utf-8')
             # Set the encoded image as the content
-            data['content'] = f"data:{image.content_type};base64,{encoded_image}"
+            data['content'] = f"data:{image.contentType};base64,{encoded_image}"
         else:
             # Retain the original content if no new content is provided
             if not data.get('content'):
@@ -483,14 +483,14 @@ def get_post_image(request, author_id=None, post_id=None, FQID=None):
     # If author_id and post_id are provided, retrieve the post by post_id
     if author_id:
         # Retrieve the post using both author_id and post_id
-        post = get_object_or_404(Post, id=post_id, author__id=author_id)
+        post = get_object_or_404(Post, uuid=post_id, author__id=author_id)
     elif FQID:
-        post = get_object_or_404(Post, FQID=FQID)
+        post = get_object_or_404(Post, id=FQID)
     else:
         return Response({'error': 'Post ID or FQID must be provided'}, status=status.HTTP_400_BAD_REQUEST)
     
     # Check if the content type is a base64 image
-    if post.content_type in ['image/png;base64', 'image/jpeg;base64']:
+    if post.contentType in ['image/png;base64', 'image/jpeg;base64']:
         try:
             # Extract the base64 data after the comma
             encoded_data = post.content.split(',', 1)[1]
@@ -499,22 +499,22 @@ def get_post_image(request, author_id=None, post_id=None, FQID=None):
             image_data = base64.b64decode(encoded_data)
             
             # Set the appropriate MIME type for the response
-            mime_type = 'image/png' if 'png' in post.content_type else 'image/jpeg'
+            mime_type = 'image/png' if 'png' in post.contentType else 'image/jpeg'
             
             # Return the binary image data in the response
-            return HttpResponse(image_data, content_type=mime_type)
+            return HttpResponse(image_data, contentType=mime_type)
         
         except base64.binascii.Error:
             # Handle decoding error
             return Response({'error': 'Invalid base64 image data', 'content': post.content}, status=status.HTTP_400_BAD_REQUEST)
     else:
         # If the content is not an image, return a 404 or error response
-        return Response({'error': 'Image not found or content type is not an image', 'post.content_type': post.content_type}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Image not found or content type is not an image', 'post.contentType': post.contentType}, status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['GET'])
 def get_post_FQID(request, FQID=None):
     if FQID:
-        post = get_object_or_404(Post, FQID=FQID)
+        post = get_object_or_404(Post, id=FQID)
         if post.visibility == 'PUBLIC':
             serializer = PostSerializer(post)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -529,7 +529,7 @@ def get_post_FQID(request, FQID=None):
         return Response({'error': 'FQID must be provided'}, status=status.HTTP_400_BAD_REQUEST)
     
 def view_post(request, id):
-    post = get_object_or_404(Post, pk=id)
+    post = get_object_or_404(Post, uuid=id)
 
     # Check for post visibility
     if post.visibility == 'DELETED' and not request.user.is_staff:  # Only admins can see deleted posts
@@ -575,13 +575,13 @@ def view_post(request, id):
         comment.save()
 
         # Redirect to the same post after adding the comment (prevents form resubmission on refresh)
-        return redirect('viewPost', id=post.id)
+        return redirect('viewPost', id=post.uuid)
 
     return render(request, "posts/viewPost.html", {"id": id, "post": post, "author": author, "comments": comments})
 
 @api_view(['GET'])
 def api_view_postLikes(request, author_id,post_id):
-    post = get_object_or_404(Post, pk=post_id)
+    post = get_object_or_404(Post, uuid=post_id)
 
     if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
         # Non-admin users should not see deleted posts
@@ -593,7 +593,7 @@ def api_view_postLikes(request, author_id,post_id):
 
 @api_view(['GET'])
 def api_view_Likes(request, post_id):
-    post = get_object_or_404(Post, pk=post_id)
+    post = get_object_or_404(Post, uuid=post_id)
 
     if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
         # Non-admin users should not see deleted posts
@@ -613,7 +613,7 @@ def github_post(request, author_id):
     post = Post(
         title=data['title'],
         description=data['description'],
-        content_type=data['content_type'],
+        contentType=data['contentType'],
         content=data['content'],
         visibility=data['visibility'],
         author=author

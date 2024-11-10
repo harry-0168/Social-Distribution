@@ -35,7 +35,7 @@ class GetEditDeletePostAPITest(APITestCase):
             id=uuid.uuid4(),
             title="Public Post",
             description="Test Description",
-            content_type="text/plain",
+            contentType="text/plain",
             content="This is a test post",
             visibility="PUBLIC",
             author=self.author1,
@@ -44,14 +44,14 @@ class GetEditDeletePostAPITest(APITestCase):
             id=uuid.uuid4(),
             title="Friends Post",
             description="This is a friends-only post",
-            content_type="text/plain",
+            contentType="text/plain",
             content="Friends content",
             visibility="FRIENDS",
             author=self.author1,
         )
-        self.public_post_url = reverse('edit_post', args=[self.author1.id, self.public_post.id])
-        self.friends_post_url = reverse('edit_post', args=[self.author1.id, self.friends_post.id])
-        self.delete_post_url = reverse('delete_post', args=[self.author1.id, self.public_post.id])
+        self.public_post_url = reverse('edit_post', args=[self.author1.id, self.public_post.uuid])
+        self.friends_post_url = reverse('edit_post', args=[self.author1.id, self.friends_post.uuid])
+        self.delete_post_url = reverse('delete_post', args=[self.author1.id, self.public_post.uuid])
 
     def test_get_public_post_as_anonymous(self):
         response = self.client.get(self.public_post_url)
@@ -80,7 +80,7 @@ class GetEditDeletePostAPITest(APITestCase):
         data = {
             'title': 'Updated Test Post',
             'description': 'Updated Description',
-            'content_type': 'text/markdown',
+            'contentType': 'text/markdown',
             'content': 'Updated content',
             '_method': 'PUT'
         }
@@ -90,7 +90,7 @@ class GetEditDeletePostAPITest(APITestCase):
 
     def test_edit_post_unauthorized(self):
         # Author2 tries to update Author1's post
-        self.public_post_url = reverse('edit_post', kwargs={'author_id': self.author2.id, 'post_id': self.public_post.id})
+        self.public_post_url = reverse('edit_post', kwargs={'author_id': self.author2.id, 'post_id': self.public_post.uuid})
         data = {'title': 'Unauthorized Update', '_method': 'PUT'}
         response = self.client.post(self.public_post_url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -104,7 +104,7 @@ class GetEditDeletePostAPITest(APITestCase):
 
     def test_delete_post_unauthorized(self):
         # Author2 tries to delete Author1's post
-        unauthorized_delete_url = reverse('delete_post', args=[self.user2.id, self.public_post.id])
+        unauthorized_delete_url = reverse('delete_post', args=[self.user2.id, self.public_post.uuid])
         response = self.client2.post(unauthorized_delete_url, {'_method': 'DELETE'}, follow=True)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(self.public_post.visibility, 'PUBLIC')
@@ -213,7 +213,7 @@ class CreatePostAPITest(TestCase):
         post_data = {
             'title': 'Test Post',
             'description': 'This is a test post.',
-            'content_type': 'text/plain',
+            'contentType': 'text/plain',
             'visibility': 'public',
             'content': 'This is some test content.',
         }
@@ -234,7 +234,7 @@ class CreatePostAPITest(TestCase):
         post_data = {
             'title': 'Test Post',
             'description': 'This is a test post.',
-            'content_type': 'text/plain',
+            'contentType': 'text/plain',
             'visibility': 'PUBLIC',
             'content': 'This is some test content.',
         }
@@ -272,7 +272,7 @@ class CreatePostCheckTest(APITestCase):
             id=uuid.uuid4(),
             title='Test Post Title',
             description='Test Post Description',
-            content_type='text/plain',
+            contentType='text/plain',
             content='Test Post Content',
             visibility='PUBLIC',
             author=self.author
@@ -284,12 +284,12 @@ class CreatePostCheckTest(APITestCase):
         self.assertEqual(Post.objects.count(), 1)  # Ensure one post was created
 
         # Retrieve the post from the database
-        post = Post.objects.get(id=self.post.id)
+        post = Post.objects.get(id=self.post.uuid)
 
         # Check the post's properties
         self.assertEqual(post.title, 'Test Post Title')
         self.assertEqual(post.description, 'Test Post Description')
-        self.assertEqual(post.content_type, 'text/plain')
+        self.assertEqual(post.contentType, 'text/plain')
         self.assertEqual(post.content, 'Test Post Content')
         self.assertEqual(post.visibility, 'PUBLIC')
         self.assertEqual(post.author, self.author)
@@ -308,7 +308,7 @@ class GetCommentTestCase(APITestCase):
         self.post_instance = Post.objects.create(
             title='Test Post',
             description='This is a test post.',
-            content_type='text/plain',
+            contentType='text/plain',
             content='This is the content of the test post.',
             author=self.author,
             visibility='PUBLIC',
@@ -376,7 +376,7 @@ class GetAuthorCommentsTestCase(APITestCase):
         
         # Create a valid JWT token for the user
         self.token = jwt.encode({'id': self.author.displayName}, settings.SECRET_KEY, algorithm='HS256')
-        self.url = reverse('create_comment', kwargs={'post_id': self.post.id})
+        self.url = reverse('create_comment', kwargs={'post_id': self.post.uuid})
 
     def test_get_author_comments_by_author_id(self):
         Comment.objects.create(content=self.comment_content, post=self.post, author=self.author, username=self.author.displayName)
