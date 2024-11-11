@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'author_profile' author.id %}"> <!-- TO-DO replace with actual author id-->
+        <a href="{% url 'author_profile' request.user.id %}"> <!-- TO-DO replace with actual author id-->
             {% if author.profileImage %}
                 <img src="{{ author.profileImage.url }}" 
                     class="profile-pic-header">
