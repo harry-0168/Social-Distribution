@@ -1,7 +1,19 @@
 {% extends 'author/author_base.html' %}
 
 {% block content %}
-<h1>{{ author.displayName }}'s Following ({{ following_count }})</h1>
+<div class="follow-info">
+    <!-- Link to Followers page with count -->
+    <a href="{% url 'followers_list' author.id %}" class="followers">
+        <strong>{{ followers_count }}</strong> Followers
+    </a>
+
+    <span> | </span>
+
+    <!-- Current page (Following) with count -->
+    <a href="{% url 'following_list' author.id %}" class="following active">
+        <strong>{{ following_count }}</strong> Following
+    </a>
+</div>
 
 <div class="following-list">
     {% for item in following %}

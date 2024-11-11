@@ -198,6 +198,7 @@ def unfollow_author(request, object_author_id):
 def following_list(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     following = Following.objects.filter(author1=author, status='accepted')
+    followers = Following.objects.filter(author2=author, status='accepted')
     
     following_with_status = []
     for follow in following:
@@ -228,6 +229,7 @@ def following_list(request, author_id):
         'author': author,
         'following': following_with_status,
         'following_count': following.count(),
+        'followers_count': followers.count(),
         'is_following': main_author_is_following  # Add this for the main profile button
     }
     return render(request, 'author/following_list.html', context)
@@ -236,6 +238,7 @@ def following_list(request, author_id):
 def followers_list(request, author_id):
     author = get_object_or_404(Author, id=author_id)
     followers = Following.objects.filter(author2=author, status='accepted')
+    following = Following.objects.filter(author1=author, status='accepted')
     
     followers_with_status = []
     for follow in followers:
@@ -266,6 +269,7 @@ def followers_list(request, author_id):
         'author': author,
         'followers': followers_with_status,
         'followers_count': followers.count(),
+        'following_count': following.count(),
         'is_following': main_author_is_following  # Add this for the main profile button
     }
     return render(request, 'author/followers_list.html', context)
