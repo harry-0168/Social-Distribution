@@ -212,7 +212,7 @@
 
                     const contentDiv = document.createElement('div');
                     contentDiv.classList.add('commentContent');
-                    contentDiv.textContent = comment.content;
+                    contentDiv.textContent = comment.comment;
 
                     h5.appendChild(contentDiv);
                     commentDiv.appendChild(img);
@@ -260,7 +260,7 @@
                             
                             // Construct the comment object to send
                             const commentData = {
-                                "content": content,
+                                "comment": content,
                                 "post": postId,
                                 "author": authorId
                             };
@@ -290,7 +290,7 @@
                                 newComment.classList.add('comment');
                                 newComment.innerHTML = `
                                     <img src="${comment.author.profileImage ? comment.author.profileImage : '/static/avatar.png'}" class="profile-pic-small">
-                                    <h5 class="commentUsername">${comment.username}<div class="commentContent">${comment.content}</div></h5>
+                                    <h5 class="commentUsername">${comment.username}<div class="commentContent">${comment.comment}</div></h5>
                                 `;
 
                                 commentList.appendChild(newComment);
@@ -310,16 +310,19 @@
                                     },
                                     "object": {
                                         "type": "comment",
-                                        "FQID": comment.FQID,
-                                        "id": comment.id,
-                                        "content": comment.content,
+                                        "author": "{{author.id}}",
+                                        "username": "{{author.displayName}}",
+                                        "comment": comment.comment,
                                         "contentType": "text/markdown",
                                         "published": comment.published,
+                                        "id": comment.id,
+                                        "uuid": comment.uuid,
                                         "post": {
                                             "type": "post",
                                             "id": comment.post.uuid,
                                             "author": "{{ post.author.id }}"
-                                        }
+                                        },
+                                        "likes_collection": comment.likes_collection
                                     }
                                 };
                                 console.log("inbox Request:", inboxRequest);

@@ -127,7 +127,7 @@ def inboxApi(request, object_author_id):
             
         elif parsed_data['type'] == 'comment':
             object_author = Author.objects.get(id=parsed_data['object']['post']['author'])
-            Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['object']['FQID'], received_at=timezone.now()).save()
+            Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['object']['id'], received_at=timezone.now()).save()
             return Response({"message": "Comment sent"}, status=200)
         
         elif parsed_data['type'] == 'like':

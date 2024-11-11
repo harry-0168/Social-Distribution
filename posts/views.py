@@ -38,13 +38,12 @@ class LikeViewSet(viewsets.ModelViewSet):
 
 # API to create a comment
 @api_view(['POST'])
-def create_comment(request, post_id):
-    post = get_object_or_404(Post, uuid=post_id)
+def create_comment(request, post_uuid):
+    post = get_object_or_404(Post, uuid=post_uuid)
     token = request.COOKIES.get('jwt')
     
     if not token:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
-
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         username = payload['id']  # Assuming 'id' is the username or display name
@@ -53,11 +52,11 @@ def create_comment(request, post_id):
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
     # Process the comment data
-    content = request.data.get('content')
+    content = request.data.get('comment')
     if not content:
         return Response({"error": "Content is required"}, status=status.HTTP_400_BAD_REQUEST)
     
-    comment = Comment(username=username, content=content, post=post, author=user, type='comment')
+    comment = Comment(username=username, comment=content, post=post, author=user, type='comment')
     comment.save()
     
     # Serialize the created comment
@@ -70,14 +69,14 @@ def create_comment(request, post_id):
         return redirect('viewPost', id=post.uuid)
 
 @api_view(['GET'])
-def get_comment(request, FQID):
+def get_comment(request, comment_id):
     print("in")
-    print("FQID: ", FQID)
-    # Decode the FQID to handle percent encoding
-    decoded_FQID = unquote(FQID)
+    print("comment_id: ", comment_id)
+    # Decode the comment id to handle percent encoding
+    decoded_comment_id = unquote(comment_id)
     
-    # Retrieve the comment using the decoded FQID
-    comment = get_object_or_404(Comment, FQID=decoded_FQID)
+    # Retrieve the comment using the decoded comment_id
+    comment = get_object_or_404(Comment, FQID=decoded_comment_id)
     print("comment: ", comment)
     # Prepare the data to be returned
     comment_data = {
@@ -87,7 +86,7 @@ def get_comment(request, FQID):
         "username": comment.username,
         "published": comment.published,
         "content": comment.content,
-        "post": comment.post.FQID,
+        "post": comment.post.id,
         "FQID": comment.FQID,
         "author": {
             "id": comment.author.id,
@@ -95,7 +94,6 @@ def get_comment(request, FQID):
             "displayName": comment.author.displayName,
             "github": comment.author.github,
             #"profile_image": comment.author.profile_image,
-            "FQID": comment.author.FQID,  # Reference to the author's FQID
         }
     }
 
