@@ -30,39 +30,64 @@ def profile_view(request, author_id):
     # Fetch the author by ID
     author = get_object_or_404(Author, id=author_id)
     
-    # Get the follower count (authors who follow this author)
-    followers_count = Following.objects.filter(author2=author, status = 'accepted').count()  # Count of followers
-    
-    # Get the Following count (authors this author is Following)
-    following_count = Following.objects.filter(author1=author, status='accepted').count()  # Count of people this author is following
-    
-    # Check if the logged-in user is following the author (if user is authenticated)
+    # Initialize follow-related variables
     is_following = False
     is_friends = False
-    if request.user.is_authenticated:
-        is_following = Following.objects.filter(author1=request.user, author2=author).exists()
+    
+    # Get follow counts
+    followers_count = Following.objects.filter(
+        author2=author, 
+        status='accepted'  # Only count accepted follows
+    ).count()
+    
+    following_count = Following.objects.filter(
+        author1=author, 
+        status='accepted'  # Only count accepted follows
+    ).count()
+    
+    # Check relationships if user is authenticated
+    if request.user.is_authenticated and request.user != author:
+        # Check if following (only if status is accepted)
+        is_following = Following.objects.filter(
+            author1=request.user, 
+            author2=author,
+            status='accepted'  # Only consider accepted follows
+        ).exists()
+        
+        # Check if they are friends
         is_friends = Following.are_friends(request.user, author)
-
+    
+    # Determine post visibility
     visibility_exclusions = ['DELETED']
     if request.user == author:
-        visibility_exclusions += []
+        # Author can see all their own posts except deleted ones
+        pass
     elif not is_friends and not is_following:
-        visibility_exclusions += ['FRIENDS', 'UNLISTED']
+        # Public users can only see public posts
+        visibility_exclusions.extend(['FRIENDS', 'UNLISTED'])
     elif not is_friends:
+        # Followers can see public and unlisted posts
         visibility_exclusions.append('FRIENDS')
 
-    # Fetch posts with the calculated exclusions
-    posts = Post.objects.filter(author=author).exclude(visibility__in=visibility_exclusions).order_by('-published')
+    # Fetch visible posts
+    posts = Post.objects.filter(
+        author=author
+    ).exclude(
+        visibility__in=visibility_exclusions
+    ).order_by('-published')
 
-    # Render the template with the author, posts, follower count, and if the user is following
-    return render(request, 'author/author_feed.html', {
+    context = {
         'author': author,
         'posts': posts,
         'followers_count': followers_count,
         'following_count': following_count,
-        'is_following': is_following,  # Add this flag to the context
-        'logged_in_user': request.user,  # Pass the logged-in user to the template
-    })
+        'is_following': is_following,
+        'is_friends': is_friends,
+        'logged_in_user': request.user,
+        'is_own_profile': request.user == author
+    }
+    
+    return render(request, 'author/author_feed.html', context)
 
 
 def author_about(request, author_id):
