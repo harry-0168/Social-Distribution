@@ -7,7 +7,14 @@
     {% for item in followers %}
         <div class="follower-box">
             <div class="follower-info">
-                <span>{{ item.user.displayName }}</span>
+                <a href="{% url 'author_profile' item.follower.id %}">
+                    {% if item.follower.profileImage %}
+                        <img src="{{ item.follower.profileImage.url }}" alt="{{ item.follower.displayName }}'s profile" class="profile-image">
+                    {% else %}
+                        <img src="/static/images/default-profile.png" alt="Default profile" class="profile-image">
+                    {% endif %}
+                    <span>{{ item.follower.displayName }}</span>
+                </a>
                 {% if item.is_friend %}
                     <span class="friend-tag">Friend</span> <!-- Add the "Friend" tag -->
                 {% endif %}
