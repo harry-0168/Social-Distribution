@@ -36,13 +36,23 @@ def profile_view(request, author_id):
     # Get the Following count (authors this author is Following)
     following_count = Following.objects.filter(author1=author, status='accepted').count()  # Count of people this author is following
     
-    # Fetch the author's posts
-    posts = Post.objects.filter(author=author).exclude(visibility='DELETED').order_by('-published')
-
     # Check if the logged-in user is following the author (if user is authenticated)
     is_following = False
+    is_friends = False
     if request.user.is_authenticated:
         is_following = Following.objects.filter(author1=request.user, author2=author).exists()
+        is_friends = Following.are_friends(request.user, author)
+
+    visibility_exclusions = ['DELETED']
+    if request.user == author:
+        visibility_exclusions += []
+    elif not is_friends and not is_following:
+        visibility_exclusions += ['FRIENDS', 'UNLISTED']
+    elif not is_friends:
+        visibility_exclusions.append('FRIENDS')
+
+    # Fetch posts with the calculated exclusions
+    posts = Post.objects.filter(author=author).exclude(visibility__in=visibility_exclusions).order_by('-published')
 
     # Render the template with the author, posts, follower count, and if the user is following
     return render(request, 'author/author_feed.html', {
@@ -61,9 +71,9 @@ def author_about(request, author_id):
     This view fetches the author by ID and renders the author's about page.
     '''
     author = Author.objects.get(id=author_id)  
-    followers_count = Following.objects.filter(author2=author).count()  # Count of followers
+    followers_count = Following.objects.filter(author2=author, status='accepted').count()  # Count of followers
     # Get the Following count (authors this author is Following)
-    following_count = Following.objects.filter(author1=author).count()  # Count of people this author is following
+    following_count = Following.objects.filter(author1=author, status='accepted').count()  # Count of people this author is following
     return render(request, 'author/author_about.html', {'author': author, 'followers_count': followers_count, 'following_count': following_count})
 
 @api_view(['GET'])
@@ -225,7 +235,7 @@ def followers_list(request, author_id):
     followers_relationships = Following.objects.filter(author2=author, status='accepted').select_related('author1')
 
     formatted_followers = []
-    following_count = Following.objects.filter(author1=author).count()
+    following_count = Following.objects.filter(author1=author, status='accepted').count()
 
 
     for follower_rel in followers_relationships:
@@ -254,7 +264,7 @@ def followers_list(request, author_id):
         'author': author,
         'followers': formatted_followers,
         'followers_count': followers_relationships.count(), 
-        'following_count': Following.objects.filter(author1=author).count(), 
+        'following_count': Following.objects.filter(author1=author, status='accepted').count(), 
     }
     #If the request is an API request, return response 200
     if request.headers.get('Accept') == 'application/json':
@@ -553,14 +563,14 @@ def logout(request):
     response.data = {
         "message": "success"
     }
-    return response
+    return render(request, 'author/login.html')
 
 
 def user_settings(request, author_id):
     author = get_object_or_404(Author, id=author_id)
-    followers_count = Following.objects.filter(author2=author).count()  # Count of followers
+    followers_count = Following.objects.filter(author2=author, status='accepted').count()  # Count of followers
     # Get the Following count (authors this author is Following)
-    following_count = Following.objects.filter(author1=author).count()  # Count of people this author is following
+    following_count = Following.objects.filter(author1=author, status='accepted').count()  # Count of people this author is following
     if request.method == 'POST':
         form = UserSettingsForm(request.POST, request.FILES, instance=author)
         new_display_name = form.data.get('displayName')
