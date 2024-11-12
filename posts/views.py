@@ -312,7 +312,7 @@ def get_posts_create_post(request, author_id):
             # Read the image file and encode it as base64
             image_data = image.read()
             encoded_image = base64.b64encode(image_data).decode('utf-8')
-            content = f"data:{image.contentType};base64,{encoded_image}"
+            content = f"data:{image.content_type};base64,{encoded_image}"
 
         # Create a new post associated with the current author
         post = Post(
@@ -328,7 +328,7 @@ def get_posts_create_post(request, author_id):
 
         # Serialize the post and return the response
         serializer = PostSerializer(post)
-        return redirect('home_page')
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
 def repost_post(request, id):
@@ -417,19 +417,18 @@ def view_edit_post(request, id):
     author_id = get_author_from_cookie(request).data.get('id')
     return render(request, 'posts/editPost.html', {'post': post, 'author_id': author_id})
 
-@api_view(['GET', 'POST', 'PUT', 'DELETE'])
+@api_view(['GET', 'PUT', 'DELETE'])
 def get_edit_delete_post(request, author_id, post_id):
     post = get_object_or_404(Post, uuid=post_id)
-    method = request.POST.get('_method', '').upper()
     try:
         # Make sure user who is not the author can't edit/delete the post
-        if author_id != post.author.id and (method in ["PUT", "DELETE"] or request.method in ["PUT", "DELETE"]):
+        if author_id != post.author.id and request.method in ["PUT", "DELETE"]:
             return Response({"error": "Unauthorized to edit/delete other author's post"}, status=status.HTTP_403_FORBIDDEN)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
     except Author.DoesNotExist:
         return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
-    if method == 'GET' or request.method == 'GET':
+    if request.method == 'GET':
         if post.visibility == 'PUBLIC':
             serializer = PostSerializer(post)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -440,7 +439,7 @@ def get_edit_delete_post(request, author_id, post_id):
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response({"error": "Unauthorized to view friends-only post"}, status=status.HTTP_403_FORBIDDEN)
-    if method == 'PUT' or request.method == 'PUT':
+    if request.method == 'PUT':
         data = request.data.copy()  # Safely copy the data
         image = request.FILES.get('img')
 
@@ -450,7 +449,7 @@ def get_edit_delete_post(request, author_id, post_id):
             image_data = image.read()
             encoded_image = base64.b64encode(image_data).decode('utf-8')
             # Set the encoded image as the content
-            data['content'] = f"data:{image.contentType};base64,{encoded_image}"
+            data['content'] = f"data:{image.content_type};base64,{encoded_image}"
         else:
             # Retain the original content if no new content is provided
             if not data.get('content'):
@@ -460,10 +459,10 @@ def get_edit_delete_post(request, author_id, post_id):
 
         if serializer.is_valid():
             serializer.save()
-            return redirect(reverse('author_profile', args=[author_id]))
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    if method == 'DELETE' or request.method == 'DELETE':
+    if request.method == 'DELETE':
         # Ensure that only the author of the post or an admin can delete the post
         if post.author == request.user or request.user.is_superuser:
             post.visibility = 'DELETED'  # Mark the post as 'DELETED'
@@ -471,10 +470,10 @@ def get_edit_delete_post(request, author_id, post_id):
 
             post_serializer = PostSerializer(post)
             
-            return redirect('author_profile', author_id=post.author.id)  # Redirect to the author's profile page
+            return Response({"message": "Post deleted successfully"}, status=status.HTTP_200_OK)
         else:
-            # If the user is not the author, they are redirected back
-            return redirect('author_profile', author_id=post.author.id)
+            # If the user is not the author
+            return Response({"error": "Unauthorized to delete this post"}, status=status.HTTP_403_FORBIDDEN)
     return Response({"error": "Method not allowed"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 

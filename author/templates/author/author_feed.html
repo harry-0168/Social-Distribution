@@ -7,7 +7,7 @@
 <div class="posts-container">
     {% if posts %}
         {% for post in posts %}
-            <div class="post-box">
+            <div class="post-box" id="post-{{ post.uuid }}">
                 <!-- 1st row: Profile info and action buttons -->
                 <div class="post-header">
                     <div class="profile-info">
@@ -24,9 +24,9 @@
                     <!-- Check if the logged-in user is the post author or an admin -->
                     {% if request.user.id == post.author.id or user.is_superuser %}
                     <div class="action-buttons">
-                        <form method="POST" action="{% url 'delete_post' request.user.id post.uuid %}" class="delete-form">
+                        <form method="POST" action="{% url 'delete_post' request.user.id post.uuid %}" class="delete-form" data-post-id="{{ post.uuid }}">
                             {% csrf_token %}
-                            <input type="hidden" name="_method" value="DELETE"> <!--IMPORTANT: Walk around for delete method-->
+                            <input type="hidden" name="_method" value="DELETE">
                             <button type="submit" class="delete-button">Delete</button>
                         </form>
                         <a href="{% url 'view_edit_post' post.uuid %}" class="edit-button">Edit</a>  
@@ -45,26 +45,13 @@
                     <img src="{{ post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
                 </div>
                 {% elif post.contentType == "text/markdown" %}
-                        <div class="content markdown-content" data-content="{{post.content}}" id="markdown-content-{{ item.post.uuid }}"></div>
+                    <div class="content markdown-content" data-content="{{ post.content }}" id="markdown-content-{{ post.uuid }}"></div>
                 {% else %}
                 <!-- 3rd row: Content of the post -->
                 <div class="post-content">
                     <p>{{ post.content }}</p>
                 </div>
                 {% endif %}
-
-                <!-- 4th row: Like, comment, share buttons -->
-                <!-- <div class="post-actions">
-                    <button>Like</button>
-                    <button>Comment</button>
-                    <button>Share</button>
-                </div> -->
-
-                <!-- 5th row: Likes count and view comments -->
-                <!-- <div class="post-footer">
-                    <p>{{ post.likes_count|default_if_none:"0" }} likes</p>
-                    <a href="#">View all comments</a>
-                </div> -->
             </div>
         {% endfor %}
     {% else %}
@@ -74,6 +61,7 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Render Markdown content
         document.querySelectorAll('.markdown-content').forEach(function (element) {
             const markdownContent = element.getAttribute('data-content').trim();
             const cleanedContent = markdownContent.replace(/\\u000D|\\u000A/g, "");
@@ -81,7 +69,40 @@
                 element.innerHTML = marked.parse(cleanedContent);
             }
         });
+
+        // Handle delete button click with AJAX
+        document.querySelectorAll('.delete-button').forEach(button => {
+            button.addEventListener('click', async function (event) {
+                event.preventDefault();
+                const form = button.closest('.delete-form');
+                const postId = form.getAttribute('data-post-id');
+                const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRFToken': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    if (response.ok) {
+                        // Remove the post element from the DOM
+                        const postElement = document.getElementById(`post-${postId}`);
+                        if (postElement) {
+                            postElement.remove();
+                        }
+                    } else {
+                        const result = await response.json();
+                        alert(result.error || 'An error occurred while trying to delete the post.');
+                    }
+                } catch (error) {
+                    console.error("Error deleting post:", error);
+                    alert('An unexpected error occurred.');
+                }
+            });
+        });
     });
 </script>
-
 {% endblock %}

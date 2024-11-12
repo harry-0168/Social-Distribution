@@ -81,23 +81,22 @@ class GetEditDeletePostAPITest(APITestCase):
             'title': 'Updated Test Post',
             'description': 'Updated Description',
             'contentType': 'text/markdown',
-            'content': 'Updated content',
-            '_method': 'PUT'
+            'content': 'Updated content'
         }
-        response = self.client1.post(self.public_post_url, data)
+        response = self.client1.put(self.public_post_url, data)
         self.public_post.refresh_from_db()
         self.assertEqual(self.public_post.title, 'Updated Test Post')
 
     def test_edit_post_unauthorized(self):
         # Author2 tries to update Author1's post
         self.public_post_url = reverse('edit_post', kwargs={'author_id': self.author2.id, 'post_id': self.public_post.uuid})
-        data = {'title': 'Unauthorized Update', '_method': 'PUT'}
-        response = self.client.post(self.public_post_url, data)
+        data = {'title': 'Unauthorized Update'}
+        response = self.client.put(self.public_post_url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_delete_post_successful(self):
         # Author1 deletes their own post
-        response = self.client1.post(self.delete_post_url, {'_method': 'DELETE'}, follow=True)
+        response = self.client1.delete(self.delete_post_url, follow=True)
         self.public_post.refresh_from_db()
         self.assertEqual(self.public_post.visibility, 'DELETED')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -105,7 +104,7 @@ class GetEditDeletePostAPITest(APITestCase):
     def test_delete_post_unauthorized(self):
         # Author2 tries to delete Author1's post
         unauthorized_delete_url = reverse('delete_post', args=[self.user2.id, self.public_post.uuid])
-        response = self.client2.post(unauthorized_delete_url, {'_method': 'DELETE'}, follow=True)
+        response = self.client2.delete(unauthorized_delete_url, follow=True)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(self.public_post.visibility, 'PUBLIC')
 
@@ -246,8 +245,7 @@ class CreatePostAPITest(TestCase):
         # Send a POST request
         response = self.client.post(url, data=post_data, follow=False)
 
-        # Check for expected 200 after redirect
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 201)
 
         # Validate the created post
         post = Post.objects.filter(author=self.author1, title='Test Post').first()
