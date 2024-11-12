@@ -309,36 +309,48 @@ body {
     background-color: #388e3c;
 }
 
-/* General styles for list boxes */
+/* General styles for list boxes - Modify existing */
 .following-list, .followers-list {
     display: flex;
     flex-direction: column;
     align-items: center;
     margin-top: 20px;
+    background-color: #f8eac7;  /* Match your existing theme */
+    padding: 20px;
 }
 
-/* List box styling */
+/* List box styling - Modify existing */
 .following-box, .follower-box {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 80%; /* Set fixed width */
-    max-width: 600px; /* Ensure consistent max width */
-    min-height: 70px; /* Fixed height for consistency */
+    width: 80%;
+    max-width: 600px;
+    min-height: 70px;
     padding: 15px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    border: 1px solid #3e305e;  /* Match your theme color */
+    border-radius: 10px;
     margin-bottom: 15px;
     background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Info and friend tag alignment within the box */
+/* Info and profile image styling - Add new */
 .following-info, .follower-info {
-    font-size: 18px;
-    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 15px;
 }
 
-/* Friend tag styling */
+.profile-image {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid #3e305e;  /* Match your theme color */
+    object-fit: cover;
+}
+
+/* Friend tag - Modify existing */
 .friend-tag {
     background-color: #4CAF50;
     color: white;
@@ -348,9 +360,9 @@ body {
     font-size: 0.9em;
 }
 
-/* Unfollow button styling */
-.unfollow-button button {
-    background-color: #d9534f;
+/* Unfollow button styling - Modify existing */
+.unfollow-button {
+    background-color: rgb(219, 94, 77);  /* Match your existing delete button color */
     color: white;
     border: none;
     padding: 5px 15px;
@@ -358,8 +370,8 @@ body {
     cursor: pointer;
 }
 
-.unfollow-button button:hover {
-    background-color: #c9302c;
+.unfollow-button:hover {
+    background-color: darkred;  /* Match your existing hover color */
 }
 
 /* Additional margin for friend tag to align properly */
@@ -373,24 +385,32 @@ body {
     flex-grow: 1;
 }
 
-
-
 .follow-button {
     padding: 6px 14px;
     font-size: 16px;
-    border: 2px solid purple; 
     border-radius: 4px;
-    background-color: transparent; 
-    color: purple;
     cursor: pointer;
-    transition: background-color 0.3s, color 0.3s; 
-    margin-bottom: 10px;
+    transition: background-color 0.3s;
+}
 
+.follow-button {
+    background-color: #3e305e;  /* Match your theme color */
+    color: white;
+    border: none;
+}
+
+.unfollow-button {
+    background-color: rgb(219, 94, 77);  /* Match your existing delete button color */
+    color: white;
+    border: none;
 }
 
 .follow-button:hover {
-    background-color: purple;
-    color: white; 
+    background-color: #6d4f8d;  /* Match your existing hover color */
+}
+
+.unfollow-button:hover {
+    background-color: darkred;  /* Match your existing hover color */
 }
 
 .search-form {
@@ -473,4 +493,39 @@ body {
 .feed-header {
     text-align: center;
     margin: 0px 00px 20px 0px;
+}
+
+/* Info and profile image styling */
+.following-info, .follower-info {
+    display: flex;
+    align-items: center;  /* This centers items vertically */
+    gap: 15px;
+}
+
+.follower-info a, .following-info a {
+    display: flex;
+    align-items: center;  /* This ensures the name and image are vertically centered */
+    text-decoration: none;
+    color: #333;
+    gap: 15px;
+    line-height: 50px;  /* Match this with the image height */
+}
+
+.profile-image {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid #3e305e;
+    object-fit: cover;
+    vertical-align: middle;  /* Helps with alignment */
+}
+
+/* Name styling */
+.follower-info span, .following-info span {
+    display: inline-block;
+    vertical-align: middle;
+    line-height: normal;  /* Reset line height for the text */
+    font-size: 1.4em;  /* Increased from 16px to 1.2em */
+    font-weight: 500;  /* Added medium font weight for better visibility */
+    color: #3e305e;    /* Using your theme color */
 }
