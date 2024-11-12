@@ -81,7 +81,7 @@
                 <a type="submit" class="comment-button" href="#comment-input">
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
-                <h3>{{ post.comment_set.count }} comment(s)</h3>
+                <h3 id="commentAmount">{{ post.comments.count }} comment(s)</h3>
                 {% if post.visibility != "UNLISTED" and post.visibility != "FRIENDS" %}
                     <img id="share-image" src="/static/share.png" alt="Share">
                     <h3>share</h3>
@@ -293,10 +293,13 @@
                                     <h5 class="commentUsername">${comment.username}<div class="commentContent">${comment.comment}</div></h5>
                                 `;
 
-                                commentList.appendChild(newComment);
+                                commentList.prepend(newComment);
 
                                 document.getElementById('comment-input').value = ''; // Clear the input field
-                                
+                                const commentAmountElement = document.getElementById('commentAmount');
+                                const currentCount = parseInt(commentAmountElement.innerText) || 0;
+                                commentAmountElement.innerText = (currentCount + 1) + ' comment(s)';
+
                                 // Now construct the inbox request payload
                                 const inboxRequest = {
                                     "type": "comment",

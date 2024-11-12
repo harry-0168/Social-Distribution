@@ -39,7 +39,7 @@ def inbox(request):
         # Serialize the querysets to JSON-serializable data
         
         follow_requests_data = list(follow_req_notifications.values('id', 'author1__FQID', 'author2__FQID', 'author1__displayName','author1__profileImage','date'))
-        comment_data = list(comment_notifications.values('id', 'username', 'content', 'published', 'post__title', 'author__profileImage', 'author__displayName'))
+        comment_data = list(comment_notifications.values('id', 'username', 'comment', 'published', 'post__title', 'author__profileImage', 'author__displayName'))
         like_data = list(like_notifications.values('id', 'username', 'object__title', 'published', 'author__displayName', 'author__profileImage'))
         repost_data = list(repost_notifications.values('id', 'author__displayName', 'content', 'title', 'author__profileImage'))
 

@@ -76,29 +76,13 @@ def get_comment(request, comment_id):
     decoded_comment_id = unquote(comment_id)
     
     # Retrieve the comment using the decoded comment_id
-    comment = get_object_or_404(Comment, FQID=decoded_comment_id)
+    comment = get_object_or_404(Comment, id=decoded_comment_id)
     print("comment: ", comment)
     # Prepare the data to be returned
-    comment_data = {
-        "id": comment.id,
-        "type": comment.type,
-        "contentType": comment.contentType,
-        "username": comment.username,
-        "published": comment.published,
-        "content": comment.content,
-        "post": comment.post.id,
-        "FQID": comment.FQID,
-        "author": {
-            "id": comment.author.id,
-            "host": comment.author.host,
-            "displayName": comment.author.displayName,
-            "github": comment.author.github,
-            #"profile_image": comment.author.profile_image,
-        }
-    }
+    comment_serializer = CommentSerializer(comment)
 
     # Return the comment data as a JSON response
-    return Response(comment_data, status=status.HTTP_200_OK)
+    return Response(comment_serializer.data, status=status.HTTP_200_OK)
 
 class CommentPagination(PageNumberPagination):
     page_size = 5
@@ -115,10 +99,10 @@ class CommentPagination(PageNumberPagination):
         })
 
 @api_view(['GET'])
-def get_posts_comments(request, author_id=None, post_id=None, FQID=None):
-    if FQID:
+def get_posts_comments(request, author_id=None, post_id=None, post_FQID=None):
+    if post_FQID:
         # Decode the FQID to find the post ID
-        decoded_FQID = unquote(FQID)
+        decoded_FQID = unquote(post_FQID)
         post = get_object_or_404(Post, id=decoded_FQID)
     else:
         # Fetch the post using author_id and post_id
@@ -183,12 +167,12 @@ def get_author_comments(request,  author_id=None, FQID=None):
 def get_commented_comment(request, author_id=None, comment_id=None, FQID=None):
     if author_id and comment_id:
         # Get the comment by author and comment UUIDs
-        comment = get_object_or_404(Comment, id=comment_id, author__id=author_id)
+        comment = get_object_or_404(Comment, uuid=comment_id, author__id=author_id)
 
     # Handle URL: /api/commented/{COMMENT_FQID}
     elif FQID:
         # Get the comment by its FQID
-        comment = get_object_or_404(Comment, FQID=FQID)
+        comment = get_object_or_404(Comment, id=FQID)
 
     else:
         # If neither case matches, return a 400 error
@@ -310,7 +294,7 @@ def get_posts_create_post(request, author_id):
             # Read the image file and encode it as base64
             image_data = image.read()
             encoded_image = base64.b64encode(image_data).decode('utf-8')
-            content = f"data:{image.contentType};base64,{encoded_image}"
+            content = f"data:{image.content_type};base64,{encoded_image}"
 
         # Create a new post associated with the current author
         post = Post(
@@ -500,7 +484,7 @@ def get_post_image(request, author_id=None, post_id=None, FQID=None):
             mime_type = 'image/png' if 'png' in post.contentType else 'image/jpeg'
             
             # Return the binary image data in the response
-            return HttpResponse(image_data, contentType=mime_type)
+            return HttpResponse(image_data, content_type=mime_type)
         
         except base64.binascii.Error:
             # Handle decoding error

@@ -13,6 +13,8 @@
             width: 30px;
             height: 30px;
             transition: transform 0.3s ease, content 0.3s ease;
+            margin-left: 10px;
+            margin-top: 5px;
         }
         .delete-button:hover img.trash {
             transform: scale(1.1); /* Scale effect on hover */
@@ -115,7 +117,7 @@
                 <a type="submit" class="comment-button" href="{% url 'viewPost' id=post.uuid %}">
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
-                <h3>{{ post.comment_set.count }} comment(s)</h3>
+                <h3>{{ post.comments.count }} comment(s)</h3>
                 <img src="/static/share.png">
                 <h3>share</h3>
             </section>
