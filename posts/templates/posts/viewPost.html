@@ -81,7 +81,7 @@
                 <a type="submit" class="comment-button" href="#comment-input">
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
-                <h3>{{ post.comment_set.count }} comment(s)</h3>
+                <h3 id="commentAmount">{{ post.comments.count }} comment(s)</h3>
                 {% if post.visibility != "UNLISTED" and post.visibility != "FRIENDS" %}
                     <img id="share-image" src="/static/share.png" alt="Share">
                     <h3>share</h3>
@@ -212,7 +212,7 @@
 
                     const contentDiv = document.createElement('div');
                     contentDiv.classList.add('commentContent');
-                    contentDiv.textContent = comment.content;
+                    contentDiv.textContent = comment.comment;
 
                     h5.appendChild(contentDiv);
                     commentDiv.appendChild(img);
@@ -260,7 +260,7 @@
                             
                             // Construct the comment object to send
                             const commentData = {
-                                "content": content,
+                                "comment": content,
                                 "post": postId,
                                 "author": authorId
                             };
@@ -290,13 +290,16 @@
                                 newComment.classList.add('comment');
                                 newComment.innerHTML = `
                                     <img src="${comment.author.profileImage ? comment.author.profileImage : '/static/avatar.png'}" class="profile-pic-small">
-                                    <h5 class="commentUsername">${comment.username}<div class="commentContent">${comment.content}</div></h5>
+                                    <h5 class="commentUsername">${comment.username}<div class="commentContent">${comment.comment}</div></h5>
                                 `;
 
-                                commentList.appendChild(newComment);
+                                commentList.prepend(newComment);
 
                                 document.getElementById('comment-input').value = ''; // Clear the input field
-                                
+                                const commentAmountElement = document.getElementById('commentAmount');
+                                const currentCount = parseInt(commentAmountElement.innerText) || 0;
+                                commentAmountElement.innerText = (currentCount + 1) + ' comment(s)';
+
                                 // Now construct the inbox request payload
                                 const inboxRequest = {
                                     "type": "comment",
@@ -310,16 +313,19 @@
                                     },
                                     "object": {
                                         "type": "comment",
-                                        "FQID": comment.FQID,
-                                        "id": comment.id,
-                                        "content": comment.content,
+                                        "author": "{{author.id}}",
+                                        "username": "{{author.displayName}}",
+                                        "comment": comment.comment,
                                         "contentType": "text/markdown",
                                         "published": comment.published,
+                                        "id": comment.id,
+                                        "uuid": comment.uuid,
                                         "post": {
                                             "type": "post",
                                             "id": comment.post.uuid,
                                             "author": "{{ post.author.id }}"
-                                        }
+                                        },
+                                        "likes_collection": comment.likes_collection
                                     }
                                 };
                                 console.log("inbox Request:", inboxRequest);
