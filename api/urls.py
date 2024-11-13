@@ -4,12 +4,15 @@ from posts.views import get_edit_delete_post,get_posts_create_post,get_post_imag
 from author.views import api_list_authors, api_add_author, api_author_detail, login, signup, get_author_from_cookie, logout, get_likes_by_author, get_single_like, api_get_like
 from inbox.views import get_followers, get_following
 from inbox.views import handle_follow_request_response, inboxApi
+from .views import nodeSignup, get_nodes
 
 urlpatterns = [
     path('signup', signup, name='signup'),
     path('login', login, name='login'),
     path('author', get_author_from_cookie, name='get_author_from_cookie'),
     path('logout', logout, name='logout'),
+    path("nodeSignup", nodeSignup, name="remoteNodeSignup"),
+    path("nodes", get_nodes, name="get_nodes"),
 
     path("authors/<uuid:object_author_id>/inbox", inboxApi, name="follow_request"), # sender of the follow request
     path("authors/<uuid:author_id>/followers" , get_followers, name="get_followers"), # get followers of an author
