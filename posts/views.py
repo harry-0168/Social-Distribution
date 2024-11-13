@@ -238,7 +238,7 @@ def api_create_like(request, author_id):
             post.save()
 
         # Create and save the new Like instance
-        like = Like(username=username, object=post, author=user)
+        like = Like(username=username, object=post, author=user, id = author_id)
         like.save()
 
         # Add the like to the post's likes collection

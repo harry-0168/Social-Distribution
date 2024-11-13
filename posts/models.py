@@ -23,7 +23,8 @@ CONTENT_TYPE_CHOICES = [
 class Like(models.Model):
     type = models.CharField(max_length=255,default="like")
     username = models.CharField(max_length=255,default="1")  # Store the display name instead of Author object
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(max_length=255,default="1")
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     object = models.ForeignKey('Post', on_delete=models.CASCADE)  # All likes belong to a post
     published = models.DateTimeField(default=timezone.now)
     author = models.ForeignKey(Author, related_name='likes', on_delete=models.CASCADE)
