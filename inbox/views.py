@@ -46,16 +46,24 @@ def inbox(request):
         # Send the data to the template
         for follow_request in follow_requests_data:
             follow_request['author1__profileImage'] = author.host + settings.MEDIA_URL +follow_request['author1__profileImage']
-        
+            author_id = follow_request['author1__FQID']
+            author = get_object_or_404(Author, FQID=author_id)
+            follow_request['profileImage'] = author.profileImage        
         for comment in comment_data:
             comment['author__profileImage'] = author.host + settings.MEDIA_URL + comment['author__profileImage']
-        
+            username = comment['username']
+            author = get_object_or_404(Author, displayName=username)
+            comment['profileImage'] = author.profileImage 
         for like in like_data:
             like['author__profileImage'] = author.host + settings.MEDIA_URL + like['author__profileImage']
-
+            username = like['username']
+            author = get_object_or_404(Author, displayName=username)
+            like['profileImage'] = author.profileImage 
         for repost in repost_data:
             repost['author__profileImage'] = author.host + settings.MEDIA_URL + repost['author__profileImage']
-        
+            username = repost['author__displayName']
+            author = get_object_or_404(Author, displayName=username)
+            repost['profileImage'] = author.profileImage 
         
         context = {
             'follow_requests': follow_requests_data,
