@@ -27,11 +27,11 @@
     <div class="header">
         <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
             {% if request.user.profileImage %}
-                <img src="{{ request.user.profileImage.url }}" 
-                style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+                <img src="data:image/png;base64,{{ request.user.profileImage }}" 
+                 style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
             {% else %}
                 <img src="{% static 'avatar.png' %}" 
-                style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+                 style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
             {% endif %}
         </a>
         <div class="icons">
@@ -57,8 +57,8 @@
                         {% for like in post.like_set.all %}
                             <div class="like">
                                 {% if like.author.profileImage %}
-                                    <img src="{{ like.author.profileImage.url }}" 
-                                        class="profile-pic-small">
+                                    <img src="data:image/png;base64,{{ like.author.profileImage }}" 
+                                     class="profile-pic-small">
                                 {% else %}
                                     <img src="{% static 'avatar.png' %}" 
                                         class="profile-pic-small">
@@ -76,8 +76,13 @@
 
         <section class="gridItemRight">
             <div class="userInfo">
-                <img class="profileImage" src="{% static 'avatar.png' %}">
-                <div class="username_DatePosted">
+                {% if post.author.profileImage %}
+                    <img src="data:image/png;base64,{{ post.author.profileImage }}" 
+                    class="profile-pic-small">
+                {% else %}
+                    <img src="{% static 'avatar.png' %}" 
+                    class="profile-pic-small">
+                {% endif %}                <div class="username_DatePosted">
                     <a class="username" href="{% url 'author_profile' post.author.id %}">{{ post.author.displayName }}</a> <!-- TODO: make the username clickable to go to userProfile-->
                     <h3 class="postDate">{{post.published|default:"NApublished"}}</h3>
                 </div>
