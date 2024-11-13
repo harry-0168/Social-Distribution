@@ -59,28 +59,32 @@ class Likes(models.Model):
 
 # Create your models here.
 class Post(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(max_length=1000, primary_key=True, unique=True)
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False)
     type = models.CharField(max_length=20)
     title = models.CharField(max_length=100)
+    page = models.URLField()
     description = models.CharField(max_length=200)
-    content_type = models.CharField(max_length=100, choices=CONTENT_TYPE_CHOICES)
+    contentType = models.CharField(max_length=100, choices=CONTENT_TYPE_CHOICES)
     content = models.TextField()
     author = models.ForeignKey(Author, related_name='posts', on_delete=models.CASCADE)
     published = models.DateTimeField(auto_now_add=True)
     visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES)
-    FQID = models.CharField(max_length=1000, unique=True, null=True)
     likes_collection = models.OneToOneField(Likes, related_name='post', on_delete=models.CASCADE, null=True, blank=True)
-
     
     def __str__(self):
         return self.title
     
     def save(self, *args, **kwargs):
         # Ensure FQID is set on creation only
-        if not self.FQID:
-            # Assumes the host is accessible in kwargs;
+        if not self.id:
             host = kwargs.get('request_host', 'localhost')
-            self.FQID = f"http://{host}/api/posts/{self.id}"
+            author_id = self.author.id  # Ensure that author id is correctly set
+            self.id = f"http://{host}/api/authors/{author_id}/posts/{self.uuid}"
+        if not self.page:
+            host = kwargs.get('request_host', 'localhost')
+            author_id = self.author.id  # Ensure that author id is correctly set
+            self.page = f"http://{host}/authors/{author_id}/posts/{self.uuid}"
         
         super().save(*args, **kwargs)
     
@@ -100,30 +104,28 @@ class Post(models.Model):
 
         # Friends-only posts are visible to friends (mutual followers)
         if self.visibility == 'FRIENDS':
-            return Following.are_friends(self.author, user)
+            return Following.are_friends(self.author, user) or user == self.author
 
         # By default, the post is not visible
         return False
 
 class Comment(models.Model):
-    username = models.CharField(max_length=32) 
-    published = models.DateTimeField("date created", default=timezone.now) 
-    content =  models.TextField()
-    post = models.ForeignKey(Post, related_name='comments', on_delete=models.CASCADE) # all comments belong to a post
+    type = models.CharField(max_length=20, default='comment')
     author = models.ForeignKey(Author, related_name='comments', on_delete=models.CASCADE)
-    FQID = models.CharField(max_length=1000, unique=True, null=True)
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    type = models.CharField(max_length=20)
-    contentType = "text/markdown"
+    username = models.CharField(max_length=32) 
+    comment =  models.TextField()
+    contentType = models.CharField(max_length=32, default="text/markdown")
+    published = models.DateTimeField("date created", default=timezone.now) 
+    id = models.CharField(max_length=1000, unique=True, null=True)  # FQID
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)   # SERIAL
+    post = models.ForeignKey(Post, related_name='comments', on_delete=models.CASCADE) # all comments belong to a post
     likes_collection = models.OneToOneField(Likes, related_name='comment', on_delete=models.CASCADE, null=True, blank=True)
 
-    #likes
-
     def save(self, *args, **kwargs):
-        ''' Override the save method to set the FQID field before saving '''
-        if not self.FQID:  # Only set if FQID is not already set
+        ''' Override the save method to set the id field before saving '''
+        if not self.id:  # Only set if id is not already set
             host = kwargs.get('request_host', 'localhost')
-            self.FQID = f"http://{host}/api/comments/{self.id}"
+            self.id = f"http://{host}/api/comments/{self.uuid}"
         
         super().save(*args, **kwargs)
 

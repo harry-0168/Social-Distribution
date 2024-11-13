@@ -12,6 +12,7 @@ import json
 from author.models import Following
 from .models import Inbox
 from django.utils import timezone
+import logging
 
 
 @api_view(['GET'])
@@ -38,23 +39,31 @@ def inbox(request):
         # Serialize the querysets to JSON-serializable data
         
         follow_requests_data = list(follow_req_notifications.values('id', 'author1__FQID', 'author2__FQID', 'author1__displayName','author1__profileImage','date'))
-        comment_data = list(comment_notifications.values('id', 'username', 'content', 'published', 'post__title', 'author__profileImage', 'author__displayName'))
+        comment_data = list(comment_notifications.values('id', 'username', 'comment', 'published', 'post__title', 'author__profileImage', 'author__displayName'))
         like_data = list(like_notifications.values('id', 'username', 'object__title', 'published', 'author__displayName', 'author__profileImage'))
         repost_data = list(repost_notifications.values('id', 'author__displayName', 'content', 'title', 'author__profileImage'))
 
         # Send the data to the template
         for follow_request in follow_requests_data:
             follow_request['author1__profileImage'] = author.host + settings.MEDIA_URL +follow_request['author1__profileImage']
-        
+            author_id = follow_request['author1__FQID']
+            author = get_object_or_404(Author, FQID=author_id)
+            follow_request['profileImage'] = author.profileImage        
         for comment in comment_data:
             comment['author__profileImage'] = author.host + settings.MEDIA_URL + comment['author__profileImage']
-        
+            username = comment['username']
+            author = get_object_or_404(Author, displayName=username)
+            comment['profileImage'] = author.profileImage 
         for like in like_data:
             like['author__profileImage'] = author.host + settings.MEDIA_URL + like['author__profileImage']
-
+            username = like['username']
+            author = get_object_or_404(Author, displayName=username)
+            like['profileImage'] = author.profileImage 
         for repost in repost_data:
             repost['author__profileImage'] = author.host + settings.MEDIA_URL + repost['author__profileImage']
-        
+            username = repost['author__displayName']
+            author = get_object_or_404(Author, displayName=username)
+            repost['profileImage'] = author.profileImage 
         
         context = {
             'follow_requests': follow_requests_data,
@@ -126,7 +135,7 @@ def inboxApi(request, object_author_id):
             
         elif parsed_data['type'] == 'comment':
             object_author = Author.objects.get(id=parsed_data['object']['post']['author'])
-            Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['object']['FQID'], received_at=timezone.now()).save()
+            Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['object']['id'], received_at=timezone.now()).save()
             return Response({"message": "Comment sent"}, status=200)
         
         elif parsed_data['type'] == 'like':
@@ -137,7 +146,7 @@ def inboxApi(request, object_author_id):
             if not post_id:
                 return Response({"error": "Post ID not found"}, status=status.HTTP_400_BAD_REQUEST)
             
-            post = get_object_or_404(Post, id=post_id)
+            post = get_object_or_404(Post, uuid=post_id)
 
             token = request.COOKIES.get('jwt')
             if not token:
@@ -194,9 +203,9 @@ def handle_follow_request_response(request, author_id, foreign_author_fqid):
             return Response({"error": "Unauthorized"}, status=401)
         
         # foreign_author_fqid will be percent encoded, so we need to decode it
-        foreign_author_fqid = foreign_author_fqid.replace('%2F', '/')
-        foreign_author_fqid = foreign_author_fqid.replace('%3A', ':')
-        
+        from urllib.parse import unquote
+        foreign_author_fqid = unquote(foreign_author_fqid).rstrip('/')
+        print(f"Decoded foreign_author_fqid: {foreign_author_fqid}")
         foreign_author = get_object_or_404(Author, FQID=foreign_author_fqid)
         if request.method == 'PUT':
             # Accept follow request from foreign_author 
@@ -206,7 +215,7 @@ def handle_follow_request_response(request, author_id, foreign_author_fqid):
             return Response({"message": "Follow request accepted"}, status=200)
         elif request.method == 'DELETE':
             # Reject follow request from foreign_authorm, status can be 'pending' or 'accepted'
-            follow_request = get_object_or_404(Following, author1 = foreign_author, author2 = author)
+            follow_request = get_object_or_404(Following, author1 = author, author2 = foreign_author)
             follow_request.delete()
             return Response({"message": "Follow request rejected"}, status=200)
         elif request.method == 'GET':

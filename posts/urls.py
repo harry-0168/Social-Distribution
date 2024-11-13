@@ -19,5 +19,5 @@ urlpatterns = [
     path("<uuid:id>/viewPost/repost_link/", views.repost_link, name="repost_link"),  # URL for repost functionality
 
     # API paths for creating comments and likes
-    path("api/<uuid:post_id>/comment/", views.create_comment, name="create_comment"),  # API for creating comments
+    path("api/<uuid:post_uuid>/comment/", views.create_comment, name="create_comment"),  # API for creating comments
 ]

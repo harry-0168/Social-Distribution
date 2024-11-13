@@ -11,11 +11,11 @@
     <div class="header">
         <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
             {% if request.user.profileImage %}
-                <img src="{{ request.user.profileImage.url }}" 
-                style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+                <img src="data:image/png;base64,{{ request.user.profileImage }}" 
+                 style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
             {% else %}
                 <img src="{% static 'avatar.png' %}" 
-                style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+                 style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
             {% endif %}
         </a>
         <div class="icons">
@@ -33,7 +33,7 @@
 
     <div class="container">
         <div class="form-title">Edit Post</div>
-        <form id="save-form" method="POST" enctype="multipart/form-data" action="{% url 'edit_post' request.user.id post.id %}">
+        <form id="save-form" method="POST" enctype="multipart/form-data" action="{% url 'edit_post' request.user.id post.uuid %}">
             {% csrf_token %}
             <input type="hidden" name="_method" value="PUT"> <!--IMPORTANT: Walk around for put method-->
             <div class="form-field-inline">
@@ -58,17 +58,17 @@
             <div class="form-field-inline">
                 <div class="form-field">
                     <label for="content-type">Content Type</label>
-                    <select id="content-type" name="content_type">
-                        <option value="text/plain" {% if post.content_type == 'text/plain' %}selected{% endif %}>Plain Text</option>
-                        <option value="text/markdown" {% if post.content_type == 'text/markdown' %}selected{% endif %}>Markdown</option>
-                        <option value="image/jpeg;base64" {% if post.content_type == 'image/jpeg;base64' %}selected{% endif %}>Image (JPEG)</option>
-                        <option value="image/png;base64" {% if post.content_type == 'image/png;base64' %}selected{% endif %}>Image (PNG)</option>
+                    <select id="content-type" name="contentType">
+                        <option value="text/plain" {% if post.contentType == 'text/plain' %}selected{% endif %}>Plain Text</option>
+                        <option value="text/markdown" {% if post.contentType == 'text/markdown' %}selected{% endif %}>Markdown</option>
+                        <option value="image/jpeg;base64" {% if post.contentType == 'image/jpeg;base64' %}selected{% endif %}>Image (JPEG)</option>
+                        <option value="image/png;base64" {% if post.contentType == 'image/png;base64' %}selected{% endif %}>Image (PNG)</option>
                     </select>
                 </div>
             </div>
             <div class="form-field" id="text-content-field">
                 <label for="content">Content</label>
-                {% if post.content_type != "image/png;base64" and post.content_type != "image/jpeg;base64" %}
+                {% if post.contentType != "image/png;base64" and post.contentType != "image/jpeg;base64" %}
                     <textarea id="content" name="content">{{ post.content }}</textarea>
                 {% else %}
                     <textarea id="content" name="content"></textarea>
@@ -77,7 +77,7 @@
             <div class="form-field" id="image-upload-field" style="display: none;">
                 <label>Image Upload</label>
                 <div id="image-upload-container">
-                    {% if post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
+                    {% if post.contentType == "image/png;base64" or post.contentType == "image/jpeg;base64" %}
                         <img src="{{ post.content }}" alt="Uploaded Image" style="max-width: 100%; height: auto;">
                     {% else %}
                         <span>No Image Uploaded</span>

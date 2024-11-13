@@ -11,11 +11,11 @@
     <div class="header">
         <a href="{% url 'author_profile' author.id %}">
             {% if author.profileImage %}
-                <img src="{{ author.profileImage.url }}" 
-                style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+                <img src="data:image/png;base64,{{ author.profileImage }}" 
+                 style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
             {% else %}
                 <img src="{% static 'avatar.png' %}" 
-                style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+                 style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
             {% endif %}
         </a>
         <div class="icons">
@@ -57,7 +57,7 @@
             <div class="form-field-inline">
                 <div class="form-field">
                     <label for="content-type">Content Type</label>
-                    <select id="content-type" name="content_type">
+                    <select id="content-type" name="contentType">
                         <option value="text/plain">Plain Text</option>
                         <option value="text/markdown">Markdown</option>
                         <option value="image/jpeg;base64">Image (JPEG)</option>

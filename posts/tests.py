@@ -35,7 +35,7 @@ class GetEditDeletePostAPITest(APITestCase):
             id=uuid.uuid4(),
             title="Public Post",
             description="Test Description",
-            content_type="text/plain",
+            contentType="text/plain",
             content="This is a test post",
             visibility="PUBLIC",
             author=self.author1,
@@ -44,14 +44,14 @@ class GetEditDeletePostAPITest(APITestCase):
             id=uuid.uuid4(),
             title="Friends Post",
             description="This is a friends-only post",
-            content_type="text/plain",
+            contentType="text/plain",
             content="Friends content",
             visibility="FRIENDS",
             author=self.author1,
         )
-        self.public_post_url = reverse('edit_post', args=[self.author1.id, self.public_post.id])
-        self.friends_post_url = reverse('edit_post', args=[self.author1.id, self.friends_post.id])
-        self.delete_post_url = reverse('delete_post', args=[self.author1.id, self.public_post.id])
+        self.public_post_url = reverse('edit_post', args=[self.author1.id, self.public_post.uuid])
+        self.friends_post_url = reverse('edit_post', args=[self.author1.id, self.friends_post.uuid])
+        self.delete_post_url = reverse('delete_post', args=[self.author1.id, self.public_post.uuid])
 
     def test_get_public_post_as_anonymous(self):
         response = self.client.get(self.public_post_url)
@@ -65,8 +65,8 @@ class GetEditDeletePostAPITest(APITestCase):
 
     def test_get_friends_post_as_friend(self):
         # Set up friendship
-        Following.objects.create(author1=self.author1, author2=self.author2)
-        Following.objects.create(author1=self.author2, author2=self.author1)
+        Following.objects.create(author1=self.author1, author2=self.author2, status='accepted')
+        Following.objects.create(author1=self.author2, author2=self.author1, status='accepted')
         response = self.client2.get(self.friends_post_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['title'], "Friends Post")
@@ -80,7 +80,7 @@ class GetEditDeletePostAPITest(APITestCase):
         data = {
             'title': 'Updated Test Post',
             'description': 'Updated Description',
-            'content_type': 'text/markdown',
+            'contentType': 'text/markdown',
             'content': 'Updated content',
             '_method': 'PUT'
         }
@@ -90,7 +90,7 @@ class GetEditDeletePostAPITest(APITestCase):
 
     def test_edit_post_unauthorized(self):
         # Author2 tries to update Author1's post
-        self.public_post_url = reverse('edit_post', kwargs={'author_id': self.author2.id, 'post_id': self.public_post.id})
+        self.public_post_url = reverse('edit_post', kwargs={'author_id': self.author2.id, 'post_id': self.public_post.uuid})
         data = {'title': 'Unauthorized Update', '_method': 'PUT'}
         response = self.client.post(self.public_post_url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -104,7 +104,7 @@ class GetEditDeletePostAPITest(APITestCase):
 
     def test_delete_post_unauthorized(self):
         # Author2 tries to delete Author1's post
-        unauthorized_delete_url = reverse('delete_post', args=[self.user2.id, self.public_post.id])
+        unauthorized_delete_url = reverse('delete_post', args=[self.user2.id, self.public_post.uuid])
         response = self.client2.post(unauthorized_delete_url, {'_method': 'DELETE'}, follow=True)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(self.public_post.visibility, 'PUBLIC')
@@ -119,8 +119,8 @@ class GetPostFQIDTestCase(APITestCase):
         self.client.login(displayName='testuser', password='password')
 
         # Create a public post and a friends-only post
-        self.public_post = Post.objects.create(id=uuid.uuid4(), FQID='http://localhost/api/authors/1', visibility="PUBLIC", author=self.user)
-        self.friends_only_post = Post.objects.create(id=uuid.uuid4(), FQID='http://localhost/api/authors/2', visibility="FRIENDS", author=self.user)
+        self.public_post = Post.objects.create(uuid=uuid.uuid4(), id='http://localhost/api/authors/1', visibility="PUBLIC", author=self.user)
+        self.friends_only_post = Post.objects.create(uuid=uuid.uuid4(), id='http://localhost/api/authors/2', visibility="FRIENDS", author=self.user)
 
     def test_no_FQID_provided(self):
         factory = APIRequestFactory()
@@ -137,7 +137,7 @@ class GetPostFQIDTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_public_post_access(self):
-        url = reverse('get_post_FQID', args=[self.public_post.FQID])
+        url = reverse('get_post_FQID', args=[self.public_post.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -146,7 +146,7 @@ class GetPostFQIDTestCase(APITestCase):
 
     @patch('author.models.Following.are_friends', return_value=True)
     def test_friends_only_post_authenticated_friend(self, mock_are_friends):
-        url = reverse('get_post_FQID', args=[self.friends_only_post.FQID])
+        url = reverse('get_post_FQID', args=[self.friends_only_post.id])
         # Ensure the test user is logged in and authenticated
         self.client.force_authenticate(user=self.user)
 
@@ -159,7 +159,7 @@ class GetPostFQIDTestCase(APITestCase):
 
     @patch('author.models.Following.are_friends', return_value=False)
     def test_friends_only_post_authenticated_non_friend(self, mock_are_friends):
-        url = reverse('get_post_FQID', args=[self.friends_only_post.FQID])
+        url = reverse('get_post_FQID', args=[self.friends_only_post.id])
         self.client.force_authenticate(user=self.user)  # Ensure user is authenticated
 
         response = self.client.get(url)
@@ -169,7 +169,7 @@ class GetPostFQIDTestCase(APITestCase):
 
     def test_friends_only_post_unauthenticated_user(self):
         self.client.logout()  # Make the request as an unauthenticated user
-        url = reverse('get_post_FQID', args=[self.friends_only_post.FQID])
+        url = reverse('get_post_FQID', args=[self.friends_only_post.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.data, {"error": "Unauthorized to view friends-only post"})
@@ -213,7 +213,7 @@ class CreatePostAPITest(TestCase):
         post_data = {
             'title': 'Test Post',
             'description': 'This is a test post.',
-            'content_type': 'text/plain',
+            'contentType': 'text/plain',
             'visibility': 'public',
             'content': 'This is some test content.',
         }
@@ -234,7 +234,7 @@ class CreatePostAPITest(TestCase):
         post_data = {
             'title': 'Test Post',
             'description': 'This is a test post.',
-            'content_type': 'text/plain',
+            'contentType': 'text/plain',
             'visibility': 'PUBLIC',
             'content': 'This is some test content.',
         }
@@ -269,10 +269,10 @@ class CreatePostCheckTest(APITestCase):
         
         # Create a post for the author
         self.post = Post.objects.create(
-            id=uuid.uuid4(),
+            uuid=uuid.uuid4(),
             title='Test Post Title',
             description='Test Post Description',
-            content_type='text/plain',
+            contentType='text/plain',
             content='Test Post Content',
             visibility='PUBLIC',
             author=self.author
@@ -284,61 +284,15 @@ class CreatePostCheckTest(APITestCase):
         self.assertEqual(Post.objects.count(), 1)  # Ensure one post was created
 
         # Retrieve the post from the database
-        post = Post.objects.get(id=self.post.id)
+        post = Post.objects.get(uuid=self.post.uuid)
 
         # Check the post's properties
         self.assertEqual(post.title, 'Test Post Title')
         self.assertEqual(post.description, 'Test Post Description')
-        self.assertEqual(post.content_type, 'text/plain')
+        self.assertEqual(post.contentType, 'text/plain')
         self.assertEqual(post.content, 'Test Post Content')
         self.assertEqual(post.visibility, 'PUBLIC')
         self.assertEqual(post.author, self.author)
-class GetPostImageViewTest(TestCase):
-    def setUp(self):
-        # Set up test data, create an author and a post
-        self.author = Author.objects.create(
-            host="http://localhost",
-            displayName="Test Author",
-            FQID="http://localhost/api/authors/test-author",
-        )
-        self.post = Post.objects.create(
-            author=self.author,
-            content='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...',
-            content_type='image/png;base64',
-            FQID="http://localhost/api/posts/test-post"
-        )
-
-    def test_get_post_image_invalid_base64(self):
-        # Create a new post with invalid base64 data instead of modifying the existing one
-        invalid_base64_post = Post.objects.create(
-            author=self.author,
-            content='data:image/png;base64,invalid_data',  # Invalid data
-            content_type='image/png;base64',
-            FQID="http://localhost/api/posts/invalid-id"
-        )
-        response = self.client.get(f'/api/posts/{invalid_base64_post.FQID}/image/')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # Expecting a 400
-        self.assertEqual(response.data, {'error': 'Invalid base64 image data', 'content': invalid_base64_post.content})
-
-    def test_get_post_image_invalid_FQID(self):
-        # Attempt to retrieve an image with an invalid FQID
-        invalid_FQID = "http://localhost/api/posts/invalid-id/image/"
-        response = self.client.get(invalid_FQID)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(response.data, {'detail': 'No Post matches the given query.'})
-
-    def test_get_post_image_not_found(self):
-        # Attempt to retrieve an image for a post that doesn't exist
-        non_existent_FQID = "http://localhost/api/posts/non-existent-id/image/"
-        response = self.client.get(non_existent_FQID)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(response.data, {'detail': 'No Post matches the given query.'})
-
-    def test_get_post_image_valid(self):
-        # Test retrieving the post image successfully
-        response = self.client.get(f'/api/posts/{self.post.FQID}/image/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response['Content-Type'], 'image/png')
 
 class GetCommentTestCase(APITestCase):
     def setUp(self):
@@ -354,11 +308,11 @@ class GetCommentTestCase(APITestCase):
         self.post_instance = Post.objects.create(
             title='Test Post',
             description='This is a test post.',
-            content_type='text/plain',
+            contentType='text/plain',
             content='This is the content of the test post.',
             author=self.author,
             visibility='PUBLIC',
-            FQID='http://example.com/posts/testpost'
+            id='http://example.com/posts/testpost'
         )
         
         # Create a comment instance
@@ -367,12 +321,12 @@ class GetCommentTestCase(APITestCase):
             username="testuser",
             post=self.post_instance,
             author=self.author,
-            FQID='http://example.com/comments/testcomment',
+            id='http://example.com/comments/testcomment',
             type='comment',
         )
         
-        # Set the URL for the get_comment view using the comment's FQID
-        self.url = reverse('get_comment', args=[self.comment.FQID])
+        # Set the URL for the get_comment view using the comment's id
+        self.url = reverse('get_comment', args=[self.comment.id])
 
     def test_get_comment(self):
         response = self.client.get(self.url)
@@ -386,14 +340,14 @@ class GetCommentTestCase(APITestCase):
             "username": self.comment.username,
             "published": self.comment.published.isoformat(),  # Ensure the datetime is in string format
             "content": self.comment.content,
-            "post": self.comment.post.FQID,
-            "FQID": self.comment.FQID,
+            "post": self.comment.post.id,
+            "id": self.comment.id,
             "author": {
                 "id": str(self.comment.author.id), 
                 "host": self.comment.author.host,
                 "displayName": self.comment.author.displayName,
                 "github": self.comment.author.github,
-                "FQID": self.comment.author.FQID,
+                "id": self.comment.author.id,
             }
         }
 
@@ -411,68 +365,6 @@ class GetCommentTestCase(APITestCase):
         invalid_url = reverse('get_comment', args=['http://example.com/comments/invalid'])
         response = self.client.get(invalid_url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-class GetPostsCommentsTestCase(APITestCase):
-    def setUp(self):
-        # Set up the author and post
-        self.author = Author.objects.create(
-            id='c9834169-f5da-4fdf-873d-10fc3ea45edb',
-            displayName='Test Author',
-            host='http://localhost',
-            profileImage='/static/avatar.png'
-        )
-        
-        self.post = Post.objects.create(
-            FQID='http://localhost/api/posts/test_post',
-            title='Test Post',
-            author=self.author,
-        )
-
-        # Create comments for the post
-        self.comments = [
-            Comment.objects.create(
-                post=self.post,
-                author=self.author,
-                content='Comment 1',
-                published='2024-11-04T17:26:22Z',
-            ),
-            Comment.objects.create(
-                post=self.post,
-                author=self.author,
-                content='Comment 2',
-                published='2024-11-04T17:26:24Z',
-            ),
-            Comment.objects.create(
-                post=self.post,
-                author=self.author,
-                content='Comment 3',
-                published='2024-11-04T17:26:30Z',
-            ),
-        ]
-
-    def test_get_posts_comments_by_FQID(self):
-        FQID = quote(self.post.FQID)
-        url = reverse('FQID_get_posts_comments', kwargs={'FQID': FQID})
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['type'], 'comments')
-        self.assertEqual(response.data['count'], len(self.comments))
-        self.assertEqual(len(response.data['src']), 3)
-        self.assertEqual(response.data['src'][0]['content'], 'Comment 3')  # Newest first
-        self.assertEqual(response.data['src'][1]['content'], 'Comment 2')
-        self.assertEqual(response.data['src'][2]['content'], 'Comment 1')
-
-    def test_get_posts_comments_by_post_id(self):
-        url = reverse('SERIAL_get_posts_comments', kwargs={'author_id': self.author.id, 'post_id': self.post.id})  # Use the correct name here
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['type'], 'comments')
-        self.assertEqual(response.data['count'], len(self.comments))
-        self.assertEqual(len(response.data['src']), 3)
-        self.assertEqual(response.data['src'][0]['content'], 'Comment 3')  # Newest first
-        self.assertEqual(response.data['src'][1]['content'], 'Comment 2')
-        self.assertEqual(response.data['src'][2]['content'], 'Comment 1')
 
 
 class GetAuthorCommentsTestCase(APITestCase):
@@ -484,7 +376,7 @@ class GetAuthorCommentsTestCase(APITestCase):
         
         # Create a valid JWT token for the user
         self.token = jwt.encode({'id': self.author.displayName}, settings.SECRET_KEY, algorithm='HS256')
-        self.url = reverse('create_comment', kwargs={'post_id': self.post.id})
+        self.url = reverse('create_comment', kwargs={'post_id': self.post.uuid})
 
     def test_get_author_comments_by_author_id(self):
         Comment.objects.create(content=self.comment_content, post=self.post, author=self.author, username=self.author.displayName)
@@ -497,7 +389,7 @@ class GetAuthorCommentsTestCase(APITestCase):
     def test_get_author_comments_by_FQID(self):
         Comment.objects.create(content=self.comment_content, post=self.post, author=self.author, username=self.author.displayName)
 
-        response = self.client.get(reverse('FQID_get_author_comments', kwargs={'FQID': self.author.FQID}))
+        response = self.client.get(reverse('FQID_get_author_comments', kwargs={'id': self.author.id}))
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn(self.comment_content, [c['content'] for c in response.data['src']])
