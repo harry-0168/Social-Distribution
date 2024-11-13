@@ -81,13 +81,13 @@ class Following(models.Model):
     @staticmethod
     def is_following(author1, author2):
         """Check if author1 is following author2."""
-        return Following.objects.filter(author1=author1, author2=author2).exists()
+        return Following.objects.filter(author1=author1, author2=author2, status='accepted').exists()
 
     @staticmethod
     def are_friends(author1, author2):
         """Check if both authors are following each other (mutual following)."""
-        return (Following.objects.filter(author1=author1, author2=author2).exists() and
-                Following.objects.filter(author1=author2, author2=author1).exists())
+        return (Following.objects.filter(author1=author1, author2=author2, status="accepted").exists() and
+            Following.objects.filter(author1=author2, author2=author1, status="accepted").exists())
         
     @staticmethod
     def follow(author1, author2):

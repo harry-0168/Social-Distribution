@@ -39,7 +39,7 @@ def inbox(request):
         # Serialize the querysets to JSON-serializable data
         
         follow_requests_data = list(follow_req_notifications.values('id', 'author1__FQID', 'author2__FQID', 'author1__displayName','author1__profileImage','date'))
-        comment_data = list(comment_notifications.values('id', 'username', 'content', 'published', 'post__title', 'author__profileImage', 'author__displayName'))
+        comment_data = list(comment_notifications.values('id', 'username', 'comment', 'published', 'post__title', 'author__profileImage', 'author__displayName'))
         like_data = list(like_notifications.values('id', 'username', 'object__title', 'published', 'author__displayName', 'author__profileImage'))
         repost_data = list(repost_notifications.values('id', 'author__displayName', 'content', 'title', 'author__profileImage'))
 
@@ -127,7 +127,7 @@ def inboxApi(request, object_author_id):
             
         elif parsed_data['type'] == 'comment':
             object_author = Author.objects.get(id=parsed_data['object']['post']['author'])
-            Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['object']['FQID'], received_at=timezone.now()).save()
+            Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['object']['id'], received_at=timezone.now()).save()
             return Response({"message": "Comment sent"}, status=200)
         
         elif parsed_data['type'] == 'like':
@@ -138,7 +138,7 @@ def inboxApi(request, object_author_id):
             if not post_id:
                 return Response({"error": "Post ID not found"}, status=status.HTTP_400_BAD_REQUEST)
             
-            post = get_object_or_404(Post, id=post_id)
+            post = get_object_or_404(Post, uuid=post_id)
 
             token = request.COOKIES.get('jwt')
             if not token:

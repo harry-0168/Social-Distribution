@@ -1,30 +1,40 @@
 {% extends 'author/author_base.html' %}
 
 {% block content %}
-<h1>{{ author.displayName }}'s Following ({{ following_count }})</h1>
+<div class="follow-info">
+    <!-- Link to Followers page with count -->
+    <a href="{% url 'followers_list' author.id %}" class="followers">
+        <strong>{{ followers_count }}</strong> Followers
+    </a>
 
-<div class="following-list-container">
-    <div class="following-list">
-        {% for item in following %}
-            <div class="following-box">
-                <div class="following-info">
-                    <span>{{ item.user.displayName }}</span>
-                    {% if item.is_friend %}
-                        <span class="friend-tag">Friend</span> <!-- Add the "Friend" tag -->
+    <span> | </span>
+
+    <!-- Current page (Following) with count -->
+    <a href="{% url 'following_list' author.id %}" class="following active">
+        <strong>{{ following_count }}</strong> Following
+    </a>
+</div>
+
+<div class="following-list">
+    {% for item in following %}
+        <div class="following-box">
+            <div class="following-info">
+                <a href="{% url 'author_profile' item.following.id %}">
+                    {% if item.following.profileImage %}
+                        <img src="{{ item.following.profileImage.url }}" alt="{{ item.following.displayName }}'s profile" class="profile-image">
+                    {% else %}
+                        <img src="/static/images/default-profile.png" alt="Default profile" class="profile-image">
                     {% endif %}
-                </div>
-
-                <div class="unfollow-button">
-                    <form action="{% url 'unfollow-author' item.user.id %}" method="post">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">Unfollow</button>
-                    </form>
-                </div>
+                    <span>{{ item.following.displayName }}</span>
+                </a>
+                {% if item.is_friend %}
+                    <span class="friend-tag">Friend</span>
+                {% endif %}
             </div>
-        {% empty %}
-            <p>No users followed yet.</p>  <!-- Show this message if there are no users followed -->
-        {% endfor %}
-    </div>
+        </div>
+    {% empty %}
+        <p>Not following anyone yet.</p>
+    {% endfor %}
 </div>
 
 {% endblock %}

@@ -13,6 +13,8 @@
             width: 30px;
             height: 30px;
             transition: transform 0.3s ease, content 0.3s ease;
+            margin-left: 10px;
+            margin-top: 5px;
         }
         .delete-button:hover img.trash {
             transform: scale(1.1); /* Scale effect on hover */
@@ -82,7 +84,7 @@
                 <!-- <button class="followButton">Follow</button> -->
                 <!-- Only the author can delete their own posts -->
                 {% if user.id == post.author.id %}
-                    <form action="{% url 'delete_post' request.user.id post.id %}" method="POST">
+                    <form action="{% url 'delete_post' request.user.id post.uuid %}" method="POST">
                         {% csrf_token %}
                         <input type="hidden" name="_method" value="DELETE"> <!--IMPORTANT: Walk around for delete method-->
                         <button style="margin-top: 20px; background-color: #f7e8d4; border-color: #f7e8d4; border-style: none;" type="submit" class="delete-button">
@@ -93,11 +95,11 @@
             </div>
             <h1 class="postTitle">{{post.title|default:"NAtitle"}}</h1>
             <div class="postContent">
-                {% if post.content_type == "text/plain" %}
+                {% if post.contentType == "text/plain" %}
                     {{ post.content|default:"NAcontent" }}
-                {% elif post.content_type == "text/markdown" %}
-                    <div id="markdown-content-{{ post.id }}" class="markdown-content" data-content="{{ post.content|escapejs }}"></div>
-                {% elif post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
+                {% elif post.contentType == "text/markdown" %}
+                    <div id="markdown-content-{{ post.uuid }}" class="markdown-content" data-content="{{ post.content|escapejs }}"></div>
+                {% elif post.contentType == "image/png;base64" or post.contentType == "image/jpeg;base64" %}
                     <img src="{{ post.content }}" alt="Post Image" class="postImage">
                 {% else %}
                     {{ post.content|default:"NAcontent" }}
@@ -106,22 +108,22 @@
             <section class="likeCommentShare">
                 <form action="{% url 'api_create_like' post.author.id %}" method="POST">
                     {% csrf_token %}
-                    <input type="hidden" name="post_id" value="{{ post.id }}">
+                    <input type="hidden" name="post_id" value="{{ post.uuid }}">
                     <button type="submit" class="like-button">
                         <img class="heart" src="{% static 'heart.png' %}" alt="Like">
                     </button>
                 </form>
                 <h3>{{ post.like_set.count }} like(s)</h3>
-                <a type="submit" class="comment-button" href="{% url 'viewPost' id=post.id %}">
+                <a type="submit" class="comment-button" href="{% url 'viewPost' id=post.uuid %}">
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
-                <h3>{{ post.comment_set.count }} comment(s)</h3>
+                <h3>{{ post.comments.count }} comment(s)</h3>
                 <img src="/static/share.png">
                 <h3>share</h3>
             </section>
             <section class="viewLikesComments">
                 <a class="viewLikes">view likes</a>
-                <a class="viewComments" href="{% url 'viewPost' id=post.id %}">view comments</a>
+                <a class="viewComments" href="{% url 'viewPost' id=post.uuid %}">view comments</a>
             </section>
         </section>
     </section>

@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'author_profile' author.id %}"> <!-- TO-DO replace with actual author id-->
+        <a href="{% url 'author_profile' request.user.id %}"> <!-- TO-DO replace with actual author id-->
             {% if author.profileImage %}
             <img class="profile-pic-header" src="data:image/png;base64,{{ author.profileImage }}">
             {% else %}
@@ -87,16 +87,14 @@
                 <li><a href="#">Video</a></li> -->
                 {% if request.user.id == author.id %}
                     <li><a href="{% url 'user-settings' author.id %}">Settings</a></li>
+                    <!-- Only show logout when viewing own profile -->
+                    <li>
+                        <form action="{% url 'logout' %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="logout-button">Logout</button>
+                        </form>
+                    </li>
                 {% endif %}
-
-                  <!-- Add the logout form below the settings option -->
-                <li>
-                    <form action="{% url 'logout' %}" method="POST">
-                        {% csrf_token %}
-                        <button type="submit" class="logout-button">Logout</button>
-                    </form>
-                    
-                </li>
             </ul>
         </div>
 

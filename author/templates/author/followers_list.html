@@ -1,13 +1,32 @@
 {% extends 'author/author_base.html' %}
 
 {% block content %}
-<h1>{{ author.displayName }}'s Followers ({{ followers_count }})</h1>
+<div class="follow-info">
+    <!-- Current page (Followers) with count -->
+    <a href="{% url 'followers_list' author.id %}" class="followers active">
+        <strong>{{ followers_count }}</strong> Followers
+    </a>
+
+    <span> | </span>
+
+    <!-- Link to Following page with count -->
+    <a href="{% url 'following_list' author.id %}" class="following">
+        <strong>{{ following_count }}</strong> Following
+    </a>
+</div>
 
 <div class="followers-list">
     {% for item in followers %}
         <div class="follower-box">
             <div class="follower-info">
-                <span>{{ item.user.displayName }}</span>
+                <a href="{% url 'author_profile' item.follower.id %}">
+                    {% if item.follower.profileImage %}
+                        <img src="{{ item.follower.profileImage.url }}" alt="{{ item.follower.displayName }}'s profile" class="profile-image">
+                    {% else %}
+                        <img src="/static/images/default-profile.png" alt="Default profile" class="profile-image">
+                    {% endif %}
+                    <span>{{ item.follower.displayName }}</span>
+                </a>
                 {% if item.is_friend %}
                     <span class="friend-tag">Friend</span> <!-- Add the "Friend" tag -->
                 {% endif %}
