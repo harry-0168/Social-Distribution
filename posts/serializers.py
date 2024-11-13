@@ -7,7 +7,7 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         # specifies which fields to serialize
-        fields = ['username', 'published', 'content', 'post', 'author', 'FQID', 'id', 'type', 'contentType']
+        fields = ['type', 'author', 'username', 'comment', 'contentType', 'published', 'id', 'uuid', 'post', 'likes_collection']
 class LikeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Like
@@ -16,11 +16,23 @@ class LikeSerializer(serializers.ModelSerializer):
 
 class PostSerializer(serializers.ModelSerializer):
     author = AuthorSerializer(read_only=True) # So the response actually return the author object instead of just id
-    comments = CommentSerializer(many=True, read_only=True)
+    comments = serializers.SerializerMethodField()
     class Meta:
         model = Post
         fields = ['id','uuid','type','page', 'title', 'description', 'contentType', 'content', 'visibility', 'author', 'published', 'comments']
     
+    def get_comments(self, obj):
+        comments_queryset = obj.comments.all().order_by('-published')[:5] 
+        return {
+            "type": "comments",
+            "page": f"{obj.id}",
+            "id": f"{obj.id}/comments",
+            "page_number": 1,
+            "size": 5,
+            "count": obj.comments.count(),
+            "src": CommentSerializer(comments_queryset, many=True).data,
+        }
+
     def validate_title(self, value):
         if not value:
             raise serializers.ValidationError("Title cannot be empty.")

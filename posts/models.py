@@ -111,24 +111,22 @@ class Post(models.Model):
         return False
 
 class Comment(models.Model):
-    username = models.CharField(max_length=32) 
-    published = models.DateTimeField("date created", default=timezone.now) 
-    content =  models.TextField()
-    post = models.ForeignKey(Post, related_name='comments', on_delete=models.CASCADE) # all comments belong to a post
+    type = models.CharField(max_length=20, default='comment')
     author = models.ForeignKey(Author, related_name='comments', on_delete=models.CASCADE)
-    FQID = models.CharField(max_length=1000, unique=True, null=True)
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    type = models.CharField(max_length=20)
-    contentType = "text/markdown"
+    username = models.CharField(max_length=32) 
+    comment =  models.TextField()
+    contentType = models.CharField(max_length=32, default="text/markdown")
+    published = models.DateTimeField("date created", default=timezone.now) 
+    id = models.CharField(max_length=1000, unique=True, null=True)  # FQID
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)   # SERIAL
+    post = models.ForeignKey(Post, related_name='comments', on_delete=models.CASCADE) # all comments belong to a post
     likes_collection = models.OneToOneField(Likes, related_name='comment', on_delete=models.CASCADE, null=True, blank=True)
 
-    #likes
-
     def save(self, *args, **kwargs):
-        ''' Override the save method to set the FQID field before saving '''
-        if not self.FQID:  # Only set if FQID is not already set
+        ''' Override the save method to set the id field before saving '''
+        if not self.id:  # Only set if id is not already set
             host = kwargs.get('request_host', 'localhost')
-            self.FQID = f"http://{host}/api/comments/{self.id}"
+            self.id = f"http://{host}/api/comments/{self.uuid}"
         
         super().save(*args, **kwargs)
 
