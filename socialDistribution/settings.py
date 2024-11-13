@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     'posts',
     'inbox',
     'nodeAdmin',
-    'search'
+    'search',
+    'api',
 ]
 
 MIDDLEWARE = [
@@ -59,6 +60,14 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'author.middleware.JWTAuthenticationMiddleware', 
 ]
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+}
+
 
 
 ROOT_URLCONF = 'socialDistribution.urls'

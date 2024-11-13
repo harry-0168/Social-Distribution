@@ -11,7 +11,10 @@ class Author(AbstractUser):
     The model extends the AbstractUser model and overrides the username field with displayName
     '''
     # set type to author and make it read only
-    type = "author"
+    TYPE_CHOICES = [("author", "Author"), ("node", "Node")]
+    
+    # New field to differentiate between author and node
+    type = models.CharField(max_length=10, choices=TYPE_CHOICES, default="author")
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     FQID = models.CharField(max_length= 1000, unique=True, null=True)
     host = models.CharField(max_length=255, null=False)
@@ -20,6 +23,7 @@ class Author(AbstractUser):
     profileImage = models.ImageField(upload_to='profileImages/', blank=True, null=True)
     page = models.CharField( max_length=1000,blank=True, null=True)
     isVerified = models.BooleanField(default=False)
+    isNode = models.BooleanField(default=False)
     username = None
 
 
