@@ -12,13 +12,14 @@
 <body>
 
     <div class="header">
-        {% if request.user.profileImage %}
-            <img src="data:image/png;base64,{{ request.user.profileImage }}" 
-             style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
-        {% else %}
-            <img src="{% static 'avatar.png' %}" 
-             style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
-        {% endif %}
+        <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
+            {% if request.user.profileImage %}
+                <img src="{{ request.user.profileImage.url }}" 
+                    class="profile-pic">
+            {% else %}
+                <img src="{% static 'avatar.png' %}" 
+                    class="profile-pic">
+            {% endif %}
         </a>
         <div class="icons">
             <a href="{% url 'home_page' %}">
@@ -36,13 +37,7 @@
     <section class="gridContainer">
         <section class="gridItemUser">
             <div class="userInfo">
-                {% if post.author.profileImage %}
-                    <img src="data:image/png;base64,{{ post.author.profileImage }}" 
-                     style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;">
-                {% else %}
-                    <img src="{% static 'avatar.png' %}" 
-                     style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;">
-                {% endif %}                
+                <img class="profileImage" src="{% static 'avatar.png' %}">
                 <div class="username_DatePosted">
                     <a class="username" href="{% url 'author_profile' post.author.id %}">{{ post.author.displayName }}</a> <!-- TODO: make the username clickable to go to userProfile-->
                     <h3 class="postDate">{{post.published}}</h3>
@@ -50,7 +45,7 @@
                 <!-- <button class="followButton">Follow</button> -->
                 <!-- Only the author can delete their own posts -->
                 {% if user.id == post.author.id %}
-                    <form action="{% url 'delete_post' request.user.id post.id %}" method="POST">
+                    <form action="{% url 'delete_post' request.user.id post.uuid %}" method="POST">
                         {% csrf_token %}
                         <input type="hidden" name="_method" value="DELETE"> <!--IMPORTANT: Walk around for delete method-->
                         <button style="margin-top: 20px; background-color: #f7e8d4; border-color: #f7e8d4; border-style: none;" type="submit" class="delete-button">
@@ -61,19 +56,23 @@
             </div>
             <h1 class="postTitle">{{post.title}}</h1>
             <div class="postContent">
-                {% if post.content_type == "text/plain" %}
+                {% if post.contentType == "text/plain" %}
                     {{ post.content }}
-                {% elif post.content_type == "text/markdown" %}
-                    <div id="markdown-content-{{ post.id }}" class="markdown-content" data-content="{{ post.content }}"></div>
-                {% elif post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
-                    <img src="{{ post.content }}" alt="Post Image" class="postImage">
+                {% elif post.contentType == "text/markdown" %}
+                    <div id="markdown-content-{{ post.uuid }}" class="markdown-content" data-content="{{ post.content }}"></div>
+                {% elif post.contentType == "image/png;base64" or post.contentType == "image/jpeg;base64" %}
+                    <a href="{% url 'post_image_SERIAL' author.id post.uuid %}" id="post-image-link">
+                        <img src="{{ post.content }}" alt="Post Image" class="postImage">
+                    </a>
                 {% else %}
                     {{ post.content }}
                 {% endif %}        
             </div>
             <section class="likeCommentShare">
-                <form action="{% url 'create_like' post.id %}" method="POST">
+                <form action="{% url 'api_create_like' post.author.id %}" method="POST">
                     {% csrf_token %}
+                    <input type="hidden" name="post_id" value="{{ post.uuid }}"> <!-- Use post.uuid here -->
+                    <input type="hidden" name="type" value="like">
                     <button type="submit" class="like-button">
                         <img class="heart" src="{% static 'heart.png' %}" alt="Like">
                     </button>
@@ -82,7 +81,7 @@
                 <a type="submit" class="comment-button" href="#comment-input">
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
-                <h3>{{ post.comment_set.count }} comment(s)</h3>
+                <h3 id="commentAmount">{{ post.comments.count }} comment(s)</h3>
                 {% if post.visibility != "UNLISTED" and post.visibility != "FRIENDS" %}
                     <img id="share-image" src="/static/share.png" alt="Share">
                     <h3>share</h3>
@@ -120,9 +119,9 @@
                         
                         // Change action based on the selected option
                         if (type === 'link') {
-                            form.action = "{% url 'repost_link' post.id %}"; // Change action to repost_link
+                            form.action = "{% url 'repost_link' post.uuid %}"; // Change action to repost_link
                         } else {
-                            form.action = "{% url 'repost_post' post.id %}"; // Default action for repost_post
+                            form.action = "{% url 'repost_post' post.uuid %}"; // Default action for repost_post
                         }
                         
                         form.submit(); // Submit the form
@@ -167,7 +166,7 @@
             </script>
             
             <section class="viewLikesComments">
-                <a href="{% url 'likes' id=post.id %}" class="viewLikes">view likes</a>
+                <a href="{% url 'api_likes' author_id=post.author.id post_id=post.uuid %}" class="viewLikes">view likes</a>
                 <a class="viewComments">view comments</a>
             </section>
         </section>
@@ -176,28 +175,192 @@
             <h3 class="commentAreaTitle">Comments</h3>
             <div class="carousel">
                 <ol class="carousel-container">
-                    {% for comment in post.comment_set.all %}
-                        <div class="comment">
-                            {% if comment.author.profileImage %}
-                                <img src="data:image/png;base64,{{ comment.author.profileImage }}" 
-                                class="profile-pic-small">
-                            {% else %}
-                                <img src="{% static 'avatar.png' %}" 
-                                    class="profile-pic-small">
-                            {% endif %}
-                            <h5 class="commentUsername">{{ comment.username }}<div class="commentContent">{{ comment.content }}</div></h5> 
-                        </div>
-                    {% endfor %}
+                    <!-- JavaScript will populate comments -->
                 </ol>
             </div>
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    loadComments();
+                });
+
+                function loadComments() {
+                    const url = `/api/authors/${encodeURIComponent("{{ author.id }}")}/posts/${encodeURIComponent("{{ post.uuid }}")}/comments`; 
+                    fetch(url)
+                        .then(response => response.json())
+                        .then(data => {
+                            const commentsContainer = document.querySelector('.carousel-container');
+                            commentsContainer.innerHTML = ''; // Clear existing comments
+                            data.src.forEach(comment => {
+                                const commentElement = createCommentElement(comment);
+                                commentsContainer.appendChild(commentElement);
+                            });
+                        })
+                        .catch(error => console.error('Error loading comments:', error));
+                }
+
+                function createCommentElement(comment) {
+                    const commentDiv = document.createElement('div');
+                    commentDiv.classList.add('comment');
+
+                    const img = document.createElement('img');
+                    img.classList.add('profile-pic-small');
+                    img.src = comment.author.profileImage ? comment.author.profileImage : '/static/avatar.png';
+
+                    const h5 = document.createElement('h5');
+                    h5.classList.add('commentUsername');
+                    h5.textContent = comment.author.displayName;
+
+                    const contentDiv = document.createElement('div');
+                    contentDiv.classList.add('commentContent');
+                    contentDiv.textContent = comment.comment;
+
+                    h5.appendChild(contentDiv);
+                    commentDiv.appendChild(img);
+                    commentDiv.appendChild(h5);
+
+                    return commentDiv;
+                }
+            </script>
             <section class="commentInput">
-                <form action="{% url 'create_comment' post.id %}" method="POST"> <!-- Updated the form action URL to post comments to the appropriate endpoint -->
+                <form id="commentForm" action="{% url 'create_comment' post.uuid %}" method="POST"> <!-- Updated the form action URL to post comments to the appropriate endpoint -->
                     {% csrf_token %}
                     <div class="commentInputWrapper">
                         <input id="comment-input" class="commentInputTextbox" type="text" name="content" placeholder="Add a comment ..." required>
                         <input class="commentInputSubmit" type="submit" value="Add Comment">
                     </div>            
                 </form>
+                <script>
+                    function getToken(name) {
+                        let cookieValue = null;
+                        if (document.cookie && document.cookie != '') {
+                        const cookies = document.cookie.split(';');
+                        for (let i = 0; i < cookies.length; i++) {
+                            const cookie = cookies[i].trim();
+                            // Does this cookie string begin with the name we want?
+                            if (cookie.substring(0,name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                            }
+                        }
+                        }
+                        return cookieValue;
+                    }
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const commentForm = document.getElementById('commentForm');
+                        const currentHost = window.location.origin;
+                        const csrftoken = getToken('csrftoken');
+
+                        commentForm.addEventListener('submit', function (event) {
+                            event.preventDefault();
+
+                            // Get the comment content from the input field
+                            const content = document.getElementById('comment-input').value;
+                            const postId = "{{ post.uuid }}";  // Assuming post.uuid is passed to the template context
+                            const authorId = "{{ author.id }}";  // Current user's ID
+                            
+                            // Construct the comment object to send
+                            const commentData = {
+                                "comment": content,
+                                "post": postId,
+                                "author": authorId
+                            };
+
+                            // Send comment creation request to the backend
+                            fetch(commentForm.action, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': csrftoken
+                                },
+                                body: JSON.stringify(commentData)
+                            })
+                            .then(response => {
+                                console.log("response:", response);
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! Status: ${response.status}`);
+                                }
+                                return response.json();
+                            })
+                            .then(comment => {
+                                console.log("Created Comment Object:", comment);
+
+                                // Append the new comment to the DOM
+                                const commentList = document.querySelector('.carousel-container');
+                                const newComment = document.createElement('div');
+                                newComment.classList.add('comment');
+                                newComment.innerHTML = `
+                                    <img src="${comment.author.profileImage ? comment.author.profileImage : '/static/avatar.png'}" class="profile-pic-small">
+                                    <h5 class="commentUsername">${comment.username}<div class="commentContent">${comment.comment}</div></h5>
+                                `;
+
+                                commentList.prepend(newComment);
+
+                                document.getElementById('comment-input').value = ''; // Clear the input field
+                                const commentAmountElement = document.getElementById('commentAmount');
+                                const currentCount = parseInt(commentAmountElement.innerText) || 0;
+                                commentAmountElement.innerText = (currentCount + 1) + ' comment(s)';
+
+                                // Now construct the inbox request payload
+                                const inboxRequest = {
+                                    "type": "comment",
+                                    "summary": `${comment.username} commented on your post`,
+                                    "actor": {
+                                        "type": "author",
+                                        "id": comment.author.id,
+                                        "host": comment.author.host,
+                                        "displayName": comment.author.displayName,
+                                        "profileImage": comment.author.profileImage
+                                    },
+                                    "object": {
+                                        "type": "comment",
+                                        "author": "{{author.id}}",
+                                        "username": "{{author.displayName}}",
+                                        "comment": comment.comment,
+                                        "contentType": "text/markdown",
+                                        "published": comment.published,
+                                        "id": comment.id,
+                                        "uuid": comment.uuid,
+                                        "post": {
+                                            "type": "post",
+                                            "id": comment.post.uuid,
+                                            "author": "{{ post.author.id }}"
+                                        },
+                                        "likes_collection": comment.likes_collection
+                                    }
+                                };
+                                console.log("inbox Request:", inboxRequest);
+
+                                // Send the comment object to the author's inbox
+                                const inboxUrl = `${currentHost}/inbox/api/authors/${"{{ post.author.id }}"}/inbox/`;
+
+                                fetch(inboxUrl, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRFToken': csrftoken
+                                    },
+                                    body: JSON.stringify(inboxRequest)
+                                })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error(`HTTP error! Status: ${response.status}`);
+                                    }
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    console.log("Inbox Response Data:", data);
+                                    if (data.message) {
+                                        console.log("Comment sent to inbox successfully!");
+                                    } else {
+                                        alert("Failed to send comment to inbox.");
+                                    }
+                                })
+                                .catch(error => console.error('Inbox Error:', error));
+                            })
+                            .catch(error => console.error('Comment Creation Error:', error));
+                        });
+                    });
+                </script>
             </section>
         </section>
     </section>
