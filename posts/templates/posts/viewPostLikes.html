@@ -13,8 +13,6 @@
             width: 30px;
             height: 30px;
             transition: transform 0.3s ease, content 0.3s ease;
-            margin-left: 10px;
-            margin-top: 5px;
         }
         .delete-button:hover img.trash {
             transform: scale(1.1); /* Scale effect on hover */
@@ -27,11 +25,11 @@
     <div class="header">
         <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
             {% if request.user.profileImage %}
-                <img src="{{ request.user.profileImage.url }}" 
-                style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+                <img src="data:image/png;base64,{{ request.user.profileImage }}" 
+                 style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
             {% else %}
                 <img src="{% static 'avatar.png' %}" 
-                style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+                 style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
             {% endif %}
         </a>
         <div class="icons">
@@ -57,8 +55,8 @@
                         {% for like in post.like_set.all %}
                             <div class="like">
                                 {% if like.author.profileImage %}
-                                    <img src="{{ like.author.profileImage.url }}" 
-                                        class="profile-pic-small">
+                                    <img src="data:image/png;base64,{{ like.author.profileImage }}" 
+                                     class="profile-pic-small">
                                 {% else %}
                                     <img src="{% static 'avatar.png' %}" 
                                         class="profile-pic-small">
@@ -76,15 +74,20 @@
 
         <section class="gridItemRight">
             <div class="userInfo">
-                <img class="profileImage" src="{% static 'avatar.png' %}">
-                <div class="username_DatePosted">
+                {% if post.author.profileImage %}
+                    <img src="data:image/png;base64,{{ post.author.profileImage }}" 
+                    class="profile-pic-small">
+                {% else %}
+                    <img src="{% static 'avatar.png' %}" 
+                    class="profile-pic-small">
+                {% endif %}                <div class="username_DatePosted">
                     <a class="username" href="{% url 'author_profile' post.author.id %}">{{ post.author.displayName }}</a> <!-- TODO: make the username clickable to go to userProfile-->
                     <h3 class="postDate">{{post.published|default:"NApublished"}}</h3>
                 </div>
                 <!-- <button class="followButton">Follow</button> -->
                 <!-- Only the author can delete their own posts -->
                 {% if user.id == post.author.id %}
-                    <form action="{% url 'delete_post' request.user.id post.uuid %}" method="POST">
+                    <form action="{% url 'delete_post' request.user.id post.id %}" method="POST">
                         {% csrf_token %}
                         <input type="hidden" name="_method" value="DELETE"> <!--IMPORTANT: Walk around for delete method-->
                         <button style="margin-top: 20px; background-color: #f7e8d4; border-color: #f7e8d4; border-style: none;" type="submit" class="delete-button">
@@ -95,35 +98,34 @@
             </div>
             <h1 class="postTitle">{{post.title|default:"NAtitle"}}</h1>
             <div class="postContent">
-                {% if post.contentType == "text/plain" %}
+                {% if post.content_type == "text/plain" %}
                     {{ post.content|default:"NAcontent" }}
-                {% elif post.contentType == "text/markdown" %}
-                    <div id="markdown-content-{{ post.uuid }}" class="markdown-content" data-content="{{ post.content|escapejs }}"></div>
-                {% elif post.contentType == "image/png;base64" or post.contentType == "image/jpeg;base64" %}
+                {% elif post.content_type == "text/markdown" %}
+                    <div id="markdown-content-{{ post.id }}" class="markdown-content" data-content="{{ post.content|escapejs }}"></div>
+                {% elif post.content_type == "image/png;base64" or post.content_type == "image/jpeg;base64" %}
                     <img src="{{ post.content }}" alt="Post Image" class="postImage">
                 {% else %}
                     {{ post.content|default:"NAcontent" }}
                 {% endif %}       
             </div>
             <section class="likeCommentShare">
-                <form action="{% url 'api_create_like' post.author.id %}" method="POST">
+                <form action="{% url 'create_like' post.id %}" method="POST">
                     {% csrf_token %}
-                    <input type="hidden" name="post_id" value="{{ post.uuid }}">
                     <button type="submit" class="like-button">
                         <img class="heart" src="{% static 'heart.png' %}" alt="Like">
                     </button>
                 </form>
                 <h3>{{ post.like_set.count }} like(s)</h3>
-                <a type="submit" class="comment-button" href="{% url 'viewPost' id=post.uuid %}">
+                <a type="submit" class="comment-button" href="{% url 'viewPost' id=post.id %}">
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
-                <h3>{{ post.comments.count }} comment(s)</h3>
+                <h3>{{ post.comment_set.count }} comment(s)</h3>
                 <img src="/static/share.png">
                 <h3>share</h3>
             </section>
             <section class="viewLikesComments">
                 <a class="viewLikes">view likes</a>
-                <a class="viewComments" href="{% url 'viewPost' id=post.uuid %}">view comments</a>
+                <a class="viewComments" href="{% url 'viewPost' id=post.id %}">view comments</a>
             </section>
         </section>
     </section>
