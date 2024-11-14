@@ -12,7 +12,13 @@
 <body>
     <div class="header">
         <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
-            <img style="padding-left: 90px;" src="{% static 'avatar.png' %}">
+            {% if request.user.profileImage %}
+                <img style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-right: 10px; margin-left: 90px;" 
+                    src="data:image/png;base64,{{ request.user.profileImage }}" 
+                    alt="Profile Picture">
+            {% else %}
+                <img style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;margin-left: 90px;" src="{% static 'avatar.png' %}" alt="Default Profile Picture">
+            {% endif %}        
         </a>
         <form method="GET" action="{% url 'search_results' %}" class="search-form">
             <input type="text" name="q" placeholder="Search by display name..." class="search-bar">
@@ -38,7 +44,7 @@
                     <a href="{% url 'author_profile' user.id %}" class="result-box">
                         <div class="profile-image-container">
                             {% if user.profileImage %}
-                                <img src="{{ user.profileImage.url }}" alt="{{ user.displayName }}" class="profile-image">
+                                <img src="data:image/png;base64,{{ user.profileImage }}" alt="{{ user.displayName }}" class="profile-image">
                             {% else %}
                                 <img src="{% static 'avatar.png' %}" alt="Default Profile" class="profile-image">
                             {% endif %}

@@ -27,10 +27,75 @@
 
 <div class="settings-container">
     <h2>Edit Profile Info</h2>
-    <form method="POST" enctype="multipart/form-data">
+    <form id="profileForm">
         {% csrf_token %}
-        {{ form.as_p }}
+        
+        <!-- Render the form fields manually if needed -->
+        <label for="displayName">Display Name:</label>
+        <input type="text" id="displayName" name="displayName" value="{{ author.displayName }}" required>
+
+        <label for="github">GitHub:</label>
+        <input type="text" id="github" name="github" value="{{ author.github }}">
+
+        <label for="page">Page:</label>
+        <input type="text" id="page" name="page" value="{{ author.page }}">
+
+        <label for="profileImage">Profile Image:</label>
+        <input type="file" id="profileImage" name="profileImage">
+
         <button type="submit">Save Changes</button>
     </form>
 </div>
+
+<script>
+    document.getElementById('profileForm').addEventListener('submit', async function(event) {
+        event.preventDefault(); // Prevent traditional form submission
+
+        // Collect form data
+        const displayName = document.getElementById('displayName').value;
+        const github = document.getElementById('github').value;
+        const page = document.getElementById('page').value;
+
+        // Convert the profile image to base64 if provided
+        const profileImageFile = document.getElementById('profileImage').files[0];
+        let profileImageBase64 = null;
+        if (profileImageFile) {
+            profileImageBase64 = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]); // Get base64 string without prefix
+                reader.readAsDataURL(profileImageFile);
+            });
+        }
+
+        // Prepare JSON payload
+        const payload = {
+            displayName,
+            github,
+            page,
+            profileImage: profileImageBase64  // Include base64 image string if available
+        };
+
+        // Send PUT request to the API as JSON
+        try {
+            const response = await fetch(`/api/authors/{{ author.id }}/`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'  // Include CSRF token for security
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                alert('Profile updated successfully');
+                window.location.href = "{{ redirect_url }}";  // Redirect after successful update
+            } else {
+                alert(data.error || 'An error occurred while updating the profile');
+            }
+        } catch (error) {
+            alert('An error occurred: ' + error.message);
+        }
+    });
+</script>
 {% endblock %}

@@ -14,9 +14,9 @@
     <div class="header">
         <a href="{% url 'author_profile' request.user.id %}">
             {% if request.user.profileImage %}
-                <img src="{{ request.user.profileImage.url }}" class="profile-pic">
+                <img class="profile-pic" src="data:image/png;base64,{{ request.user.profileImage }}">
             {% else %}
-                <img src="{% static 'avatar.png' %}" class="profile-pic">
+                <img class="profile-pic" src="{% static 'avatar.png' %}">
             {% endif %}
         </a>
         <form method="GET" action="{% url 'search_results' %}" class="search-form">
@@ -40,6 +40,8 @@
             const userId = "{{ request.user.id }}"; // Current user ID
             const apiUrl = `/api/authors/${userId}/posts/`; // API URL
             const followingList = {{ following_list|safe }}; // Pass following_list from Django
+            const defaultAvatarUrl = "{% static 'avatar.png' %}";
+
 
             fetch(apiUrl)
                 .then(response => response.json())
@@ -48,12 +50,17 @@
 
                     data.src.forEach((post, index) => {
                         const isFollowing = followingList[index]; // Match follow status by index
+                        const profileImageUrl = post.author.profileImage 
+                            ? `data:image/png;base64,${post.author.profileImage}` 
+                            : defaultAvatarUrl;
 
                         const postElement = `
                             <a href="/post/${post.uuid}/viewPost/" style="text-decoration: none; color: inherit;">
                                 <div class="post">
                                     <div class="post-header">
-                                        <img src="${post.author.profileImage || '{% static "avatar.png" %}'}" class="profile-pic-small">
+
+                                        <img src="${profileImageUrl}" class="profile-pic-small">
+
                                         <div>
                                             <p class="username">${post.author.displayName}</p>
                                             <p class="date-posted">${new Date(post.published).toLocaleDateString()}</p>
