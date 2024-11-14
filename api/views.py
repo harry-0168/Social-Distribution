@@ -61,7 +61,7 @@ def update_node_sharing(request, node_id):
     if not node.isNode:
         return Response({"error": "This ID is not a node"}, status=status.HTTP_400_BAD_REQUEST)
     
-    is_sharing = request.data.get("isSharedNqqode")
+    is_sharing = request.data.get("isSharedNode")
     if is_sharing is not None:
         node.isSharedNode = is_sharing
         node.save()
