@@ -25,6 +25,8 @@ class Author(AbstractUser):
     isVerified = models.BooleanField(default=False)
     isNode = models.BooleanField(default=False)
     username = None
+    isSharedNode = models.BooleanField(default=False) #if a node is allowed for sharing
+
 
 
     USERNAME_FIELD = 'displayName'

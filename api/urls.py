@@ -4,7 +4,7 @@ from posts.views import get_edit_delete_post,get_posts_create_post,get_post_imag
 from author.views import api_list_authors, api_add_author, api_author_detail, login, signup, get_author_from_cookie, logout, get_likes_by_author, get_single_like, api_get_like
 from inbox.views import get_followers, get_following
 from inbox.views import handle_follow_request_response, inboxApi
-from .views import nodeSignup, get_nodes
+from .views import nodeSignup, get_nodes,update_node_sharing,get_shared_nodes
 
 urlpatterns = [
     path('signup', signup, name='signup'),
@@ -13,7 +13,8 @@ urlpatterns = [
     path('logout', logout, name='logout'),
     path("nodeSignup", nodeSignup, name="remoteNodeSignup"),
     path("nodes", get_nodes, name="get_nodes"),
-
+    path('node/<uuid:node_id>/update/', update_node_sharing, name='update_node_sharing'),
+    path('nodes/sharing', get_shared_nodes, name= 'get_shared_nodes'),
     path("authors/<uuid:object_author_id>/inbox", inboxApi, name="follow_request"), # sender of the follow request
     path("authors/<uuid:author_id>/followers" , get_followers, name="get_followers"), # get followers of an author
     path("authors/<uuid:author_id>/following" , get_following, name="get_following"), # get following of an author

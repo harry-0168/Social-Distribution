@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework.response import Response
 from author.serializers import AuthorSerializer
+from django.shortcuts import get_object_or_404
 from author.models import Author
 
 @api_view(['POST'])
@@ -48,3 +49,35 @@ def get_nodes(request):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['PATCH'])
+# @permission_classes([IsAdminUser])
+def update_node_sharing(request, node_id):
+    """
+    API endpoint for an admin to update if to share with an existing node.
+    """
+    node = get_object_or_404(Author, id=node_id, isNode=True)
+
+    if not node.isNode:
+        return Response({"error": "This ID is not a node"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    is_sharing = request.data.get("isSharedNqqode")
+    if is_sharing is not None:
+        node.isSharedNode = is_sharing
+        node.save()
+        return Response({"message": f"Node sharing status updated to {is_sharing}"}, status=status.HTTP_200_OK)
+
+    return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+# @permission_classes([IsAdminUser])
+def get_shared_nodes(request):
+    """
+    API endpoint to retrieve all nodes that we are currently sharing with (isSharedNode = True)
+    """
+    shared_nodes = Author.objects.filter(isNode=True, isSharedNode=True)
+    
+    serializer = AuthorSerializer(shared_nodes, many=True)
+    
+    return Response(serializer.data, status=status.HTTP_200_OK)
