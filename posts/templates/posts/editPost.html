@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
+        <a href="{% url 'author_profile' request.user.id %}">
             {% if request.user.profileImage %}
                 <img src="data:image/png;base64,{{ request.user.profileImage }}" 
                  style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
@@ -33,9 +33,9 @@
 
     <div class="container">
         <div class="form-title">Edit Post</div>
-        <form id="save-form" method="POST" enctype="multipart/form-data" action="{% url 'edit_post' request.user.id post.uuid %}">
+        <form id="save-form" enctype="multipart/form-data">
             {% csrf_token %}
-            <input type="hidden" name="_method" value="PUT"> <!--IMPORTANT: Walk around for put method-->
+            <input type="hidden" name="_method" value="PUT">
             <div class="form-field-inline">
                 <div class="form-field">
                     <label for="title">Title</label>
@@ -54,7 +54,6 @@
                     </select>
                 </div>
             </div>
-
             <div class="form-field-inline">
                 <div class="form-field">
                     <label for="content-type">Content Type</label>
@@ -96,7 +95,31 @@
     </div>
 
     <script>
-        // toggle between content types and display elements accordingly
+        document.getElementById('save-form').addEventListener('submit', async function(event) {
+            event.preventDefault(); // Prevent the default form submission
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch("{% url 'edit_post' request.user.id post.uuid %}", {
+                    method: 'PUT',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    // Redirect to profile page on successful response
+                    window.location.href = "{% url 'author_profile' request.user.id %}";
+                } else {
+                    const result = await response.json();
+                    alert(result.error || "An error occurred.");
+                }
+            } catch (error) {
+                console.error("Error updating post:", error);
+            }
+        });
+
         function toggleContentFields(contentType) {
             const textContentField = document.getElementById('text-content-field');
             const imageUploadField = document.getElementById('image-upload-field');
@@ -113,22 +136,19 @@
             }
         }
 
-        // Event listener for content type select
         document.getElementById('content-type').addEventListener('change', function(event) {
-            const contentType = event.target.value;
-            toggleContentFields(contentType);
+            toggleContentFields(event.target.value);
         });
 
         toggleContentFields(document.getElementById('content-type').value);
-
-        // Image preview
+        
         document.getElementById('img').addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const container = document.getElementById('image-upload-container');
-                    container.innerHTML = ''; // Clear any existing content
+                    container.innerHTML = '';
                     const imgElement = document.createElement('img');
                     imgElement.src = e.target.result;
                     container.appendChild(imgElement);

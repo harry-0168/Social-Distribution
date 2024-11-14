@@ -87,7 +87,33 @@
     </div>
 
     <script>
-        // toggle between content types and display elements accordingly
+        document.getElementById('save-form').addEventListener('submit', async function(event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            const formData = new FormData(this); // Collect form data
+
+            try {
+                const response = await fetch("{% url 'create' request.user.id %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    // Redirect to home page on successful post creation
+                    window.location.href = "{% url 'home_page' %}";
+                } else {
+                    const errorData = await response.json();
+                    alert(errorData.error || 'An error occurred while creating the post.');
+                }
+            } catch (error) {
+                console.error("Error creating post:", error);
+                alert('An unexpected error occurred.');
+            }
+        });
+
         function toggleContentFields(contentType) {
             const textContentField = document.getElementById('text-content-field');
             const imageUploadField = document.getElementById('image-upload-field');
@@ -104,22 +130,19 @@
             }
         }
 
-        // Event listener for content type select
         document.getElementById('content-type').addEventListener('change', function(event) {
-            const contentType = event.target.value;
-            toggleContentFields(contentType);
+            toggleContentFields(event.target.value);
         });
 
         toggleContentFields(document.getElementById('content-type').value);
 
-        // Image preview
         document.getElementById('img').addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const container = document.getElementById('image-upload-container');
-                    container.innerHTML = ''; // Clear any existing content
+                    container.innerHTML = '';
                     const imgElement = document.createElement('img');
                     imgElement.src = e.target.result;
                     container.appendChild(imgElement);
