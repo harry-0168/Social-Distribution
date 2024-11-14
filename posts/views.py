@@ -591,7 +591,7 @@ def github_post(request, author_id):
     data = request.data
     check = githubPostIds.objects.filter(id=data['id'])
     if check:
-        return Response({"error": "Post already exists"}, status=status.HTTP_200_OK)
+        return Response({"error": "Post already exists"}, status=status.HTTP_208_ALREADY_REPORTED)
     post = Post(
         title=data['title'],
         description=data['description'],
