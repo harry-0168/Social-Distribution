@@ -9,7 +9,7 @@ async function getGithubActivityData(username) {
       if (!response.ok) {
         throw new Error(`Error fetching GitHub activity data: ${response.status}`);
       }
-      console.log(username);
+    //   console.log(username);
       return await response.json();
     } catch (error) {
       console.error(error);
@@ -140,31 +140,34 @@ function parseEventData(event, username) {
 }
   
   // Function to create posts if they don't already exist
-async function createGithubActivityPosts(authorId, username) {
+  async function createGithubActivityPosts(authorId, username) {
     try {
         // 1. Fetch GitHub activity data
         const rawData = await getGithubActivityData(username);
 
-        // 2. Fetch existing posts (Assume this fetches an array of post descriptions)
-        const existingPosts = await getAllPosts(authorId); 
-        console.log(rawData);
+        // 2. Fetch existing posts
+        const existingPosts = await getAllPosts(authorId);
+
         // 3. Process each event and render new posts
-        rawData.forEach((event) => {
-        const eventId = String(event.id);
-        
-        // Check if post already exists
-        if (!existingPosts.some(post => post.description === eventId)) {
-            // If it doesn't exist, parse and create the post
-            const postContent = parseEventData(event, username);
-            console.log(postContent);
-            createPost(authorId, postContent); // Create post on backend
+        for (const event of rawData) {
+            const eventId = String(event.id);
             
+            // Check if post already exists
+            if (!existingPosts.some(post => post.description === eventId)) {
+                // Parse and create the post
+                const postContent = parseEventData(event, username);
+                const res = await createPost(authorId, postContent);
+
+                if (res === "stop") {
+                    return "stop";
+                }
+            }
         }
-        });
     } catch (error) {
         console.error(`Error creating GitHub activity posts: ${error}`);
     }
 }
+
   
   // Mock function to get all posts (Replace with real API call)
   async function getAllPosts(authorId) {
@@ -183,8 +186,9 @@ async function createGithubActivityPosts(authorId, username) {
         },
         body: JSON.stringify(postObject),
       });
-      if (!response.ok) {
-        console.log(`Error creating post: ${response.status}`);
+      if (response.status === 208) {
+        // console.log(`Post already exists: ${response.status}`);
+        return "stop";
       }
       return await response.json();
     } catch (error) {

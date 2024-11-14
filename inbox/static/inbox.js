@@ -62,10 +62,10 @@ function main() {
     index = document.getElementById('repostData').textContent.indexOf('[')
     const repostData = JSON.parse(document.getElementById('repostData').textContent.substring(index));
 
-    console.log(followRequestsData); // Now you can use this data
-    console.log(commentsData); 
-    console.log(likesData); 
-    console.log(repostData);
+    // console.log(followRequestsData); // Now you can use this data
+    // console.log(commentsData); 
+    // console.log(likesData); 
+    // console.log(repostData);
 
     // Example: storing data for later use
     window.inboxData = {
