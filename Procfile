@@ -1,1 +1,1 @@
-web: gunicorn social_distribution.wsgi
+web: gunicorn social-distribution-dhruvil.wsgi
