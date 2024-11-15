@@ -66,7 +66,8 @@ def create_comment(request, post_uuid):
     if request.accepts('application/json'):
         return Response(comment_serializer.data, status=status.HTTP_201_CREATED)
     else:
-        return redirect('viewPost', id=post.uuid)
+        #return redirect('viewPost', id=post.uuid)
+        return redirect(request.META.get('HTTP_REFERER'))
 
 @api_view(['GET'])
 def get_comment(request, comment_id):
@@ -190,13 +191,11 @@ def api_create_like(request, author_id):
     # Validate and retrieve the author
     author = get_object_or_404(Author, id=author_id)
 
-    # Get the post_id from form data
+    # Retrieve either post_id or comment_id from the form data
     post_id = request.POST.get('post_id')
-    if not post_id:
-        return Response({"error": "Post ID not found"}, status=status.HTTP_400_BAD_REQUEST)
-    
-    post = get_object_or_404(Post, uuid=post_id)
+    comment_id = request.POST.get('comment_id')
 
+    # Token validation
     token = request.COOKIES.get('jwt')
     if not token:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -208,29 +207,57 @@ def api_create_like(request, author_id):
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
-    # Check if a like already exists
-    if Like.objects.filter(username=username, object=post).exists():
-        return redirect(request.META.get('HTTP_REFERER'))
-
+    # Handling likes for posts or comments
     try:
-        # Ensure post has a likes collection or create one
-        if not post.likes_collection:
-            likes_collection = Likes.objects.create()
-            post.likes_collection = likes_collection
-            post.save()
+        if post_id:
+            post = get_object_or_404(Post, uuid=post_id)
 
-        # Create and save the new Like instance
-        like = Like(username=username, object=post, author=user, id = author_id)
-        like.save()
+            # Check if a like already exists for the post
+            if Like.objects.filter(username=username, object=post).exists():
+                return redirect(request.META.get('HTTP_REFERER'))
 
-        # Add the like to the post's likes collection
-        post.likes_collection.add_like(like)
+            # Ensure post has a likes collection or create one
+            if not post.likes_collection:
+                likes_collection = Likes.objects.create()
+                post.likes_collection = likes_collection
+                post.save()
+
+            # Create and save the new Like instance for the post
+            like = Like(username=username, object=post, author=user, id=author_id)
+            like.save()
+
+            # Add the like to the post's likes collection
+            post.likes_collection.add_like(like)
+
+        elif comment_id:
+            comment = get_object_or_404(Comment, id=comment_id)
+
+            # Check if a like already exists for the comment
+            if Like.objects.filter(username=username, object=comment).exists():
+                return redirect(request.META.get('HTTP_REFERER'))
+
+            # Ensure comment has a likes collection or create one
+            if not comment.likes_collection:
+                likes_collection = Likes.objects.create()
+                comment.likes_collection = likes_collection
+                comment.save()
+
+            # Create and save the new Like instance for the comment
+            like = Like(username=username, object=comment, author=user, id=author_id)
+            like.save()
+
+            # Add the like to the comment's likes collection
+            comment.likes_collection.add_like(like)
+
+        else:
+            return Response({"error": "Post ID or Comment ID not found"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Serialize and return the response
         return redirect(request.META.get('HTTP_REFERER'))
 
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 # Construct posts object for home page
 class PostPagination(PageNumberPagination):

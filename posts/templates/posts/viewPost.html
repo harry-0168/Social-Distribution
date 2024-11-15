@@ -77,7 +77,7 @@
                         <img class="heart" src="{% static 'heart.png' %}" alt="Like">
                     </button>
                 </form>
-                <h3>{{ post.like_set.count }} like(s)</h3>
+                <h3>{{ post.likes_collection.count }} like(s)</h3>
                 <a type="submit" class="comment-button" href="#comment-input">
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
@@ -209,14 +209,26 @@
                     const h5 = document.createElement('h5');
                     h5.classList.add('commentUsername');
                     h5.textContent = comment.author.displayName;
-
                     const contentDiv = document.createElement('div');
                     contentDiv.classList.add('commentContent');
                     contentDiv.textContent = comment.comment;
+                    const likeForm = document.createElement('form');
+                    likeForm.setAttribute('method', 'POST');
+                    likeForm.setAttribute('action', `/api/authors/${comment.author.id}/inbox`); // Adjust endpoint as needed
+                    likeForm.innerHTML = `
+                        {% csrf_token %}
+                        <input type="hidden" name="type" value="like">
+                        <input type="hidden" name="comment_id" value="${comment.id}">
+                        <button type="submit" class="like-button">
+                            <img class="heart" src="{% static 'heart.png' %}" alt="Like">
+                        </button>
+                    `;
 
-                    h5.appendChild(contentDiv);
                     commentDiv.appendChild(img);
                     commentDiv.appendChild(h5);
+                    commentDiv.appendChild(contentDiv);
+                    commentDiv.appendChild(likeForm);
+
 
                     return commentDiv;
                 }

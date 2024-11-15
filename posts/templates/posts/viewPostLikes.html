@@ -54,7 +54,7 @@
                 <h3 class="likesAreaTitle">Likes</h3>
                 <div class="carousel">
                     <div class="carousel-container">
-                        {% for like in post.like_set.all %}
+                        {% for like in post.likes.all %}
                             <div class="like">
                                 {% if like.author.profileImage %}
                                     <img src="{{ like.author.profileImage.url }}" 
@@ -65,7 +65,7 @@
                                 {% endif %}
                                 <div class="likeUsernameDate">
                                     <h5 class="likeProfileUsername">{{like.username}}</h5> <!--TODO: add the username of the profile that liked -->
-                                    <h5 class="likeDate">{{ like.like_date }}</h5> 
+                                    <h5 class="likeDate">{{ like.published}}</h5> 
                                 </div>
                             </div>
                         {% endfor %} 
@@ -113,7 +113,7 @@
                         <img class="heart" src="{% static 'heart.png' %}" alt="Like">
                     </button>
                 </form>
-                <h3>{{ post.like_set.count }} like(s)</h3>
+                <h3>{{ post.likes_collection.count }} like(s)</h3>
                 <a type="submit" class="comment-button" href="{% url 'viewPost' id=post.uuid %}">
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
