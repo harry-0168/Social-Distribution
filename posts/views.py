@@ -16,6 +16,8 @@ from author.views import get_author_from_cookie
 from django.conf import settings
 from django.contrib import messages
 from urllib.parse import unquote
+import requests
+from requests.auth import HTTPBasicAuth
 # Create your views here.
 def post(request):
     author_id = get_author_from_cookie(request).data.get('id')
@@ -441,6 +443,32 @@ def get_edit_delete_post(request, author_id, post_id):
 
         if serializer.is_valid():
             serializer.save()
+            # POST request to remote nodes
+            if post.visibility == 'FRIENDS':
+                recipients = [f.author1 for f in Following.objects.filter(author2=post.author, status='accepted') 
+                        if Following.is_following(f.author2, f.author1)]  # Mutual followers
+            elif post.visibility == 'UNLISTED' or post.visibility == 'PUBLIC':
+                followers = Following.get_followers(post.author)
+                friends = [f.author1 for f in Following.objects.filter(author2=post.author, status='accepted') 
+                        if Following.is_following(f.author2, f.author1)]  # Mutual followers
+                # Combine followers and friends into a unique list
+                recipients = set([f.author1 for f in followers] + friends)
+            for recipient in recipients:
+                inbox_url = f"{recipient.host}/api/authors/{recipient.uuid}/inbox"
+                headers = {
+                    'Content-Type': 'application/json'
+                }
+                try:
+                    response = requests.post(
+                        inbox_url,
+                        json=serializer.data,
+                        headers=headers,
+                        auth=HTTPBasicAuth('node', 'pass') #TODO: Change to actual node credentials
+                    )
+                    response.raise_for_status()  # Raise an error for bad HTTP responses
+                except requests.exceptions.RequestException as e:
+                    # Log or handle exceptions for any unsuccessful requests
+                    print(f"Failed to send post to node at {inbox_url}: {e}")
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
