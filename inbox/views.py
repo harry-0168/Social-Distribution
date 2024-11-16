@@ -198,6 +198,7 @@ def inboxApi(request, object_author_id):
 
                         # Add the like to the post's likes collection
                         post.likes_collection.add_like(like)
+                        #Inbox(receiver=author, type='like', FQIDorId=parsed_data['object']['id'], received_at=timezone.now()).save()
                         print("level3")
 
                         # Serialize and return the response
@@ -276,6 +277,9 @@ def inboxApi(request, object_author_id):
                         # Add the like to the post's likes collection
                         comment.likes_collection.add_like(like)
                         print("level3")
+                        print(parsed_data)
+                        #Inbox(receiver=author, type='like', FQIDorId=parsed_data['object']['id'], received_at=timezone.now()).save()
+
 
                         # Serialize and return the response
                         return redirect(request.META.get('HTTP_REFERER'))
