@@ -18,6 +18,8 @@ from django.contrib import messages
 from urllib.parse import unquote
 import requests
 from requests.auth import HTTPBasicAuth
+from rest_framework.authentication import BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
 # Create your views here.
 def post(request):
     author_id = get_author_from_cookie(request).data.get('id')
@@ -254,6 +256,10 @@ def get_posts_create_post(request, author_id):
     """Handles both fetching posts for home page and creating post"""
 
     if request.method == 'GET':
+        auth = BasicAuthentication()
+        user, auth_status = auth.authenticate(request)
+        if not user or not IsAuthenticated().has_permission(request, None):
+            return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
         author = get_object_or_404(Author, id=author_id)
         posts = Post.objects.all().order_by('-published')
 
@@ -413,6 +419,10 @@ def get_edit_delete_post(request, author_id, post_id):
     except Author.DoesNotExist:
         return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
     if request.method == 'GET':
+        auth = BasicAuthentication()
+        user, auth_status = auth.authenticate(request)
+        if not user or not IsAuthenticated().has_permission(request, None):
+            return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
         if post.visibility == 'PUBLIC':
             serializer = PostSerializer(post)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -454,21 +464,23 @@ def get_edit_delete_post(request, author_id, post_id):
                 # Combine followers and friends into a unique list
                 recipients = set([f.author1 for f in followers] + friends)
             for recipient in recipients:
-                inbox_url = f"{recipient.host}/api/authors/{recipient.uuid}/inbox"
-                headers = {
-                    'Content-Type': 'application/json'
-                }
-                try:
-                    response = requests.post(
-                        inbox_url,
-                        json=serializer.data,
-                        headers=headers,
-                        auth=HTTPBasicAuth('node', 'pass') #TODO: Change to actual node credentials
-                    )
-                    response.raise_for_status()  # Raise an error for bad HTTP responses
-                except requests.exceptions.RequestException as e:
-                    # Log or handle exceptions for any unsuccessful requests
-                    print(f"Failed to send post to node at {inbox_url}: {e}")
+                # Ensure that the recipient is in the allowed hosts
+                if recipient.host in settings.ALLOWED_HOSTS:
+                    inbox_url = f"{recipient.host}/api/authors/{recipient.uuid}/inbox"
+                    headers = {
+                        'Content-Type': 'application/json'
+                    }
+                    try:
+                        response = requests.post(
+                            inbox_url,
+                            json=serializer.data,
+                            headers=headers,
+                            auth=HTTPBasicAuth(settings.NODE_USERNAME, settings.NODE_PASSWORD)
+                        )
+                        response.raise_for_status()  # Raise an error for bad HTTP responses
+                    except requests.exceptions.RequestException as e:
+                        # Log or handle exceptions for any unsuccessful requests
+                        print(f"Failed to send post to node at {inbox_url}: {e}")
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -479,8 +491,36 @@ def get_edit_delete_post(request, author_id, post_id):
             post.save()
 
             post_serializer = PostSerializer(post)
-            
-            return Response({"message": "Post deleted successfully"}, status=status.HTTP_200_OK)
+            if post_serializer.is_valid():
+                post_serializer.save()
+                # POST request to remote nodes
+                if post.visibility == 'FRIENDS':
+                    recipients = [f.author1 for f in Following.objects.filter(author2=post.author, status='accepted') 
+                            if Following.is_following(f.author2, f.author1)]  # Mutual followers
+                elif post.visibility == 'UNLISTED' or post.visibility == 'PUBLIC':
+                    followers = Following.get_followers(post.author)
+                    friends = [f.author1 for f in Following.objects.filter(author2=post.author, status='accepted') 
+                            if Following.is_following(f.author2, f.author1)]  # Mutual followers
+                    # Combine followers and friends into a unique list
+                    recipients = set([f.author1 for f in followers] + friends)
+                for recipient in recipients:
+                    inbox_url = f"{recipient.host}/api/authors/{recipient.uuid}/inbox"
+                    headers = {
+                        'Content-Type': 'application/json'
+                    }
+                    try:
+                        response = requests.post(
+                            inbox_url,
+                            json=serializer.data,
+                            headers=headers,
+                            auth=HTTPBasicAuth(recipient.host, 'pass') #TODO: Change to actual node credentials
+                        )
+                        response.raise_for_status()  # Raise an error for bad HTTP responses
+                    except requests.exceptions.RequestException as e:
+                        # Log or handle exceptions for any unsuccessful requests
+                        print(f"Failed to send post to node at {inbox_url}: {e}")
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             # If the user is not the author
             return Response({"error": "Unauthorized to delete this post"}, status=status.HTTP_403_FORBIDDEN)
