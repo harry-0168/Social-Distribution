@@ -43,7 +43,7 @@ class Author(AbstractUser):
         if not self.host:  # Only set if host is not already set
             self.host = f"http://{kwargs.get('request_host', 'localhost')}"
         if not self.id:  # Only set if id is not already set
-            self.id = f"{self.host}/api/authors/{self.id}"
+            self.id = f"{self.host}/api/authors/{self.author_serial}"
         if not self.profileImage:
             self.profileImage = Default_profile_image_BASE64
         if not self.page:
