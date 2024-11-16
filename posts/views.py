@@ -5,7 +5,7 @@ from .models import Post, Comment, Like, Author, githubPostIds, Following, Likes
 import base64
 import jwt
 import markdown
-from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.decorators import api_view, renderer_classes, authentication_classes, permission_classes
 from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
@@ -18,7 +18,7 @@ from django.contrib import messages
 from urllib.parse import unquote
 import requests
 from requests.auth import HTTPBasicAuth
-from rest_framework.authentication import BasicAuthentication
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 # Create your views here.
 def post(request):
@@ -252,14 +252,12 @@ class PostPagination(PageNumberPagination):
         })
 
 @api_view(['GET', 'POST'])
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def get_posts_create_post(request, author_id):
     """Handles both fetching posts for home page and creating post"""
 
     if request.method == 'GET':
-        auth = BasicAuthentication()
-        user, auth_status = auth.authenticate(request)
-        if not user or not IsAuthenticated().has_permission(request, None):
-            return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
         author = get_object_or_404(Author, id=author_id)
         posts = Post.objects.all().order_by('-published')
 
@@ -408,6 +406,8 @@ def view_edit_post(request, id):
     return render(request, 'posts/editPost.html', {'post': post, 'author_id': author_id})
 
 @api_view(['GET', 'PUT', 'DELETE'])
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def get_edit_delete_post(request, author_id, post_id):
     post = get_object_or_404(Post, uuid=post_id)
     try:
@@ -419,10 +419,6 @@ def get_edit_delete_post(request, author_id, post_id):
     except Author.DoesNotExist:
         return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
     if request.method == 'GET':
-        auth = BasicAuthentication()
-        user, auth_status = auth.authenticate(request)
-        if not user or not IsAuthenticated().has_permission(request, None):
-            return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
         if post.visibility == 'PUBLIC':
             serializer = PostSerializer(post)
             return Response(serializer.data, status=status.HTTP_200_OK)
