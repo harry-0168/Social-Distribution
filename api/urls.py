@@ -42,9 +42,10 @@ urlpatterns = [
     path('authors/<uuid:author_id>/gitPost/', github_post, name='github_post'),
 
     # Author API endpoints
-    path('authors/', api_list_authors, name='api_list_authors'), 
+    path('authors/', api_list_authors, name='api_list_authors'), # list all authors (local and remote)
     path('authors/add/', api_add_author, name='api_add_author'),  
-    path('authors/<uuid:author_id>/', api_author_detail, name='api_author_detail'), 
+    path('authors/<uuid:author_id>/', api_author_detail, name='api_author_detail_serial'), # local author (SERIAL)
+    path('authors/<path:author_fqid>/', api_author_detail, name='api_author_detail_fqid'), # remote author (FQID)
     path('authors/<uuid:author_serial>/liked', get_likes_by_author, name='get_likes_by_author'),
     path("authors/<uuid:author_serial>/liked/<uuid:like_serial>",get_single_like,name="single_like"),
     path("liked/<uuid:like_fqid>",api_get_like,name="get_like"),

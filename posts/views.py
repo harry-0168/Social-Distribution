@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404, reverse, get_object_or_404
-from .models import Post, Comment, Like, Author, githubPostIds, Following, Likes, Inbox
+from .models import Post, Comment, Like, Author, githubPostIds, Following, Likes
 import base64
 import jwt
 import markdown
@@ -20,6 +20,7 @@ from requests.auth import HTTPBasicAuth
 import requests
 from django.utils import timezone
 import logging
+from inbox.models import Inbox
 
 
 # Create your views here.

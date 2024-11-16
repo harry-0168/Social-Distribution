@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.decorators import api_view, action
+from rest_framework.decorators import api_view, action, authentication_classes, permission_classes
 from .models import Author, FollowRequest
 from django.utils import timezone
 from inbox.models import Notification 
@@ -20,6 +20,7 @@ from inbox.models import Inbox
 from posts.models import Like
 from posts.serializers import LikeSerializer
 import json
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 
 
 def profile_view(request, author_id):
@@ -358,29 +359,27 @@ def manage_follower(request, author_id, foreign_author_fqid):
 
 
 @api_view(['GET'])
+@authentication_classes([BasicAuthentication, SessionAuthentication])
 def api_list_authors(request):
-    paginator = AuthorPagination()  # Use the custom pagination class
+    """
+    GET: List all authors
+    Accessible by both local users (session auth) and remote nodes (basic auth)
+    """
+    # Check authentication
+    if not request.user.is_authenticated:
+        return Response(
+            {"error": "Authentication required"}, 
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    paginator = AuthorPagination()
     authors = Author.objects.all()
     result_page = paginator.paginate_queryset(authors, request)
 
-    # Format author data as per your required structure
     formatted_authors = []
     for author in result_page:
-        profile_image_url = author.profileImage.url if author.profileImage else None  # Updated field name
-        full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
-        host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
+        formatted_authors.append(get_author_data(author))
 
-        formatted_authors.append({
-            "type": "author",
-            "id": full_id_url,
-            "host": host_with_postfix,
-            "displayName": author.displayName,
-            "github": author.github,
-            "profileImage": profile_image_url,
-            "page": author.page,
-        })
-
-    # Return the customized paginated response
     return paginator.get_paginated_response(formatted_authors)
     
     
@@ -400,62 +399,112 @@ def api_add_author(request):
 
 
 @api_view(['GET', 'PUT'])
-def api_author_detail(request, author_id):
-    # GET request to retrieve a single author
-    if request.method == 'GET':
-        author = get_object_or_404(Author, id=author_id)
-        
-        # Construct the full ID URL
-        full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
-        
-        # Use static default image if profileImage has no file
-        if author.profileImage and hasattr(author.profileImage, 'url'):
-            profileImage_url = author.profileImage.url
-        else:
-            profileImage_url = f"{request.scheme}://{request.get_host()}/static/avatar.png"  # Default static image path
-        
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+def api_author_detail(request, author_id=None, author_fqid=None):
+    """
+    Two URL patterns:
+    1. SERIAL (local authors): ://service/api/authors/{AUTHOR_SERIAL}/
+       - GET: retrieve local author's profile
+       - PUT: update local author's profile
     
-        # Get the host with the postfix
-        host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
-        
-        data = {
-            "type": "author",
-            "id": full_id_url,
-            "host": host_with_postfix,
-            "displayName": author.displayName,
-            "github": author.github,
-            "profileImage": profileImage_url,
-            "page": author.page,
-        }
-        return Response(data, status=status.HTTP_200_OK)
+    2. FQID (remote authors): ://service/api/authors/{AUTHOR_FQID}/
+       - GET: retrieve remote author's profile
+       - PUT: not allowed for remote authors
+    """
     
-    # PUT request to modify an author
-    elif request.method == 'PUT':
-        try:
-            data = json.loads(request.body)
-
+    try:
+        # Handle both SERIAL and FQID paths
+        if author_id:  # SERIAL path
             author = get_object_or_404(Author, id=author_id)
+        elif author_fqid:  # FQID path
+            author = get_object_or_404(Author, FQID=author_fqid)
+        else:
+            return Response(
+                {"error": "No author identifier provided"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-            author.displayName = data.get('displayName', author.displayName)
-            author.github = data.get('github', author.github)
-            author.page = data.get('page', author.page)
+        if request.method == 'GET':
+            if not request.user.is_authenticated:
+                return Response(
+                    {"error": "Authentication required"}, 
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            return Response(get_author_data(author), status=status.HTTP_200_OK)
+        
+        elif request.method == 'PUT':
+            
+            # Only allow PUT for local authors (SERIAL)
+            if author_fqid:
+                return Response(
+                    {"error": "Cannot modify remote author profiles"}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+                
+            # Check if user is authenticated and is modifying their own profile
+            if not request.user.is_authenticated or isinstance(request.auth, BasicAuthentication):
+                return Response(
+                    {"error": "Only local users can modify profiles"}, 
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            
+            # Check if user is modifying their own profile
+            if str(request.user.id) != str(author.id):
+                return Response(
+                    {"error": "You can only modify your own profile"}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
-            # Handle image update - in PUT requests, this typically requires a multipart form-data request
-            profileImage = data.get('profileImage')
-            if profileImage:
-                author.profileImage = profileImage
+            try:
+                data = json.loads(request.body)
+                
+                # Update allowed fields
+                author.displayName = data.get('displayName', author.displayName)
+                author.github = data.get('github', author.github)
+                author.page = data.get('page', author.page)
 
-            author.save()
+                if 'profileImage' in data:
+                    author.profileImage = data['profileImage']
 
-            return Response({'message': 'Author modified successfully'}, status=status.HTTP_200_OK)
+                author.save()
 
-        except json.JSONDecodeError:
-            return Response({'error': 'Invalid JSON data'}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response(get_author_data(author), status=status.HTTP_200_OK)
 
-    return HttpResponseNotFound()
-    
+            except json.JSONDecodeError:
+                return Response(
+                    {'error': 'Invalid JSON data'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+    except Exception as e:
+        return Response(
+            {'error': str(e)}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+        
+def get_author_data(author):
+    """
+    Helper function to format author data according to the API specification
+    Returns a dictionary with the author's data in the required format
+    """
+    # Handle profile image properly
+    if hasattr(author.profileImage, 'url'):  # If it's a file
+        profile_image_url = author.profileImage.url
+    else:  # If it's a base64 string or default
+        profile_image_url = author.profileImage
+
+    # Build the author data dictionary
+    author_data = {
+        "type": "author",
+        "id": f"{author.host}/authors/{author.id}",
+        "host": author.host,
+        "displayName": author.displayName,
+        "github": author.github,
+        "profileImage": profile_image_url,
+        "page": author.page
+    }
+
+    return author_data
 
 
 
