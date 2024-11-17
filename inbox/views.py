@@ -13,7 +13,10 @@ from author.models import Following
 from .models import Inbox
 from django.utils import timezone
 import logging
-
+from urllib.parse import unquote
+from rest_framework.authentication import BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
+from author.serializers import AuthorSerializer
 
 @api_view(['GET'])
 def inbox(request):
@@ -84,13 +87,19 @@ def inbox(request):
 @api_view(['POST'])
 def inboxApi(request, object_author_id):
     token = request.COOKIES.get('jwt')
+    flag = 1   # flag to check if the request is from my nodes frontend
+    payload, author, actor, object_author = None, None, None, None
     if not token:
-        # redirect to login page
-        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED) 
+        flag = 0
+        auth = BasicAuthentication()
+        user, auth_status = auth.authenticate(request)
+        if  not user or not IsAuthenticated().has_permission(request, None):
+            return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
     
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        author = get_object_or_404(Author, displayName=payload['id']) # author that sent the request
+        if flag == 1:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            author = get_object_or_404(Author, displayName=payload['id']) # author that sent the request
 
         # Parse JSON string into a Python dictionary
         parsed_data = request.data
@@ -98,30 +107,40 @@ def inboxApi(request, object_author_id):
         # check the type of request object
         if parsed_data['type'] == 'follow':
             try:
-                print(parsed_data['actor']['id'], author.FQID)
-                if author.FQID != parsed_data['actor']['id']:
-                    return Response({"error": "Invalid request"}, status=401)
-                # if parsed_data['object']['host'] != parsed_data['actor']['host']:
-                #     # create object author and following object, then forward the request to the next host server
-                #     AuthorSerializer = AuthorSerializer(id=parsed_data['object']['id'], host=parsed_data['object']['host'], displayName=parsed_data['object']['displayName'], github=parsed_data['object']['github'], profileImage=parsed_data['object']['profileImage'], page=parsed_data['object']['url'])
-                #     if AuthorSerializer.is_valid():
-                #         AuthorSerializer.save()
-                #     else:
-                #         return Response({"error": "Invalid object author data"}, status=400)
-                #     object_author = Author.objects.get(id=parsed_data['object']['id'])
-                #     if not Following.follow(actor, object_author):
-                #         return Response({"error": "Already following"}, status=400)
-                #     return Response({"error": "Forwarding request to the next host server"}, status=200)
-                actor = get_object_or_404(Author, FQID=parsed_data['actor']['id'])
-                object_author = get_object_or_404(Author, FQID=parsed_data['object']['id'])
-                # check if the actor is already following the object_author
-                if actor.FQID == object_author.FQID:
-                    return Response({"error": "Cannot follow yourself"}, status=400)
-                new = Following.follow(actor, object_author)
+                
+                # if author.FQID != parsed_data['actor']['id']:
+                #     return Response({"error": "Invalid request"}, status=401)
+                if parsed_data['object']['host'] != parsed_data['actor']['host']:
+                    
+                    # create object author and following object, then forward the request to the next host server
+                    objectAuthor = Author.objects.get(FQID=parsed_data['object']['id'])
+                    print(parsed_data['actor']['id'])
+                    actor_data = {
+                        "FQID": parsed_data['actor']['id'],
+                        "host": parsed_data['actor']['host'],
+                        "displayName": parsed_data['actor']['displayName'],
+                        "github": parsed_data['actor']['github'],
+                        "profileImage": parsed_data['actor']['profileImage'],
+                        "page": parsed_data['actor']['page'],
+                    }
+                    actorSerializer = AuthorSerializer(data=actor_data, partial=True)
+
+                    if actorSerializer.is_valid():
+                        actorSerializer.save()
+                    else:
+                        return Response({"error": "Invalid object author data"}, status=400)
+                    actor = Author.objects.get(FQID=parsed_data['actor']['id'])
+                else:
+                    actor = get_object_or_404(Author, FQID=parsed_data['actor']['id'])
+                    objectAuthor = get_object_or_404(Author, FQID=parsed_data['object']['id'])
+                    # check if the actor is already following the object_author
+                    if actor.FQID == objectAuthor.FQID:
+                        return Response({"error": "Cannot follow yourself"}, status=400)
+                new = Following.follow(actor, objectAuthor)
                 if not new:
                     return Response({"error": "Already following"}, status=400)
                 
-                inboxxx = Inbox(receiver=object_author, type='follow', FQIDorId=new.id, received_at=timezone.now()).save()
+                inboxxx = Inbox(receiver=objectAuthor, type='follow', FQIDorId=new.id, received_at=timezone.now()).save()
 
                 return Response({"message": "Follow request sent","requestStatus":new.status}, status=200)
 
@@ -189,6 +208,8 @@ def inboxApi(request, object_author_id):
         return Response({"error": "Invalid token"}, status=401)
     except Author.DoesNotExist:
         return Response({"error": "Author not found"}, status=404)
+    # except Exception as e:
+    #     return Response({"error": str(e)}, status=400)
     
 @api_view(['GET', 'DELETE', 'PUT'])
 def handle_follow_request_response(request, author_id, foreign_author_fqid):
@@ -203,9 +224,9 @@ def handle_follow_request_response(request, author_id, foreign_author_fqid):
             return Response({"error": "Unauthorized"}, status=401)
         
         # foreign_author_fqid will be percent encoded, so we need to decode it
-        from urllib.parse import unquote
+        
         foreign_author_fqid = unquote(foreign_author_fqid).rstrip('/')
-        print(f"Decoded foreign_author_fqid: {foreign_author_fqid}")
+        # print(f"Decoded foreign_author_fqid: {foreign_author_fqid}")
         foreign_author = get_object_or_404(Author, FQID=foreign_author_fqid)
         if request.method == 'PUT':
             # Accept follow request from foreign_author 
@@ -253,6 +274,12 @@ def get_followers(request, author_id):
         ]
     }
     '''
+    if request.get_host() != settings.MY_HOST:
+        auth = BasicAuthentication()
+        user, auth_status = auth.authenticate(request)
+        if (request.get_host() not in settings.ALLOWED_HOSTS) or not user or not IsAuthenticated().has_permission(request, None):
+            return Response({"error": "Unauthorized"}, status=401)
+
     author = get_object_or_404(Author, id=author_id)
     followers = Following.get_followers(author)
     followers_data = {

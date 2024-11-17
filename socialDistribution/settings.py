@@ -27,7 +27,9 @@ SECRET_KEY = 'django-insecure-y+n@z$0zy+8o7+6ihi2tw96#^sr@-i&y20h_nka4r6+tjz^h)y
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['127.0.0.1','social1-c4a7f0052028.herokuapp.com', 'social-distribution-crimson-464113e0f29c.herokuapp.com',
+                'social-distribution-haoze-6849a7ab5179.herokuapp.com', 'social-distribution-dhruvil-7ee59df447bd.herokuapp.com',
+                 'crimson-404-9c6e916b7080.herokuapp.com','localhost']
 
 
 # Application definition
@@ -107,6 +109,7 @@ if os.environ.get("DATABASE_URL") != None:
             ssl_require=True
         )
     }
+    MY_HOST = "https://social1-c4a7f0052028.herokuapp.com/"
 else:
     # Running locally.
     DATABASES = {
@@ -115,6 +118,7 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+    MY_HOST = "http://127.0.0.1:8000/" # for local testing
 
 
 # Password validation
