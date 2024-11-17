@@ -27,7 +27,7 @@
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
+        <a href="{% url 'author_profile' request.user.author_serial %}"> <!-- Use the logged-in user's author ID -->
             {% if request.user.profileImage %}
                 <img src="data:image/png;base64,{{ request.user.profileImage }}"
                 style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
