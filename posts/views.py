@@ -611,6 +611,21 @@ def api_view_Likes(request, post_id):
 
     return render(request, "posts/viewPostLikes.html", {"post_id": post_id, "post": post, "author": author})
 
+@api_view(['GET'])
+def api_view_Likes_comments(request, author_id, post_id, comment_id):
+    print("reached comment likes")
+    comment = get_object_or_404(Comment, uuid=comment_id)
+    post = get_object_or_404(Post, uuid=post_id)
+    author = comment.author
+    # Optionally, you can use `author_id` and `post_id` here if needed
+    return render(request, "posts/viewCommentLikes.html", {
+        "comment_id": comment_id, 
+        "comment": comment, 
+        "author": author,
+        "post_id": post_id,  # If needed in the template
+        "post":post
+    })
+
 @api_view(['POST'])
 def github_post(request, author_id):
     author = get_object_or_404(Author, id=author_id)

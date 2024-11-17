@@ -207,7 +207,7 @@
                 function createCommentElement(comment) {
                     const commentDiv = document.createElement('div');
                     commentDiv.classList.add('comment');
-
+                
                     const img = document.createElement('img');
                     img.classList.add('profile-pic-small');
                     if (comment.author.profileImage) {
@@ -216,13 +216,15 @@
                     } else {
                         img.src = '/static/avatar.png';
                     }
-
+                
                     const h5 = document.createElement('h5');
                     h5.classList.add('commentUsername');
                     h5.textContent = comment.author.displayName;
+                    
                     const contentDiv = document.createElement('div');
                     contentDiv.classList.add('commentContent');
                     contentDiv.textContent = comment.comment;
+                
                     const likeForm = document.createElement('form');
                     likeForm.setAttribute('method', 'POST');
                     likeForm.setAttribute('action', `/api/authors/${comment.author.id}/inbox`); // Adjust endpoint as needed
@@ -235,12 +237,21 @@
                         </button>
                     `;
 
+                    // Construct URL for Viewing Likes
+                    let post_url = comment.post;
+                    let post_uuid = post_url.split('/').pop(); // Extract the post UUID from the URL
+                    const viewLikesLink = document.createElement('a');
+                    viewLikesLink.href = `/api/authors/${comment.author.id}/posts/${post_uuid}/comments/${comment.uuid}/likes`; // Build the URL dynamically using JavaScript
+                    viewLikesLink.textContent = 'View Likes';
+                    viewLikesLink.classList.add('viewLikes');
+                    
+
+                    // Append elements to the comment div
                     commentDiv.appendChild(img);
                     commentDiv.appendChild(h5);
                     commentDiv.appendChild(contentDiv);
                     commentDiv.appendChild(likeForm);
-
-
+                    commentDiv.appendChild(viewLikesLink); // Append the new link
                     return commentDiv;
                 }
             </script>
