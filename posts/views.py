@@ -168,6 +168,8 @@ def get_author_comments(request,  author_id=None, FQID=None):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def get_commented_comment(request, author_id=None, comment_id=None, FQID=None):
     if author_id and comment_id:
         # Get the comment by author and comment UUIDs
@@ -625,6 +627,8 @@ def view_post(request, id):
     return render(request, "posts/viewPost.html", {"id": id, "post": post, "author": author, "comments": comments})
 
 @api_view(['GET'])
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def api_view_postLikes(request, author_id,post_id):
     post = get_object_or_404(Post, uuid=post_id)
 
