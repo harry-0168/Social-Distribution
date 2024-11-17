@@ -5,7 +5,7 @@ from .models import Post, Comment, Like, Author, githubPostIds, Following, Likes
 import base64
 import jwt
 import markdown
-from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.decorators import api_view, renderer_classes, authentication_classes, permission_classes
 from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
@@ -16,6 +16,9 @@ from author.views import get_author_from_cookie
 from django.conf import settings
 from django.contrib import messages
 from urllib.parse import unquote
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
+
 # Create your views here.
 def post(request):
     author_id = get_author_from_cookie(request).data.get('id')
@@ -164,6 +167,8 @@ def get_author_comments(request,  author_id=None, FQID=None):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def get_commented_comment(request, author_id=None, comment_id=None, FQID=None):
     if author_id and comment_id:
         # Get the comment by author and comment UUIDs
@@ -561,6 +566,8 @@ def view_post(request, id):
     return render(request, "posts/viewPost.html", {"id": id, "post": post, "author": author, "comments": comments})
 
 @api_view(['GET'])
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def api_view_postLikes(request, author_id,post_id):
     post = get_object_or_404(Post, uuid=post_id)
 
