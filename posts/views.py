@@ -466,10 +466,14 @@ def get_edit_delete_post(request, author_serial, post_id):
 
 @api_view(['GET'])
 def get_post_image(request, author_serial=None, post_id=None, FQID=None):
+    print("in")
     # If author_id and post_id are provided, retrieve the post by post_id
     if author_serial:
+        print("gettiing post ...")
         # Retrieve the post using both author_id and post_id
-        post = get_object_or_404(Post, uuid=post_id, author__id=author_serial)
+        post = get_object_or_404(Post, uuid=post_id, author__author_serial=author_serial)
+        print("got post")
+        print("post: ", post.uuid)
     elif FQID:
         post = get_object_or_404(Post, id=FQID)
     else:
@@ -477,10 +481,11 @@ def get_post_image(request, author_serial=None, post_id=None, FQID=None):
     
     # Check if the content type is a base64 image
     if post.contentType in ['image/png;base64', 'image/jpeg;base64']:
+        print("getting image ...")
         try:
             # Extract the base64 data after the comma
             encoded_data = post.content.split(',', 1)[1]
-            print("encoded_DATA: ", encoded_data)
+            # print("encoded_DATA: ", encoded_data)
             # Decode the base64 content
             image_data = base64.b64decode(encoded_data)
             
