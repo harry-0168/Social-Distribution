@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.decorators import api_view, action
+from rest_framework.decorators import api_view, action,authentication_classes, permission_classes
 from .models import Author, FollowRequest
 from django.utils import timezone
 from inbox.models import Notification 
@@ -20,6 +20,8 @@ from inbox.models import Inbox
 from posts.models import Like
 from posts.serializers import LikeSerializer
 import json
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 
 def profile_view(request, author_serial):
@@ -127,6 +129,8 @@ def api_get_like(request, like_fqid):
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def get_single_like(request, author_serial, like_serial):
     print("Requested Author Serial:", author_serial)
     print("Requested Like Serial:", like_serial)
@@ -144,6 +148,8 @@ def get_single_like(request, author_serial, like_serial):
     return Response(like_serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def get_likes_by_author(request, author_serial):
     print("Requested Author Serial:", author_serial)
 
@@ -400,7 +406,10 @@ def api_add_author(request):
 
 
 @api_view(['GET', 'PUT'])
-def api_author_detail(request, author_serial):
+
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def api_author_detail(request, author_id):
     # GET request to retrieve a single author
     if request.method == 'GET':
         author = get_object_or_404(Author, author_serial=author_serial)
