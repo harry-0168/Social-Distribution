@@ -23,10 +23,10 @@ const csrftoken = getToken('csrftoken');
 function sendRequest(followRequestsData,methodd, index) {
     // Send a PUT request to the server
     // percent encode the author1__FQID , author1__FQID is object or author who sent the request, we approve or decline the request
-    let author1 = encodeURIComponent(followRequestsData[index].author1__FQID)
+    let author1 = encodeURIComponent(followRequestsData[index].author1__id)
     
-    const currentUrl = followRequestsData[index].author2__FQID + '/followers/' + author1 
-
+    const currentUrl = followRequestsData[index].author2__id + '/followers/' + author1 
+    console.log("url:", currentUrl);
     fetch(`${currentUrl}`, {
         method: methodd,
         headers: {
