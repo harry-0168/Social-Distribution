@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'author_profile' author.author_serial %}">
+        <a href="{% url 'author_profile' author.id %}">
             {% if author.profileImage %}
                 <img src="data:image/png;base64,{{ author.profileImage }}" 
                  style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
@@ -33,7 +33,7 @@
 
     <div class="container">
         <div class="form-title">Create New Post</div>
-        <form id="save-form" method="POST" enctype="multipart/form-data" action="{% url 'create' request.user.author_serial %}">
+        <form id="save-form" method="POST" enctype="multipart/form-data" action="{% url 'create' request.user.id %}">
             {% csrf_token %}
             <div class="form-field-inline">
                 <div class="form-field">
@@ -93,7 +93,7 @@
             const formData = new FormData(this); // Collect form data
 
             try {
-                const response = await fetch("{% url 'create' request.user.author_serial %}", {
+                const response = await fetch("{% url 'create' request.user.id %}", {
                     method: 'POST',
                     headers: {
                         'X-CSRFToken': '{{ csrf_token }}'
