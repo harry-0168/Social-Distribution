@@ -367,8 +367,8 @@ def manage_follower(request, author_serial, foreign_author_fqid):
 @authentication_classes([BasicAuthentication, SessionAuthentication])
 def api_list_authors(request):
     """
-    GET: List all authors
-    Accessible by both local users (session auth) and remote nodes (basic auth)
+    GET: List all authors with pagination
+    Example query: GET ://service/api/authors?page=10&size=5
     """
     # Check authentication
     if not request.user.is_authenticated:
@@ -377,15 +377,50 @@ def api_list_authors(request):
             status=status.HTTP_401_UNAUTHORIZED
         )
 
-    paginator = AuthorPagination()
+    # Get pagination parameters from query string
+    page = request.query_params.get('page', 1)
+    size = request.query_params.get('size', 10)
+    
+    try:
+        page = int(page)
+        size = int(size)
+    except ValueError:
+        return Response(
+            {"error": "Invalid page or size parameter"}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Get all authors
     authors = Author.objects.all()
-    result_page = paginator.paginate_queryset(authors, request)
-
+    
+    # Calculate pagination
+    start_index = (page - 1) * size
+    end_index = start_index + size
+    
+    # Slice the queryset
+    paginated_authors = authors[start_index:end_index]
+    
+    # Format authors according to spec
     formatted_authors = []
-    for author in result_page:
-        formatted_authors.append(get_author_data(author))
+    for author in paginated_authors:
+        author_id = f"{author.host}/api/authors/{author.author_serial}"  # Use author_serial instead of id
+        formatted_authors.append({
+            "type": "author",
+            "id": author_id,  # This should now be correct
+            "host": author.host,
+            "displayName": author.displayName,
+            "github": author.github,
+            "profileImage": author.profileImage.url if hasattr(author.profileImage, 'url') else author.profileImage,
+            "page": author.page
+        })
 
-    return paginator.get_paginated_response(formatted_authors)
+    # Return response in specified format
+    response_data = {
+        "type": "authors",
+        "authors": formatted_authors
+    }
+
+    return Response(response_data, status=status.HTTP_200_OK)
     
     
 @api_view(['POST'])
@@ -405,29 +440,15 @@ def api_add_author(request):
 
 @api_view(['GET', 'PUT'])
 @authentication_classes([BasicAuthentication, SessionAuthentication])
-def api_author_detail(request, author_id=None, author_fqid=None):
+def api_author_detail(request, author_serial=None):
     """
-    Two URL patterns:
-    1. SERIAL (local authors): ://service/api/authors/{AUTHOR_SERIAL}/
-       - GET: retrieve local author's profile
-       - PUT: update local author's profile
-    
-    2. FQID (remote authors): ://service/api/authors/{AUTHOR_FQID}/
-       - GET: retrieve remote author's profile
-       - PUT: not allowed for remote authors
+    URL: ://service/api/authors/{AUTHOR_SERIAL}/
+    GET [local, remote]: retrieve AUTHOR_SERIAL's profile
+    PUT [local]: update AUTHOR_SERIAL's profile
     """
-    
     try:
-        # Handle both SERIAL and FQID paths
-        if author_id:  # SERIAL path
-            author = get_object_or_404(Author, id=author_id)
-        elif author_fqid:  # FQID path
-            author = get_object_or_404(Author, FQID=author_fqid)
-        else:
-            return Response(
-                {"error": "No author identifier provided"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # Get author by serial
+        author = get_object_or_404(Author, author_serial=author_serial)
 
         if request.method == 'GET':
             if not request.user.is_authenticated:
@@ -436,16 +457,8 @@ def api_author_detail(request, author_id=None, author_fqid=None):
                     status=status.HTTP_401_UNAUTHORIZED
                 )
             return Response(get_author_data(author), status=status.HTTP_200_OK)
-        
+
         elif request.method == 'PUT':
-            
-            # Only allow PUT for local authors (SERIAL)
-            if author_fqid:
-                return Response(
-                    {"error": "Cannot modify remote author profiles"}, 
-                    status=status.HTTP_403_FORBIDDEN
-                )
-                
             # Check if user is authenticated and is modifying their own profile
             if not request.user.is_authenticated or isinstance(request.auth, BasicAuthentication):
                 return Response(
@@ -454,7 +467,7 @@ def api_author_detail(request, author_id=None, author_fqid=None):
                 )
             
             # Check if user is modifying their own profile
-            if str(request.user.id) != str(author.id):
+            if str(request.user.author_serial) != str(author_serial):
                 return Response(
                     {"error": "You can only modify your own profile"}, 
                     status=status.HTTP_403_FORBIDDEN
@@ -490,29 +503,25 @@ def api_author_detail(request, author_id=None, author_fqid=None):
 def get_author_data(author):
     """
     Helper function to format author data according to the API specification
-    Returns a dictionary with the author's data in the required format
     """
     # Handle profile image properly
-    if hasattr(author.profileImage, 'url'):  # If it's a file
-        profile_image_url = author.profileImage.url
-    else:  # If it's a base64 string or default
-        profile_image_url = author.profileImage
+    profile_image = author.profileImage.url if hasattr(author.profileImage, 'url') else author.profileImage
+
+    # Construct the clean FQID without duplication
+    author_id = f"{author.host}/api/authors/{author.author_serial}"
 
     # Build the author data dictionary
     author_data = {
         "type": "author",
-        "id": f"{author.host}/authors/{author.id}",
-        "host": author.host,
+        "id": author_id,
+        "host": author.host,  # This should be just the base URL, e.g. "http://127.0.0.1:8000"
         "displayName": author.displayName,
         "github": author.github,
-        "profileImage": profile_image_url,
+        "profileImage": profile_image,
         "page": author.page
     }
 
     return author_data
-
-
-
 
 
 class AuthorPagination(PageNumberPagination):
