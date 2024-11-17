@@ -24,13 +24,13 @@ from rest_framework.authentication import BasicAuthentication, SessionAuthentica
 from rest_framework.permissions import IsAuthenticated
 
 
-def profile_view(request, author_id):
+def profile_view(request, author_serial):
     '''
     View to display the public profile of an author
-    This view fetches the author by ID and renders the author's profile page.
+    This view fetches the author by author_serial and renders the author's profile page.
     '''
-    # Fetch the author by ID
-    author = get_object_or_404(Author, id=author_id)
+    # Fetch the author by author_serial
+    author = get_object_or_404(Author, author_serial=author_serial)
     
     # Initialize follow-related variables
     is_following = False
@@ -92,12 +92,12 @@ def profile_view(request, author_id):
     return render(request, 'author/author_feed.html', context)
 
 
-def author_about(request, author_id):
+def author_about(request, author_serial):
     '''
     View to display the about page of an author
-    This view fetches the author by ID and renders the author's about page.
+    This view fetches the author by author_serial and renders the author's about page.
     '''
-    author = Author.objects.get(id=author_id)  
+    author = Author.objects.get(author_serial=author_serial)  
     followers_count = Following.objects.filter(author2=author, status='accepted').count()  # Count of followers
     # Get the Following count (authors this author is Following)
     following_count = Following.objects.filter(author1=author, status='accepted').count()  # Count of people this author is following
@@ -117,7 +117,7 @@ def api_get_like(request, like_fqid):
             'id': like.id,
             'username': like.username,
             'post_id': like.object.id,
-            'author_id': like.author.id,
+            'author_id': like.author.author_serial,
             'published': like.published,
             'type': like.type,
         }
@@ -136,7 +136,7 @@ def get_single_like(request, author_serial, like_serial):
     print("Requested Like Serial:", like_serial)
 
     # Get the author based on the provided author_serial
-    author = get_object_or_404(Author, id=author_serial)
+    author = get_object_or_404(Author, author_serial=author_serial)
 
     # Get the specific like by LIKE_SERIAL and ensure it belongs to the author
     like = get_object_or_404(Like, id=like_serial, author=author)
@@ -154,7 +154,7 @@ def get_likes_by_author(request, author_serial):
     print("Requested Author Serial:", author_serial)
 
     # Get the author based on the provided author_serial
-    author = get_object_or_404(Author, id=author_serial)
+    author = get_object_or_404(Author, author_serial=author_serial)
 
     # Retrieve all likes by the author
     likes = Like.objects.filter(author=author)
@@ -181,7 +181,7 @@ def get_likes_by_author(request, author_serial):
     return Response(like_serializer.data, status=status.HTTP_200_OK)
 
 
-def follow_author(request, object_author_id):
+def follow_author(request, object_author_serial):
     '''
     This view is used to follow the target author. It fetches the currently logged-in user and the target author.
     It then follows the target author using the follow method in the model.
@@ -189,7 +189,7 @@ def follow_author(request, object_author_id):
     """Follow the target author."""
     if request.method == 'POST' and request.user.is_authenticated:
         actor = request.user  # The currently logged-in user
-        target_author = get_object_or_404(Author, id=object_author_id)  # The author to be followed
+        target_author = get_object_or_404(Author, author_serial=object_author_serial)  # The author to be followed
 
         # Prevent users from following themselves
         if target_author != actor:
@@ -206,7 +206,7 @@ def follow_author(request, object_author_id):
     return redirect('home_page')
 
 
-def unfollow_author(request, object_author_id):
+def unfollow_author(request, object_author_serial):
     '''
     This view is used to unfollow the target author. It fetches the currently logged-in user and the target author.
     It then unfollows the target author using the unfollow method in the model.
@@ -214,7 +214,7 @@ def unfollow_author(request, object_author_id):
     """Unfollow the target author."""
     if request.method == 'POST' and request.user.is_authenticated:
         actor = request.user  # The currently logged-in user
-        target_author = get_object_or_404(Author, id=object_author_id)  # The author to be unfollowed
+        target_author = get_object_or_404(Author, author_serial=object_author_serial)  # The author to be unfollowed
 
         # Prevent users from unfollowing themselves
         if target_author != actor:
@@ -226,8 +226,8 @@ def unfollow_author(request, object_author_id):
 
     return redirect('home_page')
 
-def following_list(request, author_id):
-    author = get_object_or_404(Author, id=author_id)
+def following_list(request, author_serial):
+    author = get_object_or_404(Author, author_serial=author_serial)
     following = Following.objects.filter(author1=author, status='accepted')
     followers = Following.objects.filter(author2=author, status='accepted')
     
@@ -266,8 +266,8 @@ def following_list(request, author_id):
     return render(request, 'author/following_list.html', context)
 
 @api_view(['GET'])
-def followers_list(request, author_id):
-    author = get_object_or_404(Author, id=author_id)
+def followers_list(request, author_serial):
+    author = get_object_or_404(Author, author_serial=author_serial)
     followers = Following.objects.filter(author2=author, status='accepted')
     following = Following.objects.filter(author1=author, status='accepted')
     
@@ -307,8 +307,8 @@ def followers_list(request, author_id):
 
 
 @api_view(['GET','DELETE','PUT'])
-def manage_follower(request, author_id, foreign_author_fqid):
-    author = get_object_or_404(Author, id=author_id)
+def manage_follower(request, author_serial, foreign_author_fqid):
+    author = get_object_or_404(Author, author_serial=author_serial)
 
     from urllib.parse import unquote
     foreign_author_fqid = unquote(foreign_author_fqid)
@@ -327,7 +327,7 @@ def manage_follower(request, author_id, foreign_author_fqid):
                 "id": foreign_author_fqid,
                 "host": foreign_author.host,
                 "displayName": foreign_author.displayName,
-                "page": f"{foreign_author.host}/authors/{foreign_author.id}",
+                "page": f"{foreign_author.host}/authors/{foreign_author.author_serial}",
                 "github": foreign_author.github,
                 "profileImage": foreign_author.profileImage.url
             }
@@ -352,7 +352,7 @@ def manage_follower(request, author_id, foreign_author_fqid):
                 "id": foreign_author_fqid,
                 "host": foreign_author.host,
                 "displayName": foreign_author.displayName,
-                "page": f"{foreign_author.host}/authors/{foreign_author.id}",
+                "page": f"{foreign_author.host}/authors/{foreign_author.author_serial}",
                 "github": foreign_author.github,
                 "profileImage": foreign_author.profileImage.url,
                 "message": f"New follower created for author {author.displayName}"
@@ -373,7 +373,7 @@ def api_list_authors(request):
     formatted_authors = []
     for author in result_page:
         profile_image_url = author.profileImage.url if author.profileImage else None  # Updated field name
-        full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
+        full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.author_serial}"
         host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
 
         formatted_authors.append({
@@ -406,15 +406,16 @@ def api_add_author(request):
 
 
 @api_view(['GET', 'PUT'])
+
 @authentication_classes([BasicAuthentication, SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def api_author_detail(request, author_id):
     # GET request to retrieve a single author
     if request.method == 'GET':
-        author = get_object_or_404(Author, id=author_id)
+        author = get_object_or_404(Author, author_serial=author_serial)
         
         # Construct the full ID URL
-        full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.id}"
+        full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.author_serial}"
         
         # Use static default image if profileImage has no file
         if author.profileImage and hasattr(author.profileImage, 'url'):
@@ -442,20 +443,40 @@ def api_author_detail(request, author_id):
         try:
             data = json.loads(request.body)
 
-            author = get_object_or_404(Author, id=author_id)
+            # Fetch the author object
+            author = get_object_or_404(Author, author_serial=author_serial)
 
+            # Update author fields
             author.displayName = data.get('displayName', author.displayName)
             author.github = data.get('github', author.github)
             author.page = data.get('page', author.page)
 
-            # Handle image update - in PUT requests, this typically requires a multipart form-data request
+            # Handle image update
             profileImage = data.get('profileImage')
             if profileImage:
                 author.profileImage = profileImage
 
             author.save()
 
-            return Response({'message': 'Author modified successfully'}, status=status.HTTP_200_OK)
+            # Generate JWT token with the updated information
+            payload = {
+                'id': author.displayName,
+                'author_id': str(author.author_serial),
+                'exp': datetime.now() + timedelta(days=1), 
+                'iat': datetime.now()
+            }
+            token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+
+            response = Response({'message': 'Author modified successfully'}, status=status.HTTP_200_OK)
+            response.set_cookie(
+                key=settings.JWT_AUTH_COOKIE,
+                value=token,
+                httponly=True, 
+                secure=False, 
+                path='/'
+            )
+
+            return response
 
         except json.JSONDecodeError:
             return Response({'error': 'Invalid JSON data'}, status=status.HTTP_400_BAD_REQUEST)
@@ -463,7 +484,7 @@ def api_author_detail(request, author_id):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     return HttpResponseNotFound()
-    
+
 
 
 
@@ -498,8 +519,8 @@ class AuthorViewSet(viewsets.ModelViewSet):
 
         # Step 3: Fetch the authors by UUID
         try:
-            actor_author = Author.objects.get(id=actor_author_uuid)
-            object_author = Author.objects.get(id=target_author_uuid)
+            actor_author = Author.objects.get(author_serial=actor_author_uuid)
+            object_author = Author.objects.get(author_serial=target_author_uuid)
         except Author.DoesNotExist:
             return Response({"detail": "One or both authors not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -555,7 +576,7 @@ def login(request):
     # Generate the JWT token
     payload = {
         'id': author.displayName,
-        'author_id': str(author.id),
+        'author_id': str(author.author_serial),
         'exp': datetime.now() + timedelta(days=1),  # Token expiration
         'iat': datetime.now()
     }
@@ -601,8 +622,8 @@ def logout(request):
     return render(request, 'author/login.html')
 
 
-def user_settings(request, author_id):
-    author = get_object_or_404(Author, id=author_id)
+def user_settings(request, author_serial):
+    author = get_object_or_404(Author, author_serial=author_serial)
     followers_count = Following.objects.filter(author2=author, status='accepted').count()  # Count of followers
     # Get the Following count (authors this author is Following)
     following_count = Following.objects.filter(author1=author, status='accepted').count()  # Count of people this author is following
@@ -610,13 +631,13 @@ def user_settings(request, author_id):
         form = UserSettingsForm(request.POST, request.FILES, instance=author)
         new_display_name = form.data.get('displayName')
         if new_display_name and new_display_name != author.displayName:
-            if Author.objects.filter(displayName=new_display_name).exclude(id=author.id).exists():
+            if Author.objects.filter(displayName=new_display_name).exclude(author_serial=author.author_serial).exists():
                 messages.error(request, 'This display name is already taken. Please choose another.')
                 return render(request, 'author/user_settings.html', {
                     'form': form,
                     'author': author,
                     'redirect_url': request.build_absolute_uri(
-                        redirect('author_profile', author_id=author.id).url
+                        redirect('author_profile', author_serial=author.author_serial).url
                     )
                 })
         if form.is_valid():
@@ -624,10 +645,12 @@ def user_settings(request, author_id):
             messages.success(request, 'Profile changes saved successfully!')
             payload = {
                 'id': author.displayName,
-                'author_id': str(author.id),
+                'author_id': str(author.author_serial),
                 'exp': datetime.now() + timedelta(days=1),  # Token expiration
                 'iat': datetime.now()
             }
+            print("JWT Payload:", payload)
+
             newToken = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
 
             #Redirect and set the new JWT token in a cookie
@@ -635,7 +658,7 @@ def user_settings(request, author_id):
                 'form': form,
                 'author': author,
                 'redirect_url': request.build_absolute_uri(
-                    redirect('author_profile', author_id=author.id).url
+                    redirect('author_profile', author_serial=author.author_serial).url
                 )
             })
             response.set_cookie(key=settings.JWT_AUTH_COOKIE, value=newToken, httponly=True)

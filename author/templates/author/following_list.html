@@ -3,14 +3,14 @@
 {% block content %}
 <div class="follow-info">
     <!-- Link to Followers page with count -->
-    <a href="{% url 'followers_list' author.id %}" class="followers">
+    <a href="{% url 'followers_list' author.author_serial %}" class="followers">
         <strong>{{ followers_count }}</strong> Followers
     </a>
 
     <span> | </span>
 
     <!-- Current page (Following) with count -->
-    <a href="{% url 'following_list' author.id %}" class="following active">
+    <a href="{% url 'following_list' author.author_serial %}" class="following active">
         <strong>{{ following_count }}</strong> Following
     </a>
 </div>
@@ -19,9 +19,9 @@
     {% for item in following %}
         <div class="following-box">
             <div class="following-info">
-                <a href="{% url 'author_profile' item.following.id %}">
+                <a href="{% url 'author_profile' item.following.author_serial %}">
                     {% if item.following.profileImage %}
-                        <img src="{{ item.following.profileImage.url }}" alt="{{ item.following.displayName }}'s profile" class="profile-image">
+                        <img class="profile-image" src="data:image/png;base64,{{ item.following.profileImage }}" alt="{{ item.follower.displayName }}'s profile">
                     {% else %}
                         <img src="/static/images/default-profile.png" alt="Default profile" class="profile-image">
                     {% endif %}

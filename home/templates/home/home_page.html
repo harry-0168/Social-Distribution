@@ -12,7 +12,7 @@
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'author_profile' request.user.id %}">
+        <a href="{% url 'author_profile' request.user.author_serial %}">
             {% if request.user.profileImage %}
                 <img class="profile-pic" src="data:image/png;base64,{{ request.user.profileImage }}">
             {% else %}
@@ -37,7 +37,7 @@
     <script>
         // Load posts dynamically using JavaScript
         document.addEventListener('DOMContentLoaded', function () {
-            const userId = "{{ request.user.id }}"; // Current user ID
+            const userId = "{{ request.user.author_serial }}"; // Current user ID
             const apiUrl = `/api/authors/${userId}/posts/`; // API URL
             const followingList = {{ following_list|safe }}; // Pass following_list from Django
             const defaultAvatarUrl = "{% static 'avatar.png' %}";
@@ -68,7 +68,7 @@
                                         <div class="post-visibility">
                                             ${getVisibilityTag(post.visibility)}
                                         </div>
-                                        ${renderFollowButton(isFollowing, post.author.id)}
+                                        ${renderFollowButton(isFollowing, post.author.author_serial)}
                                     </div>
                                     <div class="post-content">
                                         <h2 class="title">${post.title}</h2>

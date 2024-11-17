@@ -23,7 +23,7 @@ class JWTAuthenticationMiddleware(MiddlewareMixin):
                 payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
 
                 # Get the user from the decoded JWT payload
-                user = User.objects.get(id=payload['author_id'])
+                user = User.objects.get(author_serial=payload['author_id'])
 
                 # Attach the user and jwt payload to request
                 request.user = user
