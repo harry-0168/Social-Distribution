@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'author_profile' request.user.author_serial %}">
+        <a href="{% url 'author_profile' request.user.id %}">
             {% if request.user.profileImage %}
                 <img src="data:image/png;base64,{{ request.user.profileImage }}" 
                  style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
@@ -100,7 +100,7 @@
             const formData = new FormData(this);
             
             try {
-                const response = await fetch("{% url 'edit_post' request.user.author_serial post.uuid %}", {
+                const response = await fetch("{% url 'edit_post' request.user.id post.uuid %}", {
                     method: 'PUT',
                     headers: {
                         'X-CSRFToken': '{{ csrf_token }}'
@@ -110,7 +110,7 @@
                 
                 if (response.ok) {
                     // Redirect to profile page on successful response
-                    window.location.href = "{% url 'author_profile' request.user.author_serial %}";
+                    window.location.href = "{% url 'author_profile' request.user.id %}";
                 } else {
                     const result = await response.json();
                     alert(result.error || "An error occurred.");
