@@ -313,6 +313,7 @@ def get_posts_create_post(request, author_id):
             content=content,
             visibility=visibility,
             author=author,  # Use the author from the token
+            page= f"http://{request.get_host()}/api/authors/{author_id}/posts/{author_id}"
         )
         post.save()
 
