@@ -22,9 +22,9 @@
                         </div>
                     </div>
                     <!-- Check if the logged-in user is the post author or an admin -->
-                    {% if request.user.author_serial == post.author.author_serial or user.is_superuser %}
+                    {% if request.user.id == post.author.id or user.is_superuser %}
                     <div class="action-buttons">
-                        <form method="POST" action="{% url 'delete_post' request.user.author_serial post.uuid %}" class="delete-form" data-post-id="{{ post.uuid }}">
+                        <form method="POST" action="{% url 'delete_post' request.user.id post.uuid %}" class="delete-form" data-post-id="{{ post.uuid }}">
                             {% csrf_token %}
                             <input type="hidden" name="_method" value="DELETE">
                             <button type="submit" class="delete-button">Delete</button>

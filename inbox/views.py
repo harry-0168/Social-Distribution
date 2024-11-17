@@ -4,7 +4,7 @@ from rest_framework import status
 import jwt
 from django.conf import settings
 from .models import Notification
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, action,authentication_classes, permission_classes
 from author.models import Author, FollowRequest
 from posts.models import Post, Comment, Like, Likes
 from django.conf import settings
@@ -13,7 +13,8 @@ from author.models import Following
 from .models import Inbox
 from django.utils import timezone
 import logging
-
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 @api_view(['GET'])
 def inbox(request):
@@ -38,7 +39,7 @@ def inbox(request):
 
         # Serialize the querysets to JSON-serializable data
         
-        follow_requests_data = list(follow_req_notifications.values('id', 'author1__id', 'author2__id', 'author1__displayName','author1__profileImage','date'))
+        follow_requests_data = list(follow_req_notifications.values('id', 'author1__FQID', 'author2__FQID', 'author1__displayName','author1__profileImage','date'))
         comment_data = list(comment_notifications.values('id', 'username', 'comment', 'published', 'post__title', 'author__profileImage', 'author__displayName'))
         like_data = list(like_notifications.values('id', 'username', 'object__title', 'published', 'author__displayName', 'author__profileImage'))
         repost_data = list(repost_notifications.values('id', 'author__displayName', 'content', 'title', 'author__profileImage'))
@@ -46,8 +47,8 @@ def inbox(request):
         # Send the data to the template
         for follow_request in follow_requests_data:
             follow_request['author1__profileImage'] = author.host + settings.MEDIA_URL +follow_request['author1__profileImage']
-            author_id = follow_request['author1__id']
-            author = get_object_or_404(Author, id=author_id)
+            author_id = follow_request['author1__FQID']
+            author = get_object_or_404(Author, FQID=author_id)
             follow_request['profileImage'] = author.profileImage        
         for comment in comment_data:
             comment['author__profileImage'] = author.host + settings.MEDIA_URL + comment['author__profileImage']
@@ -82,7 +83,9 @@ def inbox(request):
         return Response({"error": "Author not found"}, status=404)
     
 @api_view(['POST'])
-def inboxApi(request, object_author_serial):
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def inboxApi(request, object_author_id):
     token = request.COOKIES.get('jwt')
     if not token:
         # redirect to login page
@@ -98,8 +101,8 @@ def inboxApi(request, object_author_serial):
         # check the type of request object
         if parsed_data['type'] == 'follow':
             try:
-                print(parsed_data['actor']['id'], author.id)
-                if author.id != parsed_data['actor']['id']:
+                print(parsed_data['actor']['id'], author.FQID)
+                if author.FQID != parsed_data['actor']['id']:
                     return Response({"error": "Invalid request"}, status=401)
                 # if parsed_data['object']['host'] != parsed_data['actor']['host']:
                 #     # create object author and following object, then forward the request to the next host server
@@ -112,10 +115,10 @@ def inboxApi(request, object_author_serial):
                 #     if not Following.follow(actor, object_author):
                 #         return Response({"error": "Already following"}, status=400)
                 #     return Response({"error": "Forwarding request to the next host server"}, status=200)
-                actor = get_object_or_404(Author, id=parsed_data['actor']['id'])
-                object_author = get_object_or_404(Author, id=parsed_data['object']['id'])
+                actor = get_object_or_404(Author, FQID=parsed_data['actor']['id'])
+                object_author = get_object_or_404(Author, FQID=parsed_data['object']['id'])
                 # check if the actor is already following the object_author
-                if actor.id == object_author.id:
+                if actor.FQID == object_author.FQID:
                     return Response({"error": "Cannot follow yourself"}, status=400)
                 new = Following.follow(actor, object_author)
                 if not new:
@@ -134,12 +137,12 @@ def inboxApi(request, object_author_serial):
                 return Response({"error": "Actor not found"}, status=404)
             
         elif parsed_data['type'] == 'comment':
-            object_author = Author.objects.get(author_serial=parsed_data['object']['post']['author'])
+            object_author = Author.objects.get(id=parsed_data['object']['post']['author'])
             Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['object']['id'], received_at=timezone.now()).save()
             return Response({"message": "Comment sent"}, status=200)
         
         elif parsed_data['type'] == 'like':
-            author = get_object_or_404(Author, author_serial=object_author_serial)
+            author = get_object_or_404(Author, id=object_author_id)
 
             # Get the post_id from form data
             post_id = request.POST.get('post_id')
@@ -191,7 +194,9 @@ def inboxApi(request, object_author_serial):
         return Response({"error": "Author not found"}, status=404)
     
 @api_view(['GET', 'DELETE', 'PUT'])
-def handle_follow_request_response(request, author_serial, foreign_author_fqid):
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def handle_follow_request_response(request, author_id, foreign_author_fqid):
     token = request.COOKIES.get('jwt')
     if not token:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -199,14 +204,14 @@ def handle_follow_request_response(request, author_serial, foreign_author_fqid):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         author = get_object_or_404(Author, displayName=payload['id']) # author that sent the request
-        if author.author_serial != author_serial:
+        if author.id != author_id:
             return Response({"error": "Unauthorized"}, status=401)
         
         # foreign_author_fqid will be percent encoded, so we need to decode it
         from urllib.parse import unquote
         foreign_author_fqid = unquote(foreign_author_fqid).rstrip('/')
         print(f"Decoded foreign_author_fqid: {foreign_author_fqid}")
-        foreign_author = get_object_or_404(Author, id=foreign_author_fqid)
+        foreign_author = get_object_or_404(Author, FQID=foreign_author_fqid)
         if request.method == 'PUT':
             # Accept follow request from foreign_author 
             follow_request = get_object_or_404(Following, author1 = foreign_author, author2 = author, status='pending')
@@ -230,7 +235,9 @@ def handle_follow_request_response(request, author_serial, foreign_author_fqid):
         return redirect('login')
 
 @api_view(['GET'])
-def get_followers(request, author_serial):
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def get_followers(request, author_id):
     ''' example response
     {
     "type": "followers",      
@@ -253,7 +260,7 @@ def get_followers(request, author_serial):
         ]
     }
     '''
-    author = get_object_or_404(Author, author_serial=author_serial)
+    author = get_object_or_404(Author, id=author_id)
     followers = Following.get_followers(author)
     followers_data = {
         "type": "followers",
@@ -262,7 +269,7 @@ def get_followers(request, author_serial):
     for follower in followers:
         follower_dataa = {
             "type": "author",
-            "id": follower.author1.id,
+            "id": follower.author1.FQID,
             "host": follower.author1.host,
             "displayName": follower.author1.displayName,
             "page": follower.author1.page,
@@ -273,7 +280,9 @@ def get_followers(request, author_serial):
     return Response(followers_data, status=200)
 
 @api_view(['GET'])
-def get_following(request, author_serial):
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def get_following(request, author_id):
     ''' example response
     {
     "type": "following",      
@@ -296,7 +305,7 @@ def get_following(request, author_serial):
         ]
     }
     '''
-    author = get_object_or_404(Author, author_serial=author_serial)
+    author = get_object_or_404(Author, id=author_id)
     following = Following.get_following(author)
     following_data = {
         "type": "following",
@@ -305,7 +314,7 @@ def get_following(request, author_serial):
     for follow in following:
         following_dataa = {
             "type": "author",
-            "id": follow.author2.id,
+            "id": follow.author2.FQID,
             "host": follow.author2.host,
             "displayName": follow.author2.displayName,
             "page": follow.author2.page,

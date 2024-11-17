@@ -5,7 +5,7 @@ from .models import Post, Comment, Like, Author, githubPostIds, Following, Likes
 import base64
 import jwt
 import markdown
-from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.decorators import api_view, renderer_classes, authentication_classes, permission_classes
 from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
@@ -16,6 +16,9 @@ from author.views import get_author_from_cookie
 from django.conf import settings
 from django.contrib import messages
 from urllib.parse import unquote
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
+
 # Create your views here.
 def post(request):
     author_id = get_author_from_cookie(request).data.get('id')
@@ -99,7 +102,7 @@ class CommentPagination(PageNumberPagination):
         })
 
 @api_view(['GET'])
-def get_posts_comments(request, author_serial=None, post_id=None, post_FQID=None):
+def get_posts_comments(request, author_id=None, post_id=None, post_FQID=None):
     if post_FQID:
         # Decode the FQID to find the post ID
         decoded_FQID = unquote(post_FQID)
@@ -122,13 +125,13 @@ def get_posts_comments(request, author_serial=None, post_id=None, post_FQID=None
     return paginator.get_paginated_response(serializer.data)
 
 @api_view(['GET', 'POST'])
-def get_author_comments(request,  author_serial=None, id=None):
+def get_author_comments(request,  author_id=None, FQID=None):
     # Determine if the author is specified by UUID or FQID
     author = None
-    if author_serial:
-        author = get_object_or_404(Author, author_serial=author_serial)
-    elif id:
-        author = get_object_or_404(Author, id=id)
+    if author_id:
+        author = get_object_or_404(Author, id=author_id)
+    elif FQID:
+        author = get_object_or_404(Author, FQID=FQID)
 
     if request.method == 'GET':
         # Retrieve comments by the specified author
@@ -159,15 +162,17 @@ def get_author_comments(request,  author_serial=None, id=None):
         
         serializer = CommentSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(author_serial=author_serial, post=post)
+            serializer.save(author_id=author_id, post=post)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
-def get_commented_comment(request, author_serial=None, comment_id=None, FQID=None):
-    if author_serial and comment_id:
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def get_commented_comment(request, author_id=None, comment_id=None, FQID=None):
+    if author_id and comment_id:
         # Get the comment by author and comment UUIDs
-        comment = get_object_or_404(Comment, uuid=comment_id, author__id=author_serial)
+        comment = get_object_or_404(Comment, uuid=comment_id, author__id=author_id)
 
     # Handle URL: /api/commented/{COMMENT_FQID}
     elif FQID:
@@ -184,11 +189,11 @@ def get_commented_comment(request, author_serial=None, comment_id=None, FQID=Non
 
 
 @api_view(['POST'])
-def api_create_like(request, author_serial):
+def api_create_like(request, author_id):
     print("Request Data:", request.data)  # Debugging line to see the request data
 
     # Validate and retrieve the author
-    author = get_object_or_404(Author, author_serial=author_serial)
+    author = get_object_or_404(Author, id=author_id)
 
     # Get the post_id from form data
     post_id = request.POST.get('post_id')
@@ -248,11 +253,11 @@ class PostPagination(PageNumberPagination):
         })
 
 @api_view(['GET', 'POST'])
-def get_posts_create_post(request, author_serial):
+def get_posts_create_post(request, author_id):
     """Handles both fetching posts for home page and creating post"""
 
     if request.method == 'GET':
-        author = get_object_or_404(Author, author_serial=author_serial)
+        author = get_object_or_404(Author, id=author_id)
         posts = Post.objects.all().order_by('-published')
 
         paginator = PostPagination()
@@ -400,11 +405,11 @@ def view_edit_post(request, id):
     return render(request, 'posts/editPost.html', {'post': post, 'author_id': author_id})
 
 @api_view(['GET', 'PUT', 'DELETE'])
-def get_edit_delete_post(request, author_serial, post_id):
+def get_edit_delete_post(request, author_id, post_id):
     post = get_object_or_404(Post, uuid=post_id)
     try:
         # Make sure user who is not the author can't edit/delete the post
-        if author_serial != post.author.author_serial and request.method in ["PUT", "DELETE"]:
+        if author_id != post.author.id and request.method in ["PUT", "DELETE"]:
             return Response({"error": "Unauthorized to edit/delete other author's post"}, status=status.HTTP_403_FORBIDDEN)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -460,11 +465,11 @@ def get_edit_delete_post(request, author_serial, post_id):
 
 
 @api_view(['GET'])
-def get_post_image(request, author_serial=None, post_id=None, FQID=None):
+def get_post_image(request, author_id=None, post_id=None, FQID=None):
     # If author_id and post_id are provided, retrieve the post by post_id
-    if author_serial:
+    if author_id:
         # Retrieve the post using both author_id and post_id
-        post = get_object_or_404(Post, uuid=post_id, author__id=author_serial)
+        post = get_object_or_404(Post, uuid=post_id, author__id=author_id)
     elif FQID:
         post = get_object_or_404(Post, id=FQID)
     else:
@@ -561,14 +566,16 @@ def view_post(request, id):
     return render(request, "posts/viewPost.html", {"id": id, "post": post, "author": author, "comments": comments})
 
 @api_view(['GET'])
-def api_view_postLikes(request, author_serial,post_id):
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def api_view_postLikes(request, author_id,post_id):
     post = get_object_or_404(Post, uuid=post_id)
 
     if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
         # Non-admin users should not see deleted posts
         return redirect('home_page')  # Redirect to index or a 404 page
 
-    author = get_object_or_404(Author, author_serial=author_serial)
+    author = get_object_or_404(Author, id=author_id)
 
     return render(request, "posts/viewPostLikes.html", {"post_id": post_id, "post": post, "author": author})
 
@@ -580,13 +587,13 @@ def api_view_Likes(request, post_id):
         # Non-admin users should not see deleted posts
         return redirect('home_page')  # Redirect to index or a 404 page
 
-    author = post.author.author_serial
+    author = post.author.id
 
     return render(request, "posts/viewPostLikes.html", {"post_id": post_id, "post": post, "author": author})
 
 @api_view(['POST'])
-def github_post(request, author_serial):
-    author = get_object_or_404(Author, author_serial=author_serial)
+def github_post(request, author_id):
+    author = get_object_or_404(Author, id=author_id)
     data = request.data
     check = githubPostIds.objects.filter(id=data['id'])
     if check:
