@@ -409,7 +409,7 @@ def api_add_author(request):
 
 @authentication_classes([BasicAuthentication, SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def api_author_detail(request, author_id):
+def api_author_detail(request, author_serial):
     # GET request to retrieve a single author
     if request.method == 'GET':
         author = get_object_or_404(Author, author_serial=author_serial)
