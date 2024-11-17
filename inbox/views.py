@@ -85,7 +85,7 @@ def inbox(request):
 @api_view(['POST'])
 @authentication_classes([BasicAuthentication, SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def inboxApi(request, object_author_id):
+def inboxApi(request, object_author_serial):
     token = request.COOKIES.get('jwt')
     if not token:
         # redirect to login page
@@ -196,7 +196,7 @@ def inboxApi(request, object_author_id):
 @api_view(['GET', 'DELETE', 'PUT'])
 @authentication_classes([BasicAuthentication, SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def handle_follow_request_response(request, author_id, foreign_author_fqid):
+def handle_follow_request_response(request, author_serial, foreign_author_fqid):
     token = request.COOKIES.get('jwt')
     if not token:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -237,7 +237,7 @@ def handle_follow_request_response(request, author_id, foreign_author_fqid):
 @api_view(['GET'])
 @authentication_classes([BasicAuthentication, SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def get_followers(request, author_id):
+def get_followers(request, author_serial):
     ''' example response
     {
     "type": "followers",      
@@ -282,7 +282,7 @@ def get_followers(request, author_id):
 @api_view(['GET'])
 @authentication_classes([BasicAuthentication, SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def get_following(request, author_id):
+def get_following(request, author_serial):
     ''' example response
     {
     "type": "following",      
