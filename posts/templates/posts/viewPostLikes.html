@@ -25,7 +25,7 @@
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'author_profile' request.user.id %}"> <!-- Use the logged-in user's author ID -->
+        <a href="{% url 'author_profile' request.user.author_serial %}"> <!-- Use the logged-in user's author ID -->
             {% if request.user.profileImage %}
                 <img src="data:image/png;base64,{{ request.user.profileImage }}" 
                  style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
@@ -83,13 +83,13 @@
                     <img src="{% static 'avatar.png' %}" 
                     class="profile-pic-small">
                 {% endif %}                <div class="username_DatePosted">
-                    <a class="username" href="{% url 'author_profile' post.author.id %}">{{ post.author.displayName }}</a> <!-- TODO: make the username clickable to go to userProfile-->
+                    <a class="username" href="{% url 'author_profile' post.author.author_serial %}">{{ post.author.displayName }}</a> <!-- TODO: make the username clickable to go to userProfile-->
                     <h3 class="postDate">{{post.published|default:"NApublished"}}</h3>
                 </div>
                 <!-- <button class="followButton">Follow</button> -->
                 <!-- Only the author can delete their own posts -->
-                {% if user.id == post.author.id %}
-                    <form action="{% url 'delete_post' request.user.id post.uuid %}" method="POST">
+                {% if user.author_serial == post.author.author_serial %}
+                    <form action="{% url 'delete_post' request.user.author_serial post.uuid %}" method="POST">
                         {% csrf_token %}
                         <input type="hidden" name="_method" value="DELETE"> <!--IMPORTANT: Walk around for delete method-->
                         <button style="margin-top: 20px; background-color: #f7e8d4; border-color: #f7e8d4; border-style: none;" type="submit" class="delete-button">
@@ -111,7 +111,7 @@
                 {% endif %}       
             </div>
             <section class="likeCommentShare">
-                <form action="{% url 'api_create_like' post.author.id %}" method="POST">
+                <form action="{% url 'api_create_like' post.author.author_serial %}" method="POST">
                     {% csrf_token %}
                     <input type="hidden" name="post_id" value="{{ post.uuid }}"> <!-- Use post.uuid here -->
                     <input type="hidden" name="type" value="like">

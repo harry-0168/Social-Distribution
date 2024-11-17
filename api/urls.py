@@ -14,45 +14,45 @@ urlpatterns = [
     path("nodeSignup", nodeSignup, name="remoteNodeSignup"),
     path("nodes", get_nodes, name="get_nodes"),
 
-    path("authors/<uuid:object_author_id>/inbox", inboxApi, name="follow_request"), # sender of the follow request
-    path("authors/<uuid:author_id>/followers" , get_followers, name="get_followers"), # get followers of an author
-    path("authors/<uuid:author_id>/following" , get_following, name="get_following"), # get following of an author
-    path("authors/<uuid:author_id>/followers/<path:foreign_author_fqid>", handle_follow_request_response, name="follow_request_response"), # receiver of the follow request, replies to the follow request
+    path("authors/<uuid:object_author_serial>/inbox", inboxApi, name="follow_request"), # sender of the follow request
+    path("authors/<uuid:author_serial>/followers" , get_followers, name="get_followers"), # get followers of an author
+    path("authors/<uuid:author_serial>/following" , get_following, name="get_following"), # get following of an author
+    path("authors/<uuid:author_serial>/followers/<path:foreign_author_fqid>", handle_follow_request_response, name="follow_request_response"), # receiver of the follow request, replies to the follow request
     
     # Image Posts API
     path('posts/<path:FQID>/image', get_post_image, name='post_image_FQID'),
-    path('authors/<uuid:author_id>/posts/<uuid:post_id>/image', get_post_image, name='post_image_SERIAL'),
+    path('authors/<uuid:author_serial>/posts/<uuid:post_id>/image', get_post_image, name='post_image_SERIAL'),
 
     # Comments API
     path('comment/<path:comment_id>', get_comment, name='get_comment'),
-    path('authors/<uuid:author_id>/posts/<uuid:post_id>/comments', get_posts_comments, name='SERIAL_get_posts_comments'),
+    path('authors/<uuid:author_serial>/posts/<uuid:post_id>/comments', get_posts_comments, name='SERIAL_get_posts_comments'),
     path('posts/<path:post_FQID>/comments', get_posts_comments, name='FQID_get_posts_comments'),
 
     # Commented API
-    path('authors/<uuid:author_id>/commented', get_author_comments, name='SERIAL_get_author_comments'),
+    path('authors/<uuid:author_serial>/commented', get_author_comments, name='SERIAL_get_author_comments'),
     path('authors/<path:FQID>/commented', get_author_comments, name='FQID_get_author_comments'),
-    path('authors/<uuid:author_id>/commented/<uuid:comment_id>', get_commented_comment, name='author_serial_get_comment'),
+    path('authors/<uuid:author_serial>/commented/<uuid:comment_id>', get_commented_comment, name='author_serial_get_comment'),
     path('commented/<path:FQID>', get_commented_comment, name='author_FQID_get_comment'),
 
-    path('authors/<uuid:author_id>/posts/<uuid:post_id>', get_edit_delete_post, name='edit_post'), # API for editing post
-    path('authors/<uuid:author_id>/posts/', get_posts_create_post, name='get_posts'),
-    path("authors/<uuid:author_id>/posts/", get_posts_create_post, name="create"),
-    path('authors/<uuid:author_id>/posts/<uuid:post_id>', get_edit_delete_post, name='delete_post'),
+    path('authors/<uuid:author_serial>/posts/<uuid:post_id>', get_edit_delete_post, name='edit_post'), # API for editing post
+    path('authors/<uuid:author_serial>/posts/', get_posts_create_post, name='get_posts'),
+    path("authors/<uuid:author_serial>/posts/", get_posts_create_post, name="create"),
+    path('authors/<uuid:author_serial>/posts/<uuid:post_id>', get_edit_delete_post, name='delete_post'),
     path('posts/<path:FQID>', get_post_FQID, name='get_post_FQID'),
-    path('authors/<uuid:author_id>/gitPost/', github_post, name='github_post'),
+    path('authors/<uuid:author_serial>/gitPost/', github_post, name='github_post'),
 
     # Author API endpoints
-    path('authors/', api_list_authors, name='api_list_authors'), 
+    path('authors/', api_list_authors, name='api_list_authors'), # list all authors (local and remote)
     path('authors/add/', api_add_author, name='api_add_author'),  
-    path('authors/<uuid:author_id>/', api_author_detail, name='api_author_detail'), 
+    path('authors/<uuid:author_serial>/', api_author_detail, name='api_author_detail'),
     path('authors/<uuid:author_serial>/liked', get_likes_by_author, name='get_likes_by_author'),
     path("authors/<uuid:author_serial>/liked/<uuid:like_serial>",get_single_like,name="single_like"),
     path("liked/<uuid:like_fqid>",api_get_like,name="get_like"),
 
     
     # Post API endpoints
-    path("authors/<uuid:author_id>/inbox", api_create_like, name="api_create_like"),  # API for liking a post
-    path("authors/<uuid:author_id>/posts/<uuid:post_id>/likes", api_view_postLikes, name="api_likes"), # path to posts view likes
+    path("authors/<uuid:author_serial>/inbox", api_create_like, name="api_create_like"),  # API for liking a post
+    path("authors/<uuid:author_serial>/posts/<uuid:post_id>/likes", api_view_postLikes, name="api_likes"), # path to posts view likes
     path("posts/<uuid:post_id>/likes",api_view_Likes,name="api_view_Likes"),
     path("authors/<uuid:author_id>/posts/<uuid:post_id>/comments/<uuid:comment_id>/likes",api_view_Likes_comments,name="api_likes_comments"),
     

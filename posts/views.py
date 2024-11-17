@@ -5,7 +5,7 @@ from .models import Post, Comment, Like, Author, githubPostIds, Following, Likes
 import base64
 import jwt
 import markdown
-from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.decorators import api_view, renderer_classes, authentication_classes, permission_classes
 from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
@@ -16,6 +16,16 @@ from author.views import get_author_from_cookie
 from django.conf import settings
 from django.contrib import messages
 from urllib.parse import unquote
+from requests.auth import HTTPBasicAuth
+import requests
+from django.utils import timezone
+import logging
+from inbox.models import Inbox
+
+
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
+
 # Create your views here.
 def post(request):
     author_id = get_author_from_cookie(request).data.get('id')
@@ -100,7 +110,7 @@ class CommentPagination(PageNumberPagination):
         })
 
 @api_view(['GET'])
-def get_posts_comments(request, author_id=None, post_id=None, post_FQID=None):
+def get_posts_comments(request, author_serial=None, post_id=None, post_FQID=None):
     if post_FQID:
         # Decode the FQID to find the post ID
         decoded_FQID = unquote(post_FQID)
@@ -123,13 +133,13 @@ def get_posts_comments(request, author_id=None, post_id=None, post_FQID=None):
     return paginator.get_paginated_response(serializer.data)
 
 @api_view(['GET', 'POST'])
-def get_author_comments(request,  author_id=None, FQID=None):
+def get_author_comments(request,  author_serial=None, id=None):
     # Determine if the author is specified by UUID or FQID
     author = None
-    if author_id:
-        author = get_object_or_404(Author, id=author_id)
-    elif FQID:
-        author = get_object_or_404(Author, FQID=FQID)
+    if author_serial:
+        author = get_object_or_404(Author, author_serial=author_serial)
+    elif id:
+        author = get_object_or_404(Author, id=id)
 
     if request.method == 'GET':
         # Retrieve comments by the specified author
@@ -160,15 +170,17 @@ def get_author_comments(request,  author_id=None, FQID=None):
         
         serializer = CommentSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(author_id=author_id, post=post)
+            serializer.save(author_serial=author_serial, post=post)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
-def get_commented_comment(request, author_id=None, comment_id=None, FQID=None):
-    if author_id and comment_id:
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def get_commented_comment(request, author_serial=None, comment_id=None, FQID=None):
+    if author_serial and comment_id:
         # Get the comment by author and comment UUIDs
-        comment = get_object_or_404(Comment, uuid=comment_id, author__id=author_id)
+        comment = get_object_or_404(Comment, uuid=comment_id, author__id=author_serial)
 
     # Handle URL: /api/commented/{COMMENT_FQID}
     elif FQID:
@@ -185,11 +197,11 @@ def get_commented_comment(request, author_id=None, comment_id=None, FQID=None):
 
 
 @api_view(['POST'])
-def api_create_like(request, author_id):
+def api_create_like(request, author_serial):
     print("Request Data:", request.data)  # Debugging line to see the request data
 
     # Validate and retrieve the author
-    author = get_object_or_404(Author, id=author_id)
+    author = get_object_or_404(Author, author_serial=author_serial)
 
     # Retrieve either post_id or comment_id from the form data
     post_id = request.POST.get('post_id')
@@ -275,11 +287,11 @@ class PostPagination(PageNumberPagination):
         })
 
 @api_view(['GET', 'POST'])
-def get_posts_create_post(request, author_id):
+def get_posts_create_post(request, author_serial):
     """Handles both fetching posts for home page and creating post"""
 
     if request.method == 'GET':
-        author = get_object_or_404(Author, id=author_id)
+        author = get_object_or_404(Author, author_serial=author_serial)
         posts = Post.objects.all().order_by('-published')
 
         paginator = PostPagination()
@@ -337,6 +349,10 @@ def get_posts_create_post(request, author_id):
 
         # Serialize the post and return the response
         serializer = PostSerializer(post)
+        
+        # Send the post to remote nodes if visibility is public, unlisted, or friends
+        send_post_to_remote_nodes(post, serializer.data, 'new')
+        
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
@@ -427,11 +443,11 @@ def view_edit_post(request, id):
     return render(request, 'posts/editPost.html', {'post': post, 'author_id': author_id})
 
 @api_view(['GET', 'PUT', 'DELETE'])
-def get_edit_delete_post(request, author_id, post_id):
+def get_edit_delete_post(request, author_serial, post_id):
     post = get_object_or_404(Post, uuid=post_id)
     try:
         # Make sure user who is not the author can't edit/delete the post
-        if author_id != post.author.id and request.method in ["PUT", "DELETE"]:
+        if author_serial != post.author.author_serial and request.method in ["PUT", "DELETE"]:
             return Response({"error": "Unauthorized to edit/delete other author's post"}, status=status.HTTP_403_FORBIDDEN)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -468,6 +484,11 @@ def get_edit_delete_post(request, author_id, post_id):
 
         if serializer.is_valid():
             serializer.save()
+            
+            # Send the updated post to remote nodes
+            serializer = PostSerializer(post)
+            send_post_to_remote_nodes(post, serializer.data, action_type='edit')
+            
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -477,7 +498,9 @@ def get_edit_delete_post(request, author_id, post_id):
             post.visibility = 'DELETED'  # Mark the post as 'DELETED'
             post.save()
 
+            # Notify remote nodes about post deletion if it was previously shared
             post_serializer = PostSerializer(post)
+            send_post_to_remote_nodes(post, post_serializer.data, action_type='delete')
             
             return Response({"message": "Post deleted successfully"}, status=status.HTTP_200_OK)
         else:
@@ -487,11 +510,11 @@ def get_edit_delete_post(request, author_id, post_id):
 
 
 @api_view(['GET'])
-def get_post_image(request, author_id=None, post_id=None, FQID=None):
+def get_post_image(request, author_serial=None, post_id=None, FQID=None):
     # If author_id and post_id are provided, retrieve the post by post_id
-    if author_id:
+    if author_serial:
         # Retrieve the post using both author_id and post_id
-        post = get_object_or_404(Post, uuid=post_id, author__id=author_id)
+        post = get_object_or_404(Post, uuid=post_id, author__id=author_serial)
     elif FQID:
         post = get_object_or_404(Post, id=FQID)
     else:
@@ -588,14 +611,16 @@ def view_post(request, id):
     return render(request, "posts/viewPost.html", {"id": id, "post": post, "author": author, "comments": comments})
 
 @api_view(['GET'])
-def api_view_postLikes(request, author_id,post_id):
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def api_view_postLikes(request, author_serial,post_id):
     post = get_object_or_404(Post, uuid=post_id)
 
     if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
         # Non-admin users should not see deleted posts
         return redirect('home_page')  # Redirect to index or a 404 page
 
-    author = get_object_or_404(Author, id=author_id)
+    author = get_object_or_404(Author, author_serial=author_serial)
 
     return render(request, "posts/viewPostLikes.html", {"post_id": post_id, "post": post, "author": author})
 
@@ -607,7 +632,7 @@ def api_view_Likes(request, post_id):
         # Non-admin users should not see deleted posts
         return redirect('home_page')  # Redirect to index or a 404 page
 
-    author = post.author.id
+    author = post.author.author_serial
 
     return render(request, "posts/viewPostLikes.html", {"post_id": post_id, "post": post, "author": author})
 
@@ -627,8 +652,8 @@ def api_view_Likes_comments(request, author_id, post_id, comment_id):
     })
 
 @api_view(['POST'])
-def github_post(request, author_id):
-    author = get_object_or_404(Author, id=author_id)
+def github_post(request, author_serial):
+    author = get_object_or_404(Author, author_serial=author_serial)
     data = request.data
     check = githubPostIds.objects.filter(id=data['id'])
     if check:
@@ -646,3 +671,70 @@ def github_post(request, author_id):
     githubPost.save()
 
     return Response(data, status=status.HTTP_200_OK)
+
+def get_base_recipients(post):
+    """Get base followers and friends for a post's author"""
+    followers = Following.get_followers(post.author)
+    friends = [f.author1 for f in Following.objects.filter(
+        author2=post.author, 
+        status='accepted'
+    ) if Following.is_following(f.author2, f.author1)]
+    return [f.author1 for f in followers], friends
+
+def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
+    """Send post to remote nodes based on visibility and action type"""
+    recipients = set()
+    
+    if action_type == 'new':
+        # Get base recipients based on visibility
+        if post.visibility in ['PUBLIC', 'UNLISTED']:
+            followers = Following.get_followers(post.author)
+            friends = Following.objects.filter(
+                author2=post.author, 
+                status='accepted'
+            ).select_related('author1')
+            
+            recipients.update([f.author1 for f in followers])
+            if post.visibility == 'PUBLIC':
+                recipients.update([f.author1 for f in friends])
+                
+        elif post.visibility == 'FRIENDS':
+            friends = Following.objects.filter(
+                author2=post.author,
+                status='accepted'
+            ).select_related('author1')
+            recipients.update([f.author1 for f in friends])
+            
+    elif action_type in ['edit', 'delete']:
+        # For edit/delete, send to previous recipients
+        previous_recipients = Inbox.objects.filter(
+            FQIDorId=post.id,
+            type='post'
+        ).values_list('receiver', flat=True)
+        recipients.update(previous_recipients)
+
+    # Send to each remote recipient's inbox
+    for recipient in recipients:
+        if recipient.host != post.author.host:  # Only send to remote nodes
+            try:
+                # Create inbox entry first
+                Inbox.objects.create(
+                    receiver=recipient,
+                    type='post',
+                    FQIDorId=post.id,
+                    received_at=timezone.now()
+                )
+                
+                # Send to remote node
+                response = requests.post(
+                    f"{recipient.host}/api/authors/{recipient.FQID}/inbox",
+                    json=serializer_data,
+                    headers={'Content-Type': 'application/json'},
+                    auth=HTTPBasicAuth(settings.NODE_USERNAME, settings.NODE_PASSWORD),
+                    timeout=10
+                )
+                response.raise_for_status()
+                
+            except Exception as e:
+                logging.error(f"Failed to send post to {recipient.host}: {str(e)}")
+                continue
