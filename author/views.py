@@ -21,6 +21,7 @@ from posts.models import Like
 from posts.serializers import LikeSerializer
 import json
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 
 def profile_view(request, author_serial):
