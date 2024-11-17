@@ -4,7 +4,7 @@ from rest_framework import status
 import jwt
 from django.conf import settings
 from .models import Notification
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, action,authentication_classes, permission_classes
 from author.models import Author, FollowRequest
 from posts.models import Post, Comment, Like, Likes
 from django.conf import settings
@@ -13,7 +13,8 @@ from author.models import Following
 from .models import Inbox
 from django.utils import timezone
 import logging
-
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 @api_view(['GET'])
 def inbox(request):
@@ -82,6 +83,8 @@ def inbox(request):
         return Response({"error": "Author not found"}, status=404)
     
 @api_view(['POST'])
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def inboxApi(request, object_author_id):
     token = request.COOKIES.get('jwt')
     if not token:
@@ -191,6 +194,8 @@ def inboxApi(request, object_author_id):
         return Response({"error": "Author not found"}, status=404)
     
 @api_view(['GET', 'DELETE', 'PUT'])
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def handle_follow_request_response(request, author_id, foreign_author_fqid):
     token = request.COOKIES.get('jwt')
     if not token:
@@ -230,6 +235,8 @@ def handle_follow_request_response(request, author_id, foreign_author_fqid):
         return redirect('login')
 
 @api_view(['GET'])
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def get_followers(request, author_id):
     ''' example response
     {
@@ -273,6 +280,8 @@ def get_followers(request, author_id):
     return Response(followers_data, status=200)
 
 @api_view(['GET'])
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def get_following(request, author_id):
     ''' example response
     {
