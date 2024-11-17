@@ -77,7 +77,7 @@
 
         // Send PUT request to the API as JSON
         try {
-            const response = await fetch(`/api/authors/{{ author.author_serial }}/`, {
+            const response = await fetch(`/api/authors/{{ author.id }}/`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
