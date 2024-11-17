@@ -21,7 +21,7 @@
             <div class="following-info">
                 <a href="{% url 'author_profile' item.following.author_serial %}">
                     {% if item.following.profileImage %}
-                        <img src="{{ item.following.profileImage.url }}" alt="{{ item.following.displayName }}'s profile" class="profile-image">
+                        <img class="profile-image" src="data:image/png;base64,{{ item.following.profileImage }}" alt="{{ item.follower.displayName }}'s profile">
                     {% else %}
                         <img src="/static/images/default-profile.png" alt="Default profile" class="profile-image">
                     {% endif %}

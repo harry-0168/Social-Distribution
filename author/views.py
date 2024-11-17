@@ -175,7 +175,7 @@ def get_likes_by_author(request, author_serial):
     return Response(like_serializer.data, status=status.HTTP_200_OK)
 
 
-def follow_author(request, object_author_id):
+def follow_author(request, object_author_serial):
     '''
     This view is used to follow the target author. It fetches the currently logged-in user and the target author.
     It then follows the target author using the follow method in the model.
@@ -183,7 +183,7 @@ def follow_author(request, object_author_id):
     """Follow the target author."""
     if request.method == 'POST' and request.user.is_authenticated:
         actor = request.user  # The currently logged-in user
-        target_author = get_object_or_404(Author, author_serial=object_author_id)  # The author to be followed
+        target_author = get_object_or_404(Author, author_serial=object_author_serial)  # The author to be followed
 
         # Prevent users from following themselves
         if target_author != actor:

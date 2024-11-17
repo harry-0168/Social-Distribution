@@ -38,9 +38,9 @@
  
         <div class="profile-area">
             {% if author.profileImage %}
-            <img class="profile-pic" src="data:image/png;base64,{{ author.profileImage }}">
+                <img class="profile-pic" src="data:image/png;base64,{{ author.profileImage }}">
             {% else %}
-            <img class="profile-pic" src="{% static 'avatar.png' %}">
+                <img class="profile-pic" src="{% static 'avatar.png' %}">
             {% endif %}          
         <h2 class="profile-name">{{ author.displayName }}</h2>
         
