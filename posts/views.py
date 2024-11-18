@@ -462,25 +462,27 @@ def get_edit_delete_post(request, author_id, post_id):
                         if Following.is_following(f.author2, f.author1)]  # Mutual followers
                 # Combine followers and friends into a unique list
                 recipients = set([f.author1 for f in followers] + friends)
+            nodes = Author.objects.filter(isNode=True)
             for recipient in recipients:
-                # Ensure that the recipient is in the allowed hosts
-                if recipient.host in settings.ALLOWED_HOSTS:
-                    inbox_url = f"{recipient.host}/api/authors/{recipient.uuid}/inbox"
-                    headers = {
-                        'Content-Type': 'application/json'
-                    }
-                    try:
-                        response = requests.post(
-                            inbox_url,
-                            json=serializer.data,
-                            headers=headers,
-                            auth=HTTPBasicAuth(settings.NODE_USERNAME, settings.NODE_PASSWORD)
-                        )
-                        response.raise_for_status()  # Raise an error for bad HTTP responses
-                    except requests.exceptions.RequestException as e:
-                        # Log or handle exceptions for any unsuccessful requests
-                        print(f"Failed to send post to node at {inbox_url}: {e}")
-            return Response(serializer.data, status=status.HTTP_200_OK)
+                # Ensure that the recipient is in the available nodes
+                for node in nodes:
+                    if recipient.host == node.id:
+                        inbox_url = f"{recipient.host}/api/authors/{recipient.uuid}/inbox"
+                        headers = {
+                            'Content-Type': 'application/json'
+                        }
+                        try:
+                            response = requests.post(
+                                inbox_url,
+                                json=serializer.data,
+                                headers=headers,
+                                auth=HTTPBasicAuth(node.displayName, node.password)
+                            )
+                            response.raise_for_status()  # Raise an error for bad HTTP responses
+                        except requests.exceptions.RequestException as e:
+                            # Log or handle exceptions for any unsuccessful requests
+                            print(f"Failed to send post to node at {inbox_url}: {e}")
+                return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     if request.method == 'DELETE':
@@ -501,23 +503,27 @@ def get_edit_delete_post(request, author_id, post_id):
                         if Following.is_following(f.author2, f.author1)]  # Mutual followers
                 # Combine followers and friends into a unique list
                 recipients = set([f.author1 for f in followers] + friends)
+            nodes = Author.objects.filter(isNode=True)
             for recipient in recipients:
-                inbox_url = f"{recipient.host}/api/authors/{recipient.uuid}/inbox"
-                headers = {
-                    'Content-Type': 'application/json'
-                }
-                try:
-                    response = requests.post(
-                        inbox_url,
-                        json=post_serializer.data,
-                        headers=headers,
-                        auth=HTTPBasicAuth(recipient.host, 'pass') #TODO: Change to actual node credentials
-                    )
-                    response.raise_for_status()  # Raise an error for bad HTTP responses
-                except requests.exceptions.RequestException as e:
-                    # Log or handle exceptions for any unsuccessful requests
-                    print(f"Failed to send post to node at {inbox_url}: {e}")
-            return Response(post_serializer.data, status=status.HTTP_200_OK)
+                # Ensure that the recipient is in the available nodes
+                for node in nodes:
+                    if recipient.host == node.id:
+                        inbox_url = f"{recipient.host}/api/authors/{recipient.uuid}/inbox"
+                        headers = {
+                            'Content-Type': 'application/json'
+                        }
+                        try:
+                            response = requests.post(
+                                inbox_url,
+                                json=serializer.data,
+                                headers=headers,
+                                auth=HTTPBasicAuth(node.displayName, node.password)
+                            )
+                            response.raise_for_status()  # Raise an error for bad HTTP responses
+                        except requests.exceptions.RequestException as e:
+                            # Log or handle exceptions for any unsuccessful requests
+                            print(f"Failed to send post to node at {inbox_url}: {e}")
+                return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             # If the user is not the author
             return Response({"error": "Unauthorized to delete this post"}, status=status.HTTP_403_FORBIDDEN)
