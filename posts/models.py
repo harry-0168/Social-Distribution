@@ -78,11 +78,11 @@ class Post(models.Model):
     def save(self, *args, **kwargs):
         # Ensure FQID is set on creation only
         if not self.id:
-            author_id = self.author.id  # Ensure that author id is correctly set
-            self.id = f"{self.author.host}/api/authors/{author_id}/posts/{self.uuid}"
+            author_serial = self.author.author_serial # Ensure that author id is correctly set
+            self.id = f"{self.author.host}/api/authors/{author_serial}/posts/{self.uuid}"
         if not self.page:
-            author_id = self.author.id  # Ensure that author id is correctly set
-            self.page = f"{self.author.host}/authors/{author_id}/posts/{self.uuid}"
+            author_serial = self.author.author_serial  # Ensure that author id is correctly set
+            self.page = f"{self.author.host}/authors/{author_serial}/posts/{self.uuid}"
         
         super().save(*args, **kwargs)
     

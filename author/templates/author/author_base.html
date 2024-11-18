@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'author_profile' request.user.id %}"> <!-- TO-DO replace with actual author id-->
+        <a href="{% url 'author_profile' request.user.author_serial %}"> <!-- TO-DO replace with actual author id-->
             {% if author.profileImage %}
             <img class="profile-pic-header" src="data:image/png;base64,{{ author.profileImage }}">
             {% else %}
@@ -38,23 +38,23 @@
  
         <div class="profile-area">
             {% if author.profileImage %}
-            <img class="profile-pic" src="data:image/png;base64,{{ author.profileImage }}">
+                <img class="profile-pic" src="data:image/png;base64,{{ author.profileImage }}">
             {% else %}
-            <img class="profile-pic" src="{% static 'avatar.png' %}">
+                <img class="profile-pic" src="{% static 'avatar.png' %}">
             {% endif %}          
         <h2 class="profile-name">{{ author.displayName }}</h2>
         
         <!-- Get all the information of the user and author -->
-        <form method="POST" action="{% url 'follow-author' author.id %}" class="follow-form"
+        <form method="POST" action="{% url 'follow-author' author.author_serial %}" class="follow-form"
+                data-author-author_serial="{{ author.author_serial }}"
                 data-author-id="{{ author.id }}"
-                data-author-fqid="{{ author.FQID }}"
                 data-author-host="{{ author.host }}"
                 data-author-name="{{ author.displayName }}"
                 data-author-github="{{ author.user.github }}"
                 data-author-profile-image="{{ author.user.profileImage.url }}"
 
+                data-actor-author_serial="{{ request.user.author_serial }}"
                 data-actor-id="{{ request.user.id }}"
-                data-actor-fqid="{{ request.user.FQID }}"
                 data-actor-name="{{ request.user.displayName }}"
                 data-actor-host="{{ request.user.host }}"
                 data-actor-github="{{ request.user.github }}"
@@ -68,25 +68,25 @@
         </form>
         <div class="follow-info">
             <!-- Clickable link for followers list -->
-            <a href="{% url 'followers_list' author.id %}" class="followers">
+            <a href="{% url 'followers_list' author.author_serial %}" class="followers">
                 <strong>{{ followers_count }}</strong> Followers
             </a>
 
            <span> | </span>
         
             <!-- Clickable link for following list -->
-            <a href="{% url 'following_list' author.id %}" class="following">
+            <a href="{% url 'following_list' author.author_serial %}" class="following">
                 <strong>{{ following_count }}</strong> Following
             </a>
         </div>
 
             <ul class="profile-menu">
-                <li><a href="{% url 'author_profile' author.id %}">Home</a></li>
-                <li><a href="{% url 'author-about' author.id %}">About</a></li>
+                <li><a href="{% url 'author_profile' author.author_serial %}">Home</a></li>
+                <li><a href="{% url 'author-about' author.author_serial %}">About</a></li>
                 <!-- <li><a href="#">Photo</a></li>
                 <li><a href="#">Video</a></li> -->
-                {% if request.user.id == author.id %}
-                    <li><a href="{% url 'user-settings' author.id %}">Settings</a></li>
+                {% if request.user.author_serial == author.author_serial %}
+                    <li><a href="{% url 'user-settings' author.author_serial %}">Settings</a></li>
                     <!-- Only show logout when viewing own profile -->
                     <li>
                         <form action="{% url 'logout' %}" method="POST">
@@ -124,8 +124,8 @@
             const followForm = document.querySelector('.follow-form');
 
             if (followForm) {
-                const authorId = followForm.getAttribute('data-author-id');
-                const actorId = followForm.getAttribute('data-actor-id');
+                const authorId = followForm.getAttribute('data-author-author_serial');
+                const actorId = followForm.getAttribute('data-actor-author_serial');
                 const Button = followForm.querySelector('button');
                 //Hide follow and unfollow buttons if the profile page belongs to the logged-in user
                 if (authorId === actorId) {
@@ -140,15 +140,15 @@
                 button.addEventListener('click', function () {
                     const form = button.closest('.follow-form');
                     
-                    const authorId = form.getAttribute('data-author-id');
-                    const authorFQID = form.getAttribute('data-author-fqid');
+                    const authorId = form.getAttribute('data-author-author_serial');
+                    const authorFQID = form.getAttribute('data-author-id');
                     const authorName = form.getAttribute('data-author-name');
                     const authorHost = form.getAttribute('data-author-host');
                     const authorGithub = form.getAttribute('data-author-github')
                     const authorProfileImage = form.getAttribute('data-author-profile-image');
 
-                    const actorId = form.getAttribute('data-actor-id');
-                    const actorFQID = form.getAttribute('data-actor-fqid');
+                    const actorId = form.getAttribute('data-actor-author_serial');
+                    const actorFQID = form.getAttribute('data-actor-id');
                     const actorName = form.getAttribute('data-actor-name');
                     const actorHost = form.getAttribute('data-actor-host');
                     const actorGithub = form.getAttribute('data-actor-github');
@@ -213,8 +213,8 @@
             document.querySelectorAll('.unfollow-button').forEach(function (button) {
                 button.addEventListener('click', function () {
                     const form = button.closest('.follow-form');
-                    const actorId = form.getAttribute('data-actor-id');
-                    const authorFQID = form.getAttribute('data-author-fqid');
+                    const actorId = form.getAttribute('data-actor-author_serial');
+                    const authorFQID = form.getAttribute('data-author-id');
                     
                     const unfollowUrl = `/api/authors/${actorId}/followers/${encodeURIComponent(authorFQID)}/`;
                     console.log("Unfollow URL:", unfollowUrl);  // Log the URL to check if it matches the expected pattern
