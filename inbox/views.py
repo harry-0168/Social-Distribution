@@ -358,7 +358,9 @@ def forward_follow_request(request):
         new = Following.follow(actor, object_author)
         if not new:
             return Response({"error": "Already following"}, status=400)
-        new.status = 'accepted' # set the status to accepted since the follow request has been forwarded
+        follow = Following.objects.get(author1=actor, author2=object_author)
+        follow.status = 'accepted'
+        follow.save()
         
 
         response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
