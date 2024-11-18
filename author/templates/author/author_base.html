@@ -48,17 +48,9 @@
         <form method="POST" action="{% url 'follow-author' author.author_serial %}" class="follow-form"
                 data-author-author_serial="{{ author.author_serial }}"
                 data-author-id="{{ author.id }}"
-                data-author-host="{{ author.host }}"
-                data-author-name="{{ author.displayName }}"
-                data-author-github="{{ author.user.github }}"
-                data-author-profile-image="{{ author.user.profileImage.url }}"
 
                 data-actor-author_serial="{{ request.user.author_serial }}"
-                data-actor-id="{{ request.user.id }}"
-                data-actor-name="{{ request.user.displayName }}"
-                data-actor-host="{{ request.user.host }}"
-                data-actor-github="{{ request.user.github }}"
-                data-actor-profile-image="{% if request.user.profileImage %}{{ request.user.profileImage.url }}{% else %}None{% endif %}">
+                data-actor-id="{{ request.user.id }}">
             {% csrf_token %}
             {% if is_following %}
                 <button type="button" class="unfollow-button">Unfollow</button>
@@ -133,64 +125,30 @@
                 }
             }
         });
-        const currentHost = window.location.origin;
         const csrftoken = getToken('csrftoken');
+
         document.addEventListener('DOMContentLoaded', function () {
-            document.querySelectorAll('.follow-button').forEach(function (button) {
+            document.querySelectorAll('.follow-button, .unfollow-button').forEach(function (button) {
                 button.addEventListener('click', function () {
-                    const form = button.closest('.follow-form');
+                    const form = button.closest('.follow-form'); 
                     
                     const authorId = form.getAttribute('data-author-author_serial');
                     const authorFQID = form.getAttribute('data-author-id');
-                    const authorName = form.getAttribute('data-author-name');
-                    const authorHost = form.getAttribute('data-author-host');
-                    const authorGithub = form.getAttribute('data-author-github')
-                    const authorProfileImage = form.getAttribute('data-author-profile-image');
-
                     const actorId = form.getAttribute('data-actor-author_serial');
                     const actorFQID = form.getAttribute('data-actor-id');
-                    const actorName = form.getAttribute('data-actor-name');
-                    const actorHost = form.getAttribute('data-actor-host');
-                    const actorGithub = form.getAttribute('data-actor-github');
-                    const actorProfileImage = form.getAttribute('data-actor-profile-image');
-
-                    //Construct the follow request object
-                    const followRequest = {
-                        "type": "follow",
-                        "summary": `${actorName} wants to follow ${authorName}`,
-                        "actor": {
-                            "type": "author",
-                            "id": actorFQID, 
-                            "host": actorHost,
-                            "displayName": actorName,
-                            "github": actorGithub,
-                            "profileImage": actorProfileImage,
-                            "page": `${actorHost}authors/${actorId}`
-                        },
-                        "object": {
-                            "type": "author",
-                            "id": authorFQID, 
-                            "host": authorHost,
-                            "displayName": authorName,
-                            "page": `${authorHost}authors/${authorId}`,
-                            "github": authorGithub,  
-                            "profileImage": authorProfileImage  
-                        }
-                    };
-                    console.log("Follow Request Object:", followRequest);
                     
-
-
-                    const inboxUrl = `${currentHost}/inbox/api/authors/${authorId}/inbox/`;
-                    console.log("Attempting to send request to:", inboxUrl);
-                    //Send the follow request to the author's inbox
-                    fetch(inboxUrl, {
-                        method: 'POST',
+                    const isFollow = button.classList.contains('follow-button');
+                    const method = isFollow ? 'PUT' : 'DELETE'; //Use PUT for follow, DELETE for unfollow
+                    
+                    const currentUrl = `/author/${authorId}/followers/${actorFQID}/`; 
+                    console.log(`Sending ${method} request to:`, currentUrl);
+                    
+                    fetch(currentUrl, {
+                        method: method,
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRFToken': csrftoken
-                        },
-                        body: JSON.stringify(followRequest)
+                        }
                     })
                     .then(response => {
                         if (!response.ok) {
@@ -200,45 +158,21 @@
                     })
                     .then(data => {
                         console.log("Response data:", data);
-                        if (data.message) {
+                        if (isFollow) {
                             alert("Follow request sent successfully!");
-                            location.reload();
                         } else {
-                            alert("Failed to send follow request.");
+                            alert("Unfollow author successfully!");
                         }
-                    })
-                    .catch(error => console.error('Error:', error));
-                });
-            });
-            document.querySelectorAll('.unfollow-button').forEach(function (button) {
-                button.addEventListener('click', function () {
-                    const form = button.closest('.follow-form');
-                    const actorId = form.getAttribute('data-actor-author_serial');
-                    const authorFQID = form.getAttribute('data-author-id');
-                    
-                    const unfollowUrl = `/api/authors/${actorId}/followers/${encodeURIComponent(authorFQID)}/`;
-                    console.log("Unfollow URL:", unfollowUrl);  // Log the URL to check if it matches the expected pattern
-
-
-                    fetch(unfollowUrl, {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': csrftoken  
-                        }
-                    })
-                    .then(response => {
-                        console.log("Response status:", response.status); 
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! Status: ${response.status}`);
-                        }
-                        alert("Unfollowed successfully!");
                         location.reload();
                     })
-                    .catch(error => console.error('Error:', error));
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while processing your request.');
+                    });
                 });
             });
-        })
+});
+
     </script>
 </body>
 </html>
