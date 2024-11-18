@@ -319,6 +319,10 @@ def forward_follow_request(request):
                 "host": node_author.host.split('//')[1],
             }
         print(headers)
+        new = Following.follow(actor, object_author)
+        if not new:
+            return Response({"error": "Already following"}, status=400)
+        new.status = 'accepted' # set the status to accepted since the follow request has been forwarded
         
 
         response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
