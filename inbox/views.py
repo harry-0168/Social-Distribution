@@ -324,6 +324,7 @@ def forward_follow_request(request):
             return Response({"error": "Already following"}, status=400)
         follow = Following.objects.get(author1=actor, author2=object_author)
         follow.status = 'accepted'
+        follow.save()
         
 
         response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
