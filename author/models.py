@@ -46,6 +46,7 @@ class Author(AbstractUser):
             # Use the request object to determine the scheme (http or https)
             scheme = request.scheme
             host = request.get_host()
+            print(scheme, host)
             self.host = f"{scheme}://{host}"
         elif not self.host:
             # Fallback if no request object is provided
