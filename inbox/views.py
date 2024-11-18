@@ -206,6 +206,24 @@ def inboxApi(request, object_author_serial):
             except Exception as e:
                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         elif parsed_data['type'] == 'post':
+            # Extract the author data from the parsed_data
+            author_data = parsed_data.get('author')
+            if not author_data:
+                return Response({"error": "Author data missing from post"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Try to get existing author or create new one
+            try:
+                author = Author.objects.get(id=author_data.get('id'))
+            except Author.DoesNotExist:
+                # Create new author if doesn't exist
+                author_serializer = AuthorSerializer(data=author_data)
+                if author_serializer.is_valid():
+                    author = author_serializer.save()
+                else:
+                    return Response({"error": "Invalid author data", "details": author_serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            # Now validate and create/update the post
             serializer = PostSerializer(data=parsed_data)
             if serializer.is_valid():
                 # Check if post exists and update it if needed
@@ -218,7 +236,7 @@ def inboxApi(request, object_author_serial):
                         'contentType': parsed_data.get('contentType'),
                         'content': parsed_data.get('content'),
                         'visibility': parsed_data.get('visibility'),
-                        'author': author,
+                        'author': author,  # Now we have a valid author
                         'page': parsed_data.get('page')
                     }
                 )
