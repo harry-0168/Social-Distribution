@@ -22,14 +22,16 @@ def nodeSignup(request):
         serializer = AuthorSerializer(data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            # get the user object
+            user = Author.objects.get(displayName=data['displayName'])
+            user.isNode = True
+            user.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 @api_view(['GET'])
-# @authentication_classes([BasicAuthentication]) 
-# @permission_classes([IsAuthenticated])
 def get_nodes(request):
     '''
     API endpoint for getting all nodes
