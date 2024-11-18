@@ -45,8 +45,10 @@ class Author(AbstractUser):
         if not self.host and request:
             # Use the request object to determine the scheme (http or https)
             scheme = request.scheme
+            # if host heroku in it, use https
+            if 'heroku' in request.get_host():
+                scheme = "https"
             host = request.get_host()
-            print(scheme, host)
             self.host = f"{scheme}://{host}"
         elif not self.host:
             # Fallback if no request object is provided
