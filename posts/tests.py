@@ -8,13 +8,14 @@ from django.test import TestCase, Client, RequestFactory
 from django.urls import reverse
 from author.models import Author
 from .models import Post, Following, Comment
+from inbox.models import Inbox
 import jwt
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from unittest.mock import patch
 from .serializers import PostSerializer
 from rest_framework.test import APIRequestFactory
-from .views import get_post_FQID, get_post_image
+from .views import get_post_FQID, get_post_image, send_post_to_remote_nodes
 from urllib.parse import quote
 
 User = get_user_model()
@@ -50,9 +51,9 @@ class GetEditDeletePostAPITest(APITestCase):
             visibility="FRIENDS",
             author=self.author1,
         )
-        self.public_post_url = reverse('edit_post', args=[self.author1.id, self.public_post.uuid])
-        self.friends_post_url = reverse('edit_post', args=[self.author1.id, self.friends_post.uuid])
-        self.delete_post_url = reverse('delete_post', args=[self.author1.id, self.public_post.uuid])
+        self.public_post_url = reverse('edit_post', args=[self.author1.author_serial, self.public_post.uuid])
+        self.friends_post_url = reverse('edit_post', args=[self.author1.author_serial, self.friends_post.uuid])
+        self.delete_post_url = reverse('delete_post', args=[self.author1.author_serial, self.public_post.uuid])
 
     def test_get_public_post_as_authenticated_user(self):
         response = self.client1.get(self.public_post_url)
@@ -90,7 +91,7 @@ class GetEditDeletePostAPITest(APITestCase):
 
     def test_edit_post_unauthorized(self):
         # Author2 tries to update Author1's post
-        self.public_post_url = reverse('edit_post', kwargs={'author_id': self.author2.id, 'post_id': self.public_post.uuid})
+        self.public_post_url = reverse('edit_post', kwargs={'author_serial': self.author2.author_serial, 'post_id': self.public_post.uuid})
         data = {'title': 'Unauthorized Update'}
         response = self.client.put(self.public_post_url, data)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -104,7 +105,7 @@ class GetEditDeletePostAPITest(APITestCase):
 
     def test_delete_post_unauthorized(self):
         # Author2 tries to delete Author1's post
-        unauthorized_delete_url = reverse('delete_post', args=[self.user2.id, self.public_post.uuid])
+        unauthorized_delete_url = reverse('delete_post', args=[self.user2.author_serial, self.public_post.uuid])
         response = self.client2.delete(unauthorized_delete_url, follow=True)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(self.public_post.visibility, 'PUBLIC')
@@ -178,13 +179,13 @@ class CreatePostAPITest(TestCase):
 
     def setUp(self):
         # Create some test authors for the test database
-        self.author1 = Author.objects.create(displayName="Author1", host='http://localhost', FQID='http://localhost/api/authors/1')
-        self.author2 = Author.objects.create(displayName="Author2", host='http://localhost', FQID='http://localhost/api/authors/2')
+        self.author1 = Author.objects.create(displayName="Author1", host='http://localhost', id='http://localhost/api/authors/1')
+        self.author2 = Author.objects.create(displayName="Author2", host='http://localhost', id='http://localhost/api/authors/2')
         
         # Generate a JWT token with both 'author_id' and 'displayName'
         self.token = jwt.encode({
             'id': self.author1.displayName,   # Use displayName as 'id' for the view
-            'author_id': str(self.author1.id) # Use actual ID as 'author_id' for the middleware
+            'author_id': str(self.author1.author_serial) # Use actual ID as 'author_id' for the middleware
         }, settings.SECRET_KEY, algorithm='HS256')
 
         # Create a client instance
@@ -203,10 +204,10 @@ class CreatePostAPITest(TestCase):
 
         # Check that the author's properties are correct
         self.assertEqual(author1.host, 'http://localhost')
-        self.assertEqual(author1.FQID, 'http://localhost/api/authors/1')
+        self.assertEqual(author1.id, 'http://localhost/api/authors/1')
         
         self.assertEqual(author2.host, 'http://localhost')
-        self.assertEqual(author2.FQID, 'http://localhost/api/authors/2')
+        self.assertEqual(author2.id, 'http://localhost/api/authors/2')
 
     def test_create_post_success(self):
         # Prepare post data (without the 'author' field, since it's derived from the JWT)
@@ -240,7 +241,7 @@ class CreatePostAPITest(TestCase):
         }
 
         # Generate URL for creating the post
-        url = reverse('create', args=[self.author1.id])  # Ensure URL name matches configuration
+        url = reverse('create', args=[self.author1.author_serial])  # Ensure URL name matches configuration
         print("Generated URL:", url)
 
         # Send a POST request
@@ -254,8 +255,6 @@ class CreatePostAPITest(TestCase):
         self.assertEqual(post.description, 'This is a test post.')
         self.assertEqual(post.visibility, 'PUBLIC')
         self.assertEqual(post.content, 'This is some test content.')
-
-
        
 class CreatePostCheckTest(APITestCase):
     def setUp(self):
@@ -300,7 +299,7 @@ class GetCommentTestCase(APITestCase):
             host='http://example.com',
             displayName='Test Author',
             github='testauthor',
-            FQID='http://example.com/authors/testauthor'
+            id='http://example.com/authors/testauthor'
         )
 
         # Create a post instance
@@ -316,7 +315,7 @@ class GetCommentTestCase(APITestCase):
         
         # Create a comment instance
         self.comment = Comment.objects.create(
-            content="This is a test comment.",
+            comment="This is a test comment.",
             username="testuser",
             post=self.post_instance,
             author=self.author,
@@ -325,7 +324,7 @@ class GetCommentTestCase(APITestCase):
         )
         
         # Set the URL for the get_comment view using the comment's id
-        self.url = reverse('get_comment', args=[self.comment.id])
+        self.url = reverse('get_comment', args=[self.comment.uuid])
 
     def test_get_comment(self):
         response = self.client.get(self.url)
@@ -417,19 +416,19 @@ class GetCommentedCommentTestCase(TestCase):
 
     def test_get_commented_comment_valid_parameters(self):
         # Construct the URL
-        url = reverse('author_serial_get_comment', args=[self.author.id, self.comment.id])
+        url = reverse('author_serial_get_comment', args=[self.author.author_serial, self.comment.uuid])
         response = self.client.get(url)
         
         # Assert the response status code
         self.assertEqual(response.status_code, 200)
 
     def test_get_commented_comment_invalid_author(self):
-        url = reverse('author_serial_get_comment', args=[uuid.uuid4(), self.comment.id])
+        url = reverse('author_serial_get_comment', args=[uuid.uuid4(), self.comment.uuid])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
     def test_get_commented_comment_invalid_comment(self):
-        url = reverse('author_serial_get_comment', args=[self.author.id, uuid.uuid4()])
+        url = reverse('author_serial_get_comment', args=[self.author.author_serial, uuid.uuid4()])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
