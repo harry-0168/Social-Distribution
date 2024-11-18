@@ -30,19 +30,19 @@ url: https://social-distribution-crimson-464113e0f29c.herokuapp.com/
 username:   
 password: pass  
 Credentials for Harveer's application  
-url: https://social-distribution-crimson-464113e0f29c.herokuapp.com/](https://social1-c4a7f0052028.herokuapp.com/  
+url: https://social1-c4a7f0052028.herokuapp.com/  
 username:   
 password:   
 Credentials for Haoze's application  
-url: https://social-distribution-crimson-464113e0f29c.herokuapp.com/](https://social-distribution-haoze-6849a7ab5179.herokuapp.com/  
+url: https://social-distribution-haoze-6849a7ab5179.herokuapp.com/  
 username:   
 password: pass  
 Credentials for Dhruvil's application  
-url: https://social-distribution-crimson-464113e0f29c.herokuapp.com/](https://social-distribution-dhruvil-7ee59df447bd.herokuapp.com/  
+url: https://social-distribution-dhruvil-7ee59df447bd.herokuapp.com/  
 username:   
 password: pass  
 Credentials for Yihui's application  
-url: https://social-distribution-crimson-464113e0f29c.herokuapp.com/](https://crimson-404-9c6e916b7080.herokuapp.com/  
+url: https://crimson-404-9c6e916b7080.herokuapp.com/  
 username:   
 password: pass  
 Credentials for Khym's application  
