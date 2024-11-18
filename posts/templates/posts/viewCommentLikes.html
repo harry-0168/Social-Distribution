@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{% static 'viewPostLikes.css' %}">
-    <title>View Post</title>
+    <title>View Comment Likes</title>
+    
 
     <style>
         /* Add hover style for the trash button */
@@ -21,17 +22,19 @@
             content: url("{% static 'trashFilled.png' %}"); /* Change the image on hover */
         }
     </style>
-
 </head>
 <body>
+    <script>
+        console.log("STAGE COMMENT")
+    </script>
     <div class="header">
         <a href="{% url 'author_profile' request.user.author_serial %}"> <!-- Use the logged-in user's author ID -->
             {% if request.user.profileImage %}
                 <img src="data:image/png;base64,{{ request.user.profileImage }}" 
-                 style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+                     style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
             {% else %}
                 <img src="{% static 'avatar.png' %}" 
-                 style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+                     style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
             {% endif %}
         </a>
         <div class="icons">
@@ -47,28 +50,27 @@
         </div>
     </div>
 
-
     <section class="gridContainer">
         <section class="gridItemLeft">
             <section class="likesArea">
-                <h3 class="likesAreaTitle">Likes for post: {{ post.title }}</h3>
+                <h3 class="likesAreaTitle">Likes for Comment: {{ comment.comment }}</h3>
                 <div class="carousel">
                     <div class="carousel-container">
-                        {% for like in post.likes.all %}
+                        {% for like in comment.likes.all %}
                             <div class="like">
                                 {% if like.author.profileImage %}
                                     <img src="data:image/png;base64,{{ like.author.profileImage }}" 
-                                     class="profile-pic-small">
+                                         class="profile-pic-small">
                                 {% else %}
                                     <img src="{% static 'avatar.png' %}" 
-                                        class="profile-pic-small">
+                                         class="profile-pic-small">
                                 {% endif %}
                                 <div class="likeUsernameDate">
-                                    <h5 class="likeProfileUsername">{{like.username}}</h5> <!--TODO: add the username of the profile that liked -->
-                                    <h5 class="likeDate">{{ like.published}}</h5> 
+                                    <h5 class="likeProfileUsername">{{ like.author.displayName }}</h5>
+                                    <h5 class="likeDate">{{ like.published }}</h5>
                                 </div>
                             </div>
-                        {% endfor %} 
+                        {% endfor %}
                     </div>
                 </div>
             </section>
@@ -88,7 +90,7 @@
                 </div>
                 <!-- <button class="followButton">Follow</button> -->
                 <!-- Only the author can delete their own posts -->
-                {% if user.author_serial == post.author.author_serial %}
+                {% if user.id == post.author.author_serial %}
                     <form action="{% url 'delete_post' request.user.author_serial post.uuid %}" method="POST">
                         {% csrf_token %}
                         <input type="hidden" name="_method" value="DELETE"> <!--IMPORTANT: Walk around for delete method-->
@@ -127,12 +129,10 @@
                 <img src="/static/share.png">
                 <h3>share</h3>
             </section>
-            <section class="viewLikesComments">
-                <a class="viewLikes">view likes</a>
-                <a class="viewComments" href="{% url 'viewPost' id=post.uuid %}">view comments</a>
-            </section>
+            
         </section>
     </section>
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -145,3 +145,4 @@
         });
     </script>
 </body>
+</html>

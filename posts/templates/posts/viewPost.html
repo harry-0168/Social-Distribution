@@ -76,13 +76,17 @@
             <section class="likeCommentShare">
                 <form action="{% url 'api_create_like' post.author.author_serial %}" method="POST">
                     {% csrf_token %}
+                    <script>
+                    console.log("post_id")
+                    console.log(post.uuid)
+                    </script>
                     <input type="hidden" name="post_id" value="{{ post.uuid }}"> <!-- Use post.uuid here -->
                     <input type="hidden" name="type" value="like">
                     <button type="submit" class="like-button">
                         <img class="heart" src="{% static 'heart.png' %}" alt="Like">
                     </button>
                 </form>
-                <h3>{{ post.like_set.count }} like(s)</h3>
+                <h3>{{ post.likes_collection.count }} like(s)</h3>
                 <a type="submit" class="comment-button" href="#comment-input">
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
@@ -206,7 +210,7 @@
                 function createCommentElement(comment) {
                     const commentDiv = document.createElement('div');
                     commentDiv.classList.add('comment');
-
+                
                     const img = document.createElement('img');
                     img.classList.add('profile-pic-small');
                     if (comment.author.profileImage) {
@@ -215,19 +219,45 @@
                     } else {
                         img.src = '/static/avatar.png';
                     }
-
+                
                     const h5 = document.createElement('h5');
                     h5.classList.add('commentUsername');
                     h5.textContent = comment.author.displayName;
-
+                    
                     const contentDiv = document.createElement('div');
                     contentDiv.classList.add('commentContent');
                     contentDiv.textContent = comment.comment;
+                
+                    const likeForm = document.createElement('form');
+                    likeForm.setAttribute('method', 'POST');
+                    likeForm.setAttribute('action', `/api/authors/${comment.author.author_serial}/inbox`); // Adjust endpoint as needed
+                    likeForm.innerHTML = `
+                        {% csrf_token %}
+                        <input type="hidden" name="type" value="like">
+                        <input type="hidden" name="comment_id" value="${comment.id}">
+                        <button type="submit" class="like-button">
+                            <img class="heart" src="{% static 'heart.png' %}" alt="Like">
+                        </button>
+                    `;
+                    console.log("author")
+                    console.log(comment.author.serial)
+                    // Construct URL for Viewing Likes
+                    let post_url = comment.post;
+                    let post_uuid = post_url.split('/').pop(); // Extract the post UUID from the URL
+                    const viewLikesLink = document.createElement('a');
+                    console.log("author")
+                    console.log(comment.author.serial)
+                    viewLikesLink.href = `/api/authors/${comment.author.author_serial}/posts/${post_uuid}/comments/${comment.uuid}/likes`; // Build the URL dynamically using JavaScript
+                    viewLikesLink.textContent = 'View Likes';
+                    viewLikesLink.classList.add('viewLikes');
+                    
 
-                    h5.appendChild(contentDiv);
+                    // Append elements to the comment div
                     commentDiv.appendChild(img);
                     commentDiv.appendChild(h5);
-
+                    commentDiv.appendChild(contentDiv);
+                    commentDiv.appendChild(likeForm);
+                    commentDiv.appendChild(viewLikesLink); // Append the new link
                     return commentDiv;
                 }
             </script>

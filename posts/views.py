@@ -75,7 +75,8 @@ def create_comment(request, post_uuid):
     if request.accepts('application/json'):
         return Response(comment_serializer.data, status=status.HTTP_201_CREATED)
     else:
-        return redirect('viewPost', id=post.uuid)
+        #return redirect('viewPost', id=post.uuid)
+        return redirect(request.META.get('HTTP_REFERER'))
 
 @api_view(['GET'])
 def get_comment(request, comment_id=None, author_serial=None, post_serial=None, remote_comment_FQID=None):
@@ -288,13 +289,11 @@ def api_create_like(request, author_serial):
     # Validate and retrieve the author
     author = get_object_or_404(Author, author_serial=author_serial)
 
-    # Get the post_id from form data
+    # Retrieve either post_id or comment_id from the form data
     post_id = request.POST.get('post_id')
-    if not post_id:
-        return Response({"error": "Post ID not found"}, status=status.HTTP_400_BAD_REQUEST)
-    
-    post = get_object_or_404(Post, uuid=post_id)
+    comment_id = request.POST.get('comment_id')
 
+    # Token validation
     token = request.COOKIES.get('jwt')
     if not token:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -306,29 +305,57 @@ def api_create_like(request, author_serial):
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
-    # Check if a like already exists
-    if Like.objects.filter(username=username, object=post).exists():
-        return redirect(request.META.get('HTTP_REFERER'))
-
+    # Handling likes for posts or comments
     try:
-        # Ensure post has a likes collection or create one
-        if not post.likes_collection:
-            likes_collection = Likes.objects.create()
-            post.likes_collection = likes_collection
-            post.save()
+        if post_id:
+            post = get_object_or_404(Post, uuid=post_id)
 
-        # Create and save the new Like instance
-        like = Like(username=username, object=post, author=user)
-        like.save()
+            # Check if a like already exists for the post
+            if Like.objects.filter(username=username, object=post).exists():
+                return redirect(request.META.get('HTTP_REFERER'))
 
-        # Add the like to the post's likes collection
-        post.likes_collection.add_like(like)
+            # Ensure post has a likes collection or create one
+            if not post.likes_collection:
+                likes_collection = Likes.objects.create()
+                post.likes_collection = likes_collection
+                post.save()
+
+            # Create and save the new Like instance for the post
+            like = Like(username=username, object=post, author=user, id=author_serial)
+            like.save()
+
+            # Add the like to the post's likes collection
+            post.likes_collection.add_like(like)
+
+        elif comment_id:
+            comment = get_object_or_404(Comment, id=comment_id)
+
+            # Check if a like already exists for the comment
+            if Like.objects.filter(username=username, object=comment).exists():
+                return redirect(request.META.get('HTTP_REFERER'))
+
+            # Ensure comment has a likes collection or create one
+            if not comment.likes_collection:
+                likes_collection = Likes.objects.create()
+                comment.likes_collection = likes_collection
+                comment.save()
+
+            # Create and save the new Like instance for the comment
+            like = Like(username=username, object=comment, author=user, id=author_serial)
+            like.save()
+
+            # Add the like to the comment's likes collection
+            comment.likes_collection.add_like(like)
+
+        else:
+            return Response({"error": "Post ID or Comment ID not found"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Serialize and return the response
         return redirect(request.META.get('HTTP_REFERER'))
 
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 # Construct posts object for home page
 class PostPagination(PageNumberPagination):
@@ -698,16 +725,51 @@ def view_post(request, id):
 @api_view(['GET'])
 @authentication_classes([BasicAuthentication, SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def api_view_postLikes(request, author_serial,post_id):
+def api_view_postLikes(request, author_serial, post_id):
     post = get_object_or_404(Post, uuid=post_id)
 
-    if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
+    if post.visibility == 'DELETED' and not request.user.is_staff:
         # Non-admin users should not see deleted posts
         return redirect('home_page')  # Redirect to index or a 404 page
 
     author = get_object_or_404(Author, author_serial=author_serial)
 
+    
+    
+    # Check if the author is a node
+    if author.isNode:
+        try:
+            # Prepare request data to be sent to the remote node
+            endpoint = f"{author.host}/api/authors/{author_serial}/posts/{post_id}/likes"
+            headers = {
+                'Content-Type': 'application/json'
+            }
+            # Assume `displayName` and `password` are available for basic authentication
+            response = requests.get(
+                endpoint,
+                headers=headers,
+                auth=HTTPBasicAuth(author.displayName, author.password),
+                timeout=10
+            )
+
+            response.raise_for_status()  # Raise an exception for any HTTP error responses
+            likes_data = response.json()  # Parse the response data
+
+            # Optionally, you can add custom handling for the response data here
+
+        except requests.RequestException as e:
+            # Handle connection errors, timeouts, etc.
+            logging.error(f"Failed to fetch data from node {author.host}: {e}")
+            likes_data = {"error": "Failed to fetch data from remote node"}
+            # You might decide to return an error response or handle it differently here
+
+        # Render a template or return a response based on `likes_data`
+        return render(request, "posts/viewPostLikes.html", {"post_id": post_id, "post": post, "author": author, "likes_data": likes_data})
+
+    # If not a node, proceed with regular rendering logic
     return render(request, "posts/viewPostLikes.html", {"post_id": post_id, "post": post, "author": author})
+
+
 
 @api_view(['GET'])
 def api_view_Likes(request, post_id):
@@ -720,6 +782,23 @@ def api_view_Likes(request, post_id):
     author = post.author.author_serial
 
     return render(request, "posts/viewPostLikes.html", {"post_id": post_id, "post": post, "author": author})
+
+@api_view(['GET'])
+def api_view_Likes_comments(request, author_serial, post_id, comment_id):
+    print("Reached comment likes")
+    comment = get_object_or_404(Comment, uuid=comment_id)
+    post = get_object_or_404(Post, uuid=post_id)
+    author = comment.author
+
+    
+    # If not a node, proceed with regular rendering logic
+    return render(request, "posts/viewCommentLikes.html", {
+        "comment_id": comment_id, 
+        "comment": comment, 
+        "author": author,
+        "post_id": post_id,  # If needed in the template
+        "post": post
+    })
 
 @api_view(['POST'])
 def github_post(request, author_serial):

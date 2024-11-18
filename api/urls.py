@@ -1,9 +1,9 @@
 from django.urls import path
 from posts.views import get_author_comments, get_comment, get_commented_comment, get_edit_delete_post, get_posts_comments,get_posts_create_post,get_post_image
-from posts.views import get_edit_delete_post,get_posts_create_post,get_post_image, github_post, api_create_like, api_view_postLikes, api_view_Likes, get_post_FQID
+from posts.views import get_edit_delete_post,get_posts_create_post,get_post_image, github_post, api_create_like, api_view_postLikes, api_view_Likes, get_post_FQID, api_view_Likes_comments
 from author.views import api_list_authors, api_add_author, api_author_detail, login, signup, get_author_from_cookie, logout, get_likes_by_author, get_single_like, api_get_like
 from inbox.views import get_followers, get_following
-from inbox.views import handle_follow_request_response, inboxApi, forward_follow_request
+from inbox.views import handle_follow_request_response, inboxApi, forward_follow_request, forward_like_request
 from .views import nodeSignup, get_nodes
 
 urlpatterns = [
@@ -55,7 +55,9 @@ urlpatterns = [
     # Post API endpoints
     path("authors/<uuid:author_serial>/inbox", api_create_like, name="api_create_like"),  # API for liking a post
     path("authors/<uuid:author_serial>/posts/<uuid:post_id>/likes", api_view_postLikes, name="api_likes"), # path to posts view likes
-    path("posts/<uuid:post_id>/likes",api_view_Likes,name="api_view_Likes")
+    path("posts/<uuid:post_id>/likes",api_view_Likes,name="api_view_Likes"),
+    path("authors/<uuid:author_serial>/posts/<uuid:post_id>/comments/<uuid:comment_id>/likes",api_view_Likes_comments,name="api_likes_comments"),
+    path("forward_like_request", forward_like_request, name="forward_like_request"), # forward follow request to remote node, name="forward_follow_request"), # forward follow request to remote node
     
 
     

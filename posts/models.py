@@ -3,6 +3,7 @@ from django.db import models
 from author.models import Author, Following
 from django.utils import timezone
 import uuid
+from django.contrib.contenttypes.fields import GenericRelation
 
 VISIBILITY_CHOICES = [
     ('PUBLIC', 'Public'),
@@ -21,15 +22,43 @@ CONTENT_TYPE_CHOICES = [
 
 
 class Like(models.Model):
-    type = models.CharField(max_length=255,default="like")
-    username = models.CharField(max_length=255,default="1")  # Store the display name instead of Author object
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    object = models.ForeignKey('Post', on_delete=models.CASCADE)  # All likes belong to a post
+    type = models.CharField(max_length=255, default="like")
+    username = models.CharField(max_length=255, default="1")  # Store the display name instead of Author object
+    uuid = models.UUIDField( default=uuid.uuid4, editable=False)
     published = models.DateTimeField(default=timezone.now)
     author = models.ForeignKey(Author, related_name='likes', on_delete=models.CASCADE)
+    id = models.CharField(max_length=1000, primary_key=True, unique=True)
+    post = models.ForeignKey('Post', related_name='likes', on_delete=models.CASCADE, null=True, blank=True)
+    comment = models.ForeignKey('Comment', related_name='likes', on_delete=models.CASCADE, null=True, blank=True)
+    object = models.CharField(max_length=255, blank=True, null=True)  # Adding 'object' field as a CharField
 
     def __str__(self):
-        return f"{self.username} liked {self.object.title}"
+        # Adjust string representation based on whether it's a post or comment like
+        if self.post:
+            return f"{self.username} liked the post '{self.post.title}'"
+        elif self.comment:
+            return f"{self.username} liked a comment by {self.comment.author.username}"
+        return f"{self.username} liked something"
+
+    def save(self, *args, **kwargs):
+        """
+        Ensure that only one of post or comment is set.
+        """
+        host = kwargs.get('request_host', 'localhost')
+        author_id = self.author.id  # Ensure that author id is correctly set
+        self.id = f"http://{host}/api/authors/{author_id}/liked/{self.uuid}"
+        if self.post:
+            self.object = str(self.post.id)
+        elif self.comment:
+            self.object = str(self.comment.id)
+        else:
+            self.object = None  # Set to None if neither post nor comment is set
+        if self.post and self.comment:
+            raise ValueError("A Like object cannot be associated with both a post and a comment.")
+        if not self.post and not self.comment:
+            raise ValueError("A Like object must be associated with either a post or a comment.")
+        super().save(*args, **kwargs)
+
 
 class Likes(models.Model):
     type = models.CharField(max_length=20, default="likes")
@@ -71,6 +100,8 @@ class Post(models.Model):
     published = models.DateTimeField(auto_now_add=True)
     visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES)
     likes_collection = models.OneToOneField(Likes, related_name='post', on_delete=models.CASCADE, null=True, blank=True)
+    likes = GenericRelation('Like')
+
     
     def __str__(self):
         return self.title
@@ -118,6 +149,7 @@ class Comment(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)   # SERIAL
     post = models.ForeignKey(Post, related_name='comments', on_delete=models.CASCADE) # all comments belong to a post
     likes_collection = models.OneToOneField(Likes, related_name='comment', on_delete=models.CASCADE, null=True, blank=True)
+    likes = GenericRelation('Like')
 
     def save(self, *args, **kwargs):
         ''' Override the save method to set the id field before saving '''

@@ -87,16 +87,17 @@
         <div class="notification">
             <img src="data:image/png;base64,{{ like.profileImage }}" class="profileImage">
             <div class="content">
-                <p class="description">{{ like.username }} likes your post</p>
-                <!-- <div class="action-buttons" data-index="{{ forloop.counter0 }}">
-                        <button class="accept">Go to the post</button>
-                    </a>
-                </div>  -->
+                {% if like.post__title %}
+                    <p class="description">{{ like.username }} liked the post "{{ like.post__title }}"</p>
+                {% elif like.comment__comment %}
+                    <p class="description">{{ like.username }} liked the comment "{{ like.comment__comment }}"</p>
+                {% endif %}
+                </div>
+                <span class="date">{{ like.published|date:"Y-m-d H:i:s" }}</span>
+                <img style="padding: 0px 20px;" src="{% static 'close.png' %}" class="profileImage">
             </div>
-            <span class="date">{{ like.like_date|date:"Y-m-d H:i:s" }}</span>
-            <img style="padding: 0px 20px;" src="{% static 'close.png' %}" class="profileImage">
-        </div>
         {% endfor %}
+
 
         <h2>reposts</h2>
         {% for repost in reposts %}
