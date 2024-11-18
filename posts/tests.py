@@ -27,12 +27,13 @@ class GetEditDeletePostAPITest(APITestCase):
         self.client1.force_authenticate(user=self.user1)
         self.client2 = APIClient()
         self.client2.force_authenticate(user=self.user2)
+        self.anonymous_client = APIClient()
         # Set up authors, posts, and client for test cases
         self.author1 = self.user1
         self.author2 = self.user2
         
         self.public_post = Post.objects.create(
-            id=uuid.uuid4(),
+            uuid=uuid.uuid4(),
             title="Public Post",
             description="Test Description",
             contentType="text/plain",
@@ -41,7 +42,7 @@ class GetEditDeletePostAPITest(APITestCase):
             author=self.author1,
         )
         self.friends_post = Post.objects.create(
-            id=uuid.uuid4(),
+            uuid=uuid.uuid4(),
             title="Friends Post",
             description="This is a friends-only post",
             contentType="text/plain",
@@ -52,11 +53,6 @@ class GetEditDeletePostAPITest(APITestCase):
         self.public_post_url = reverse('edit_post', args=[self.author1.id, self.public_post.uuid])
         self.friends_post_url = reverse('edit_post', args=[self.author1.id, self.friends_post.uuid])
         self.delete_post_url = reverse('delete_post', args=[self.author1.id, self.public_post.uuid])
-
-    def test_get_public_post_as_anonymous(self):
-        response = self.client.get(self.public_post_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['title'], "Public Post")
 
     def test_get_public_post_as_authenticated_user(self):
         response = self.client1.get(self.public_post_url)
@@ -75,6 +71,11 @@ class GetEditDeletePostAPITest(APITestCase):
         response = self.client2.get(self.friends_post_url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_get_post_as_unauthenticated_user(self):
+        # Attempt to get a public post without authentication
+        response = self.anonymous_client.get(self.public_post_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_edit_post_successful(self):
         # Author1 updates their own post
         data = {
@@ -92,7 +93,7 @@ class GetEditDeletePostAPITest(APITestCase):
         self.public_post_url = reverse('edit_post', kwargs={'author_id': self.author2.id, 'post_id': self.public_post.uuid})
         data = {'title': 'Unauthorized Update'}
         response = self.client.put(self.public_post_url, data)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_delete_post_successful(self):
         # Author1 deletes their own post
@@ -377,7 +378,7 @@ class GetAuthorCommentsTestCase(APITestCase):
         self.url = reverse('create_comment', kwargs={'post_id': self.post.uuid})
 
     def test_get_author_comments_by_author_id(self):
-        Comment.objects.create(content=self.comment_content, post=self.post, author=self.author, username=self.author.displayName)
+        Comment.objects.create(comment=self.comment_content, post=self.post, author=self.author, username=self.author.displayName)
 
         response = self.client.get(reverse('SERIAL_get_author_comments', kwargs={'author_id': self.author.id}))
         
@@ -385,7 +386,7 @@ class GetAuthorCommentsTestCase(APITestCase):
         self.assertIn(self.comment_content, [c['content'] for c in response.data['src']])
 
     def test_get_author_comments_by_FQID(self):
-        Comment.objects.create(content=self.comment_content, post=self.post, author=self.author, username=self.author.displayName)
+        Comment.objects.create(comment=self.comment_content, post=self.post, author=self.author, username=self.author.displayName)
 
         response = self.client.get(reverse('FQID_get_author_comments', kwargs={'id': self.author.id}))
         
@@ -408,7 +409,7 @@ class GetCommentedCommentTestCase(TestCase):
 
         # Create a comment associated with the post
         self.comment = Comment.objects.create(
-            content='This is a test comment.',
+            comment='This is a test comment.',
             author=self.author,
             post=self.post,  # Associate the comment with the post
             username=self.author.displayName
