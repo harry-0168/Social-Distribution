@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.decorators import api_view, action,authentication_classes, permission_classes
+from rest_framework.decorators import api_view, action, authentication_classes, permission_classes
 from .models import Author, FollowRequest
 from django.utils import timezone
 from inbox.models import Notification 
@@ -364,30 +364,63 @@ def manage_follower(request, author_serial, foreign_author_fqid):
 
 
 @api_view(['GET'])
+@authentication_classes([BasicAuthentication, SessionAuthentication])
 def api_list_authors(request):
-    paginator = AuthorPagination()  # Use the custom pagination class
+    """
+    GET: List all authors with pagination
+    Example query: GET ://service/api/authors?page=10&size=5
+    """
+    # Check authentication
+    if not request.user.is_authenticated:
+        return Response(
+            {"error": "Authentication required"}, 
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    # Get pagination parameters from query string
+    page = request.query_params.get('page', 1)
+    size = request.query_params.get('size', 10)
+    
+    try:
+        page = int(page)
+        size = int(size)
+    except ValueError:
+        return Response(
+            {"error": "Invalid page or size parameter"}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Get all authors
     authors = Author.objects.all()
-    result_page = paginator.paginate_queryset(authors, request)
-
-    # Format author data as per your required structure
+    
+    # Calculate pagination
+    start_index = (page - 1) * size
+    end_index = start_index + size
+    
+    # Slice the queryset
+    paginated_authors = authors[start_index:end_index]
+    
+    # Format authors according to spec
     formatted_authors = []
-    for author in result_page:
-        profile_image_url = author.profileImage.url if author.profileImage else None  # Updated field name
-        full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.author_serial}"
-        host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
-
+    for author in paginated_authors:
+        author_id = f"{author.host}/api/authors/{author.author_serial}"  # Use author_serial instead of id
         formatted_authors.append({
             "type": "author",
-            "id": full_id_url,
-            "host": host_with_postfix,
+            "id": author_id,  # This should now be correct
+            "host": author.host,
             "displayName": author.displayName,
             "github": author.github,
-            "profileImage": profile_image_url,
-            "page": author.page,
+            "profileImage": author.profileImage.url if hasattr(author.profileImage, 'url') else author.profileImage,
+            "page": author.page
         })
 
-    # Return the customized paginated response
-    return paginator.get_paginated_response(formatted_authors)
+    # Return response in specified format
+    response_data = {
+        "type": "authors",
+        "authors": formatted_authors
+    }
+
+    return Response(response_data, status=status.HTTP_200_OK)
     
     
 @api_view(['POST'])
@@ -406,88 +439,89 @@ def api_add_author(request):
 
 
 @api_view(['GET', 'PUT'])
-
 @authentication_classes([BasicAuthentication, SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def api_author_detail(request, author_serial):
-    # GET request to retrieve a single author
-    if request.method == 'GET':
+def api_author_detail(request, author_serial=None):
+    """
+    URL: ://service/api/authors/{AUTHOR_SERIAL}/
+    GET [local, remote]: retrieve AUTHOR_SERIAL's profile
+    PUT [local]: update AUTHOR_SERIAL's profile
+    """
+    try:
+        # Get author by serial
         author = get_object_or_404(Author, author_serial=author_serial)
+
+        if request.method == 'GET':
+            if not request.user.is_authenticated:
+                return Response(
+                    {"error": "Authentication required"}, 
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            return Response(get_author_data(author), status=status.HTTP_200_OK)
+
+        elif request.method == 'PUT':
+            # Check if user is authenticated and is modifying their own profile
+            if not request.user.is_authenticated or isinstance(request.auth, BasicAuthentication):
+                return Response(
+                    {"error": "Only local users can modify profiles"}, 
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            
+            # Check if user is modifying their own profile
+            if str(request.user.author_serial) != str(author_serial):
+                return Response(
+                    {"error": "You can only modify your own profile"}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            try:
+                data = json.loads(request.body)
+                
+                # Update allowed fields
+                author.displayName = data.get('displayName', author.displayName)
+                author.github = data.get('github', author.github)
+                author.page = data.get('page', author.page)
+
+                if 'profileImage' in data:
+                    author.profileImage = data['profileImage']
+
+                author.save()
+
+                return Response(get_author_data(author), status=status.HTTP_200_OK)
+
+            except json.JSONDecodeError:
+                return Response(
+                    {'error': 'Invalid JSON data'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+    except Exception as e:
+        return Response(
+            {'error': str(e)}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
         
-        # Construct the full ID URL
-        full_id_url = f"{request.scheme}://{request.get_host()}/api/authors/{author.author_serial}"
-        
-        # Use static default image if profileImage has no file
-        if author.profileImage and hasattr(author.profileImage, 'url'):
-            profileImage_url = author.profileImage.url
-        else:
-            profileImage_url = f"{request.scheme}://{request.get_host()}/static/avatar.png"  # Default static image path
-        
-    
-        # Get the host with the postfix
-        host_with_postfix = f"{request.scheme}://{request.get_host()}/api/"
-        
-        data = {
-            "type": "author",
-            "id": full_id_url,
-            "host": host_with_postfix,
-            "displayName": author.displayName,
-            "github": author.github,
-            "profileImage": profileImage_url,
-            "page": author.page,
-        }
-        return Response(data, status=status.HTTP_200_OK)
-    
-    # PUT request to modify an author
-    elif request.method == 'PUT':
-        try:
-            data = json.loads(request.body)
+def get_author_data(author):
+    """
+    Helper function to format author data according to the API specification
+    """
+    # Handle profile image properly
+    profile_image = author.profileImage.url if hasattr(author.profileImage, 'url') else author.profileImage
 
-            # Fetch the author object
-            author = get_object_or_404(Author, author_serial=author_serial)
+    # Construct the clean FQID without duplication
+    author_id = f"{author.host}/api/authors/{author.author_serial}"
 
-            # Update author fields
-            author.displayName = data.get('displayName', author.displayName)
-            author.github = data.get('github', author.github)
-            author.page = data.get('page', author.page)
+    # Build the author data dictionary
+    author_data = {
+        "type": "author",
+        "id": author_id,
+        "host": author.host,  # This should be just the base URL, e.g. "http://127.0.0.1:8000"
+        "displayName": author.displayName,
+        "github": author.github,
+        "profileImage": profile_image,
+        "page": author.page
+    }
 
-            # Handle image update
-            profileImage = data.get('profileImage')
-            if profileImage:
-                author.profileImage = profileImage
-
-            author.save()
-
-            # Generate JWT token with the updated information
-            payload = {
-                'id': author.displayName,
-                'author_id': str(author.author_serial),
-                'exp': datetime.now() + timedelta(days=1), 
-                'iat': datetime.now()
-            }
-            token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
-
-            response = Response({'message': 'Author modified successfully'}, status=status.HTTP_200_OK)
-            response.set_cookie(
-                key=settings.JWT_AUTH_COOKIE,
-                value=token,
-                httponly=True, 
-                secure=False, 
-                path='/'
-            )
-
-            return response
-
-        except json.JSONDecodeError:
-            return Response({'error': 'Invalid JSON data'}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    return HttpResponseNotFound()
-
-
-
-
+    return author_data
 
 
 class AuthorPagination(PageNumberPagination):
