@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>Home</title>
     <link rel="stylesheet" href="{% static 'home_page.css' %}">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -38,6 +39,7 @@
         // Load posts dynamically using JavaScript
         document.addEventListener('DOMContentLoaded', function () {
             const userId = "{{ request.user.author_serial }}"; // Current user ID
+            const userFQID = "{{ request.user.id }}";
             const apiUrl = `/api/authors/${userId}/posts/`; // API URL
             const followingList = {{ following_list|safe }}; // Pass following_list from Django
             const defaultAvatarUrl = "{% static 'avatar.png' %}";
@@ -68,7 +70,7 @@
                                         <div class="post-visibility">
                                             ${getVisibilityTag(post.visibility)}
                                         </div>
-                                        ${renderFollowButton(isFollowing, post.author.author_serial)}
+                                        ${renderFollowButton(isFollowing, post.author.author_serial, userFQID)}
                                     </div>
                                     <div class="post-content">
                                         <h2 class="title">${post.title}</h2>
@@ -130,22 +132,65 @@
                 };
                 return `<span class="visibility-tag ${classMap[visibility]}">${visibilityMap[visibility]}</span>`;
             }
-
-            function renderFollowButton(isFollowing, authorId) {
-                if (userId === authorId) {
-                    return ''; // Don't show the follow/unfollow button on own profile
+            function renderFollowButton(isFollowing, author_serial, foreignAuthorId) {
+                if (userId === author_serial) {
+                    return ''; // Don't show the follow/unfollow button on the user's own profile
                 }
 
                 const action = isFollowing ? 'unfollow' : 'follow';
                 const buttonText = isFollowing ? 'Unfollow' : 'Follow';
+                const apiUrl = `/author/${author_serial}/followers/${foreignAuthorId}/`;
 
                 return `
-                    <form action="/author/authors/${authorId}/${action}/" method="post">
-                        {% csrf_token %}
+                    <form class="follow-form" data-url="${apiUrl}" data-method="${action === 'unfollow' ? 'DELETE' : 'PUT'}">
                         <button type="submit" class="follow-btn">${buttonText}</button>
                     </form>
                 `;
             }
+
+
+
+            function handleFollow(event, form) {
+                event.preventDefault(); 
+
+                const url = form.dataset.url; 
+                const method = form.dataset.method; 
+
+                console.log(`Intercepted form submission to: ${url} with method: ${method}`);            fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                    .then(function(response) {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        alert(data.detail || 'Follow/unfollow request successful');
+                        console.log('Response:', data); 
+                        location.reload(); 
+                    })
+                    .catch(function(error) {
+                        console.error('Error:', error);
+                        alert('An error occurred while processing your request.');
+                    });
+            }
+
+
+            
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll('.follow-form').forEach(function(form) {
+                    console.log(`Attaching listener to form: ${form.dataset.url}`);
+                    form.addEventListener('submit', function(event) {
+                        handleFollow(event, form);
+                    });
+                });
+            });
+
+
         });
     </script>
 </body>
