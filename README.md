@@ -27,7 +27,7 @@ Sharon Wong
 ## Connections
 Credentials for Sharon's application  
 url: https://social-distribution-crimson-464113e0f29c.herokuapp.com/  
-username:   
+username: heroku_local  
 password: pass  
 Credentials for Harveer's application  
 url: https://social1-c4a7f0052028.herokuapp.com/  
@@ -43,9 +43,9 @@ username:
 password: pass  
 Credentials for Yihui's application  
 url: https://crimson-404-9c6e916b7080.herokuapp.com/  
-username:   
+username: heroku_local  
 password: pass  
 Credentials for Khym's application  
-url:   
+url: https://cmput-404-project-crimson-ca3201dcadad.herokuapp.com/  
 username:   
 password: pass  
