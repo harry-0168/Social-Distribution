@@ -790,43 +790,7 @@ def api_view_Likes_comments(request, author_serial, post_id, comment_id):
     post = get_object_or_404(Post, uuid=post_id)
     author = comment.author
 
-    # Check if the author is a node
-    if author.isNode:
-        try:
-            # Prepare request data to be sent to the remote node
-            endpoint = f"{author.host}/api/authors/{author_serial}/posts/{post_id}/comments/{comment_id}/likes"
-            headers = {
-                'Content-Type': 'application/json'
-            }
-            # Assume `displayName` and `password` are available for basic authentication
-            response = requests.get(
-                endpoint,
-                headers=headers,
-                auth=HTTPBasicAuth(author.displayName, author.password),
-                timeout=10
-            )
-
-            response.raise_for_status()  # Raise an exception for any HTTP error responses
-            likes_data = response.json()  # Parse the response data
-
-            # Optionally, you can add custom handling for the response data here
-
-        except requests.RequestException as e:
-            # Handle connection errors, timeouts, etc.
-            logging.error(f"Failed to fetch data from node {author.host}: {e}")
-            likes_data = {"error": "Failed to fetch data from remote node"}
-            # You might decide to return an error response or handle it differently here
-
-        # Render a template or return a response based on `likes_data`
-        return render(request, "posts/viewCommentLikes.html", {
-            "comment_id": comment_id, 
-            "comment": comment, 
-            "author": author,
-            "post_id": post_id,  # If needed in the template
-            "post": post,
-            "likes_data": likes_data  # Pass likes data to the template
-        })
-
+    
     # If not a node, proceed with regular rendering logic
     return render(request, "posts/viewCommentLikes.html", {
         "comment_id": comment_id, 

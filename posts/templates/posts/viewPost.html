@@ -76,6 +76,10 @@
             <section class="likeCommentShare">
                 <form action="{% url 'api_create_like' post.author.author_serial %}" method="POST">
                     {% csrf_token %}
+                    <script>
+                    console.log("post_id")
+                    console.log(post.uuid)
+                    </script>
                     <input type="hidden" name="post_id" value="{{ post.uuid }}"> <!-- Use post.uuid here -->
                     <input type="hidden" name="type" value="like">
                     <button type="submit" class="like-button">
