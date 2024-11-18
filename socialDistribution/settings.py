@@ -33,7 +33,8 @@ ALLOWED_HOSTS = [
     'social-distribution-dhruvil-7ee59df447bd.herokuapp.com',
     'social-distribution-haoze-6849a7ab5179.herokuapp.com',
     'social-distribution-crimson-464113e0f29c.herokuapp.com',
-    'social1-c4a7f0052028.herokuapp.com',]
+    'social1-c4a7f0052028.herokuapp.com',
+    'cmput-404-project-crimson-ca3201dcadad.herokuapp.com']
 
 
 # Application definition

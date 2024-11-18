@@ -77,6 +77,58 @@ def create_comment(request, post_uuid):
     else:
         return redirect('viewPost', id=post.uuid)
 
+@api_view(['POST'])
+def forward_comment(request):
+    print("in")
+    request_data = request.data
+    object_author = get_object_or_404(Author, id=request_data['object']['id']) # the object we are commenting on (post object)
+    actor = get_object_or_404(Author, id=request_data['actor']['id'])    # the person making the comment
+    
+    # check if the object_author is on a remote node
+    if object_author.host == request.get_host():
+        return Response({"error": "Object author is on the current host server"}, status = 400)
+    else:
+        # find the node that the object_author belongs to
+        node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
+        if not node_author:
+            return Response({"error": "Node Author not found"}, status = 404)
+        # forward the comment to the object_author's host
+        payload = {
+            "type": "comment",
+            "summary": f"{object_author.username} commented on your post",
+            "actor": {
+                "type": "author",
+                "id": actor.id,
+                "host": actor.host,
+                "displayName": actor.displayName,
+                "github": actor.github,
+                "profileImage": actor.host + actor.profileImage,
+                "page": actor.page
+            },
+            "object": {
+                "type": "author",
+                "id": object_author.id,
+                "host": object_author.host,
+                "displayName": object_author.displayName,
+                "page": object_author.page,
+                "github": object_author.github,
+                "profileImage": object_author.profileImage
+            } 
+        }
+        print(node_author.displayName, node_author.first_name, object_author.id+'/inbox')
+        # using http basic auth to authenticate with the node server using the node_author's username and password
+        headers = {
+                "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
+                "Content-Type": "application/json",
+                "host": node_author.host.split('//')[1],
+            }
+        print(headers)
+        
+        response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
+        print(response.status_code, response.text)
+
+        return Response({"message": "comment request forwarded"}, status=200)
+
 @api_view(['GET'])
 def get_comment(request, comment_id=None, author_serial=None, post_serial=None, remote_comment_FQID=None):
     print("in")
