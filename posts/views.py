@@ -687,7 +687,7 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
                         f"{recipient.host}/api/authors/{recipient.author_serial}/inbox",
                         json=serializer_data,
                         headers={'Content-Type': 'application/json'},
-                        auth=HTTPBasicAuth(node.displayName, node.password),
+                        auth=HTTPBasicAuth(node.displayName, node.first_name),
                         timeout=10
                     )
                     response.raise_for_status()
