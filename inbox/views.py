@@ -8,6 +8,7 @@ from rest_framework.decorators import api_view, action,authentication_classes, p
 from author.models import Author, FollowRequest
 from django.contrib.contenttypes.models import ContentType
 from posts.models import Post, Comment, Like, Likes
+from posts.serializers import PostSerializer
 from django.conf import settings
 import json
 from author.models import Following
@@ -321,7 +322,25 @@ def inboxApi(request, object_author_serial):
 
             except Exception as e:
                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        elif parsed_data['type'] == 'post':
+            serializer = PostSerializer(data=parsed_data)
+            if serializer.is_valid():
+                # Check if post exists and update it if needed
+                post, created = Post.objects.update_or_create(
+                    id=parsed_data.get('id'),
+                    defaults={
+                        'type': 'post',
+                        'title': parsed_data.get('title'),
+                        'description': parsed_data.get('description'),
+                        'contentType': parsed_data.get('contentType'),
+                        'content': parsed_data.get('content'),
+                        'visibility': parsed_data.get('visibility'),
+                        'author': author,
+                        'page': parsed_data.get('page')
+                    }
+                )
+                return Response({"message": "Post received"}, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=401)
     except jwt.InvalidTokenError:

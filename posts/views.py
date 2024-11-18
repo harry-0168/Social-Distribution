@@ -25,7 +25,6 @@ from inbox.models import Inbox
 
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
-
 # Create your views here.
 def post(request):
     author_id = get_author_from_cookie(request).data.get('id')
@@ -287,6 +286,8 @@ class PostPagination(PageNumberPagination):
         })
 
 @api_view(['GET', 'POST'])
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def get_posts_create_post(request, author_serial):
     """Handles both fetching posts for home page and creating post"""
 
@@ -443,6 +444,8 @@ def view_edit_post(request, id):
     return render(request, 'posts/editPost.html', {'post': post, 'author_id': author_id})
 
 @api_view(['GET', 'PUT', 'DELETE'])
+@authentication_classes([BasicAuthentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def get_edit_delete_post(request, author_serial, post_id):
     post = get_object_or_404(Post, uuid=post_id)
     try:
@@ -479,16 +482,11 @@ def get_edit_delete_post(request, author_serial, post_id):
             # Retain the original content if no new content is provided
             if not data.get('content'):
                 data['content'] = post.content
-
-        serializer = PostSerializer(post, data=data, partial=True)
-
-        if serializer.is_valid():
-            serializer.save()
-            
-            # Send the updated post to remote nodes
-            serializer = PostSerializer(post)
-            send_post_to_remote_nodes(post, serializer.data, action_type='edit')
-            
+            serializer = PostSerializer(post, data=data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                # Send the updated post to remote nodes
+                send_post_to_remote_nodes(post, serializer.data, action_type='edit')
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -497,11 +495,9 @@ def get_edit_delete_post(request, author_serial, post_id):
         if post.author == request.user or request.user.is_superuser:
             post.visibility = 'DELETED'  # Mark the post as 'DELETED'
             post.save()
-
             # Notify remote nodes about post deletion if it was previously shared
             post_serializer = PostSerializer(post)
             send_post_to_remote_nodes(post, post_serializer.data, action_type='delete')
-            
             return Response({"message": "Post deleted successfully"}, status=status.HTTP_200_OK)
         else:
             # If the user is not the author
@@ -685,56 +681,59 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
     """Send post to remote nodes based on visibility and action type"""
     recipients = set()
     
-    if action_type == 'new':
-        # Get base recipients based on visibility
-        if post.visibility in ['PUBLIC', 'UNLISTED']:
-            followers = Following.get_followers(post.author)
-            friends = Following.objects.filter(
-                author2=post.author, 
-                status='accepted'
-            ).select_related('author1')
-            
-            recipients.update([f.author1 for f in followers])
-            if post.visibility == 'PUBLIC':
-                recipients.update([f.author1 for f in friends])
-                
-        elif post.visibility == 'FRIENDS':
-            friends = Following.objects.filter(
-                author2=post.author,
-                status='accepted'
-            ).select_related('author1')
+    # Get base recipients based on visibility
+    if post.visibility in ['PUBLIC', 'UNLISTED']:
+        followers = Following.get_followers(post.author)
+        friends = Following.objects.filter(
+            author2=post.author, 
+            status='accepted'
+        ).select_related('author1')
+        
+        recipients.update([f.author1 for f in followers])
+        if post.visibility == 'PUBLIC':
             recipients.update([f.author1 for f in friends])
             
-    elif action_type in ['edit', 'delete']:
+    elif post.visibility == 'FRIENDS':
+        friends = Following.objects.filter(
+            author2=post.author,
+            status='accepted'
+        ).select_related('author1')
+        recipients.update([f.author1 for f in friends])
+            
+    if action_type in ['edit', 'delete']:
         # For edit/delete, send to previous recipients
         previous_recipients = Inbox.objects.filter(
             FQIDorId=post.id,
             type='post'
-        ).values_list('receiver', flat=True)
-        recipients.update(previous_recipients)
+        ).select_related('receiver')
+        for inbox_entry in previous_recipients:
+            recipients.add(inbox_entry.receiver)
 
     # Send to each remote recipient's inbox
+    nodes = Author.objects.filter(isNode=True)
     for recipient in recipients:
-        if recipient.host != post.author.host:  # Only send to remote nodes
-            try:
-                # Create inbox entry first
-                Inbox.objects.create(
-                    receiver=recipient,
-                    type='post',
-                    FQIDorId=post.id,
-                    received_at=timezone.now()
-                )
-                
-                # Send to remote node
-                response = requests.post(
-                    f"{recipient.host}/api/authors/{recipient.FQID}/inbox",
-                    json=serializer_data,
-                    headers={'Content-Type': 'application/json'},
-                    auth=HTTPBasicAuth(settings.NODE_USERNAME, settings.NODE_PASSWORD),
-                    timeout=10
-                )
-                response.raise_for_status()
-                
-            except Exception as e:
-                logging.error(f"Failed to send post to {recipient.host}: {str(e)}")
-                continue
+        # Ensure that the recipient is in remote nodes that we have access to
+        for node in nodes:
+            if recipient.host == node.host and recipient.host != post.author.host: # Only send to remote nodes 
+                try:
+                    # Create inbox entry first
+                    Inbox.objects.create(
+                        receiver=recipient,
+                        type='post',
+                        FQIDorId=post.id,
+                        received_at=timezone.now()
+                    )
+                    
+                    # Send to remote node
+                    response = requests.post(
+                        f"{recipient.host}/api/authors/{recipient.author_serial}/inbox",
+                        json=serializer_data,
+                        headers={'Content-Type': 'application/json'},
+                        auth=HTTPBasicAuth(node.displayName, node.password),
+                        timeout=10
+                    )
+                    response.raise_for_status()
+                    
+                except Exception as e:
+                    logging.error(f"Failed to send post to {recipient.host}: {str(e)}")
+                    continue
