@@ -204,8 +204,7 @@ def handle_follow_request_response(request, author_serial, foreign_author_fqid):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         author = get_object_or_404(Author, displayName=payload['id']) # author that sent the request
-        if author.author_serial != author_serial:
-            return Response({"error": "Unauthorized"}, status=401)
+
         
         # foreign_author_fqid will be percent encoded, so we need to decode it
         from urllib.parse import unquote
