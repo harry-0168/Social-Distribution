@@ -5,7 +5,7 @@ from django import forms
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Author
-        fields = ['type','FQID','id', 'host', 'displayName', 'github', 'profileImage', 'page', 'password']
+        fields = ['type','id', 'host', 'displayName', 'github', 'profileImage', 'page', 'password']
         extra_kwargs = {'password': {'write_only': True}}
     
     def create(self, validated_data):
