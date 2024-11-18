@@ -326,8 +326,13 @@
                                 const newComment = document.createElement('div');
                                 newComment.classList.add('comment');
                                 newComment.innerHTML = `
-                                    <img src="${comment.author.profileImage ? comment.author.profileImage : '/static/avatar.png'}" class="profile-pic-small">
-                                    <h5 class="commentUsername">${comment.username}<div class="commentContent">${comment.comment}</div></h5>
+                                    <img src="${comment.author.profileImage ? 
+                                                (comment.author.profileImage.startsWith('data:image/png;base64,') ? comment.author.profileImage : 'data:image/png;base64,' + comment.author.profileImage) 
+                                                : '/static/avatar.png'}" 
+                                        class="profile-pic-small">
+                                    <h5 class="commentUsername">${comment.username}
+                                        <div class="commentContent">${comment.comment}</div>
+                                    </h5>
                                 `;
 
                                 commentList.prepend(newComment);
