@@ -67,9 +67,8 @@
                 {% elif post.contentType == "text/markdown" %}
                     <div id="markdown-content-{{ post.uuid }}" class="markdown-content" data-content="{{ post.content }}"></div>
                 {% elif post.contentType == "image/png;base64" or post.contentType == "image/jpeg;base64" %}
-                    <a href="{% url 'post_image_SERIAL' author.author_serial post.uuid %}" id="post-image-link">
-                        <img src="{{ post.content }}" alt="Post Image" class="postImage">
-                    </a>
+                    <img src="{{ post.content }}" alt="Post Image" class="postImage">
+
                 {% else %}
                     {{ post.content }}
                 {% endif %}        
@@ -300,8 +299,13 @@
                                 const newComment = document.createElement('div');
                                 newComment.classList.add('comment');
                                 newComment.innerHTML = `
-                                    <img src="${comment.author.profileImage ? comment.author.profileImage : '/static/avatar.png'}" class="profile-pic-small">
-                                    <h5 class="commentUsername">${comment.username}<div class="commentContent">${comment.comment}</div></h5>
+                                    <img src="${comment.author.profileImage ? 
+                                                (comment.author.profileImage.startsWith('data:image/png;base64,') ? comment.author.profileImage : 'data:image/png;base64,' + comment.author.profileImage) 
+                                                : '/static/avatar.png'}" 
+                                        class="profile-pic-small">
+                                    <h5 class="commentUsername">${comment.username}
+                                        <div class="commentContent">${comment.comment}</div>
+                                    </h5>
                                 `;
 
                                 commentList.prepend(newComment);

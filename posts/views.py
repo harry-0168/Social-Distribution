@@ -78,19 +78,53 @@ def create_comment(request, post_uuid):
         return redirect('viewPost', id=post.uuid)
 
 @api_view(['GET'])
-def get_comment(request, comment_id):
+def get_comment(request, comment_id=None, author_serial=None, post_serial=None, remote_comment_FQID=None):
     print("in")
     print("comment_id: ", comment_id)
-    # Decode the comment id to handle percent encoding
-    decoded_comment_id = unquote(comment_id)
-    
-    # Retrieve the comment using the decoded comment_id
-    comment = get_object_or_404(Comment, id=decoded_comment_id)
-    print("comment: ", comment)
-    # Prepare the data to be returned
-    comment_serializer = CommentSerializer(comment)
 
-    # Return the comment data as a JSON response
+    # For authenticated users
+    if request.user.is_authenticated:
+        if comment_id:
+            comment = get_object_or_404(Comment, uuid=comment_id)
+            print("comment: ", comment)
+            comment_serializer = CommentSerializer(comment)
+        else:
+            return Response({"error": "Invalid parameters"}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        # For authenticated remote requests
+        auth = BasicAuthentication()
+        user, auth_status = auth.authenticate(request)
+
+        if not user or not IsAuthenticated().has_permission(request, None):
+            return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        if not hasattr(user, 'isNode') or not user.isNode:
+            return Response({"error": "Not approved by admin"}, status=status.HTTP_403_FORBIDDEN)
+
+        if comment_id:
+            # Decode the comment ID and retrieve the comment
+            decoded_comment_id = unquote(comment_id)
+            comment = get_object_or_404(Comment, id=decoded_comment_id)
+            print("comment: ", comment)
+            comment_serializer = CommentSerializer(comment)
+        elif author_serial and post_serial and remote_comment_FQID:
+            # Retrieve the comment based on author, post, and remote FQID
+            print("auther_serial: ", author_serial)
+            print("post_serial: ", post_serial)
+            print("remote_FQID: ", remote_comment_FQID)
+            comment = get_object_or_404(
+                Comment,  
+                author__author_serial=author_serial, 
+                id=remote_comment_FQID,
+                post__uuid=post_serial
+            )
+
+            print("comment: ", comment)
+            comment_serializer = CommentSerializer(comment)
+        else:
+            return Response({"error": "Invalid parameters"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Return the serialized comment
     return Response(comment_serializer.data, status=status.HTTP_200_OK)
 
 class CommentPagination(PageNumberPagination):
@@ -109,16 +143,34 @@ class CommentPagination(PageNumberPagination):
 
 @api_view(['GET'])
 def get_posts_comments(request, author_serial=None, post_id=None, post_FQID=None):
-    if post_FQID:
-        # Decode the FQID to find the post ID
-        decoded_FQID = unquote(post_FQID)
-        post = get_object_or_404(Post, id=decoded_FQID)
+    if request.user.is_authenticated:
+        # Local user
+        if post_FQID:
+            # Decode the FQID to find the post ID
+            decoded_FQID = unquote(post_FQID)
+            post = get_object_or_404(Post, id=decoded_FQID)
+        else:
+            # Fetch the post using author_id and post_id
+            post = get_object_or_404(Post, uuid=post_id)
+        # Retrieve comments for the post
+        comments = Comment.objects.filter(post=post).order_by('-published')
     else:
-        # Fetch the post using author_id and post_id
-        post = get_object_or_404(Post, uuid=post_id)
+        auth = BasicAuthentication()
+        user, auth_status = auth.authenticate(request)
+        if not user or not IsAuthenticated().has_permission(request, None):
+                return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
+        if not user.isNode:
+            return Response({"error": "Not approved by admin"}, status=status.HTTP_403_FORBIDDEN)
+        if post_FQID:
+            # Decode the FQID to find the post ID
+            decoded_FQID = unquote(post_FQID)
+            post = get_object_or_404(Post, id=decoded_FQID)
+        else:
+            # Fetch the post using author_id and post_id
+            post = get_object_or_404(Post, uuid=post_id)
 
-    # Retrieve comments for the post
-    comments = Comment.objects.filter(post=post).order_by('-published')
+        # Retrieve comments for the post
+        comments = Comment.objects.filter(post=post).order_by('-published')
 
     # Create an instance of the pagination class
     paginator = CommentPagination()
@@ -131,29 +183,50 @@ def get_posts_comments(request, author_serial=None, post_id=None, post_FQID=None
     return paginator.get_paginated_response(serializer.data)
 
 @api_view(['GET', 'POST'])
-def get_author_comments(request,  author_serial=None, id=None):
+def get_author_comments(request, author_serial=None, id=None):
+    print("author_serial:", author_serial)
+
     # Determine if the author is specified by UUID or FQID
-    author = None
     if author_serial:
+        print("1")
+        print("author_serial:", author_serial)
         author = get_object_or_404(Author, author_serial=author_serial)
+        print("author: ", author)
     elif id:
+        print("2")
         author = get_object_or_404(Author, id=id)
+    print("done1")
 
     if request.method == 'GET':
-        # Retrieve comments by the specified author
-        comments = Comment.objects.filter(author=author)
-        
-        # Filter comments based on the visibility of the posts (for remote access)
-        if request.user.is_anonymous:
+        # Check if the request is from a local or remote user
+        print("user: ", request.user)
+        if request.user.is_authenticated:
+            # Local user: return all comments by the author
+            # Retrieve comments by the specified author
+            comments = Comment.objects.filter(author=author)
+        else:
+            # Remote user request handling
+            auth = BasicAuthentication()
+            user, auth_status = auth.authenticate(request)
+
+            if not user or not IsAuthenticated().has_permission(request, None):
+                return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if the authenticated user is an approved remote node
+            if not hasattr(user, 'isNode') or not user.isNode:
+                return Response({"error": "Not approved by admin"}, status=status.HTTP_403_FORBIDDEN)
+            
+            comments = Comment.objects.filter(author=author)
+            # Remote users: Filter comments to include only those on public or unlisted posts
             comments = comments.filter(post__visibility__in=["PUBLIC", "UNLISTED"])
 
         # Apply pagination
         paginator = CommentPagination()
         paginated_comments = paginator.paginate_queryset(comments, request)
-        
+
         # Serialize the paginated data
         serializer = CommentSerializer(paginated_comments, many=True)
-        
+
         # Return the paginated response
         return paginator.get_paginated_response(serializer.data)
 
@@ -162,10 +235,10 @@ def get_author_comments(request,  author_serial=None, id=None):
         data = request.data
         if data.get('type') != 'comment':
             return Response({'error': 'Invalid data type. Expected "comment".'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         post_id = data.get('post')
         post = get_object_or_404(Post, uuid=post_id)
-        
+
         serializer = CommentSerializer(data=data)
         if serializer.is_valid():
             serializer.save(author_serial=author_serial, post=post)
@@ -173,12 +246,26 @@ def get_author_comments(request,  author_serial=None, id=None):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
-@authentication_classes([BasicAuthentication, SessionAuthentication])
-@permission_classes([IsAuthenticated])
+# @authentication_classes([BasicAuthentication, SessionAuthentication])
+# @permission_classes([IsAuthenticated])
 def get_commented_comment(request, author_serial=None, comment_id=None, FQID=None):
+    print("comment_uuid: ", comment_id)
+    print("author_serial: ", author_serial)
     if author_serial and comment_id:
-        # Get the comment by author and comment UUIDs
-        comment = get_object_or_404(Comment, uuid=comment_id, author__id=author_serial)
+        if request.user.is_authenticated:
+            # Local user: return all comments by the author
+            # Retrieve comments by the specified author
+            comment = get_object_or_404(Comment, uuid=comment_id, author__author_serial=author_serial)
+        else:
+            # Get the comment by author and comment UUIDs
+            auth = BasicAuthentication()
+            user, auth_status = auth.authenticate(request)
+            if not user or not IsAuthenticated().has_permission(request, None):
+                    return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
+            if not user.isNode:
+                return Response({"error": "Not approved by admin"}, status=status.HTTP_403_FORBIDDEN)
+            
+            comment = get_object_or_404(Comment, uuid=comment_id, author__author_serial=author_serial)
 
     # Handle URL: /api/commented/{COMMENT_FQID}
     elif FQID:
@@ -480,21 +567,47 @@ def get_edit_delete_post(request, author_serial, post_id):
 
 @api_view(['GET'])
 def get_post_image(request, author_serial=None, post_id=None, FQID=None):
-    # If author_id and post_id are provided, retrieve the post by post_id
-    if author_serial:
-        # Retrieve the post using both author_id and post_id
-        post = get_object_or_404(Post, uuid=post_id, author__id=author_serial)
-    elif FQID:
-        post = get_object_or_404(Post, id=FQID)
+    print("in")
+    if request.user.is_anonymous:
+        # If author_id and post_id are provided, retrieve the post by post_id
+        if author_serial:
+            print("gettiing post ...")
+            # Retrieve the post using both author_id and post_id
+            post = get_object_or_404(Post, uuid=post_id, author__author_serial=author_serial)
+            print("got post")
+            print("post: ", post.uuid)
+        elif FQID:
+            post = get_object_or_404(Post, id=FQID)
+        else:
+            return Response({'error': 'Post ID or FQID must be provided'}, status=status.HTTP_400_BAD_REQUEST)
     else:
-        return Response({'error': 'Post ID or FQID must be provided'}, status=status.HTTP_400_BAD_REQUEST)
-    
+        auth = BasicAuthentication()
+        user, auth_status = auth.authenticate(request)
+        if not user or not IsAuthenticated().has_permission(request, None):
+                return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
+        if not user.isNode:
+            return Response({"error": "Not approved by admin"}, status=status.HTTP_403_FORBIDDEN)
+        # If author_id and post_id are provided, retrieve the post by post_id
+
+        if author_serial:
+            print("gettiing post ...")
+            # Retrieve the post using both author_id and post_id
+            post = get_object_or_404(Post, uuid=post_id, author__author_serial=author_serial)
+            print("got post")
+            print("post: ", post.uuid)
+        elif FQID:
+            post = get_object_or_404(Post, id=FQID)
+        else:
+            return Response({'error': 'Post ID or FQID must be provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+
     # Check if the content type is a base64 image
     if post.contentType in ['image/png;base64', 'image/jpeg;base64']:
+        print("getting image ...")
         try:
             # Extract the base64 data after the comma
             encoded_data = post.content.split(',', 1)[1]
-            print("encoded_DATA: ", encoded_data)
+            # print("encoded_DATA: ", encoded_data)
             # Decode the base64 content
             image_data = base64.b64decode(encoded_data)
             

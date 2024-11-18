@@ -25,9 +25,10 @@ urlpatterns = [
     path('authors/<uuid:author_serial>/posts/<uuid:post_id>/image', get_post_image, name='post_image_SERIAL'),
 
     # Comments API
-    path('comment/<path:comment_id>', get_comment, name='get_comment'),
+    path('comment/<uuid:comment_id>', get_comment, name='get_comment'),
     path('authors/<uuid:author_serial>/posts/<uuid:post_id>/comments', get_posts_comments, name='SERIAL_get_posts_comments'),
     path('posts/<path:post_FQID>/comments', get_posts_comments, name='FQID_get_posts_comments'),
+    path('authors/<uuid:author_serial>/posts/<uuid:post_serial>/comment/<path:remote_comment_FQID>', get_comment, name='get_comment_remote_FQID'),
 
     # Commented API
     path('authors/<uuid:author_serial>/commented', get_author_comments, name='SERIAL_get_author_comments'),

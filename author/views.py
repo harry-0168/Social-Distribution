@@ -307,14 +307,14 @@ def followers_list(request, author_serial):
 
 
 @api_view(['GET','DELETE','PUT'])
-def manage_follower(request, author_serial, foreign_author_fqid):
+def manage_follower(request, author_serial, foreign_author_id):
     author = get_object_or_404(Author, author_serial=author_serial)
 
     from urllib.parse import unquote
-    foreign_author_fqid = unquote(foreign_author_fqid)
+    foreign_author_id = unquote(foreign_author_id)
 
     try:
-        foreign_author = Author.objects.get(FQID=foreign_author_fqid)
+        foreign_author = Author.objects.get(id=foreign_author_id)
     except Author.DoesNotExist:
         return Response({"detail": "Foreign author not found"}, status=status.HTTP_404_NOT_FOUND)
     
@@ -324,12 +324,12 @@ def manage_follower(request, author_serial, foreign_author_fqid):
         if is_follower:
             follower_data = {
                 "type": "author",
-                "id": foreign_author_fqid,
+                "id": foreign_author_id,
                 "host": foreign_author.host,
                 "displayName": foreign_author.displayName,
                 "page": f"{foreign_author.host}/authors/{foreign_author.author_serial}",
                 "github": foreign_author.github,
-                "profileImage": foreign_author.profileImage.url
+                "profileImage": foreign_author.profileImage
             }
             return Response(follower_data, status=status.HTTP_200_OK)
         
@@ -349,12 +349,12 @@ def manage_follower(request, author_serial, foreign_author_fqid):
         if new_following:
             follower_data = {
                 "type": "author",
-                "id": foreign_author_fqid,
+                "id": foreign_author_id,
                 "host": foreign_author.host,
                 "displayName": foreign_author.displayName,
                 "page": f"{foreign_author.host}/authors/{foreign_author.author_serial}",
                 "github": foreign_author.github,
-                "profileImage": foreign_author.profileImage.url,
+                "profileImage": foreign_author.profileImage,
                 "message": f"New follower created for author {author.displayName}"
             }
             return Response(follower_data, status=status.HTTP_201_CREATED)
