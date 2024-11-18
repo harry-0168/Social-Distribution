@@ -170,9 +170,11 @@ def get_author_comments(request,  author_serial=None, id=None):
 @authentication_classes([BasicAuthentication, SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def get_commented_comment(request, author_serial=None, comment_id=None, FQID=None):
+    print("comment_uuid: ", comment_id)
+    print("author_serial: ", author_serial)
     if author_serial and comment_id:
         # Get the comment by author and comment UUIDs
-        comment = get_object_or_404(Comment, uuid=comment_id, author__id=author_serial)
+        comment = get_object_or_404(Comment, uuid=comment_id, author__author_serial=author_serial)
 
     # Handle URL: /api/commented/{COMMENT_FQID}
     elif FQID:
