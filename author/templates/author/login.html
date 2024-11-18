@@ -67,7 +67,9 @@
         const password = document.getElementById("signupPassword").value;
         // url should be "host+ api/signup"
         let host = window.location.host;
-        host = "http://"+host;
+        // if heroku in host, add https
+        if (host.includes("heroku")) host = "https://"+host;
+        else host = "http://"+host;
         
         const response = await fetch(origin+"/api/signup", {
           method: "POST",
