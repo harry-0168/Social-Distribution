@@ -206,41 +206,59 @@ def inboxApi(request, object_author_serial):
             except Exception as e:
                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         elif parsed_data['type'] == 'post':
-            # Extract the author data from the parsed_data
+            # Extract author data from the parsed_data
             author_data = parsed_data.get('author')
             if not author_data:
                 return Response({"error": "Author data missing from post"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Try to get existing author or create new one
             try:
-                author = Author.objects.get(id=author_data.get('id'))
-            except Author.DoesNotExist:
-                # Create new author if doesn't exist
-                author_serializer = AuthorSerializer(data=author_data)
-                if author_serializer.is_valid():
-                    author = author_serializer.save()
-                else:
-                    return Response({"error": "Invalid author data", "details": author_serializer.errors}, 
-                                status=status.HTTP_400_BAD_REQUEST)
-
-            # Now validate and create/update the post
-            serializer = PostSerializer(data=parsed_data)
-            if serializer.is_valid():
-                # Check if post exists and update it if needed
-                post, created = Post.objects.update_or_create(
-                    id=parsed_data.get('id'),
+                # Try to get or create the author
+                author, _ = Author.objects.get_or_create(
+                    id=author_data.get('id'),
                     defaults={
-                        'type': 'post',
-                        'title': parsed_data.get('title'),
-                        'description': parsed_data.get('description'),
-                        'contentType': parsed_data.get('contentType'),
-                        'content': parsed_data.get('content'),
-                        'visibility': parsed_data.get('visibility'),
-                        'author': author,  # Now we have a valid author
-                        'page': parsed_data.get('page')
+                        'displayName': author_data.get('displayName'),
+                        'host': author_data.get('host'),
+                        'github': author_data.get('github', ''),
+                        'profileImage': author_data.get('profileImage', '')
                     }
                 )
-                return Response({"message": "Post received"}, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                logging.error(f"Error processing author data: {str(e)}")
+                return Response({"error": "Invalid author data"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Check if post exists
+            existing_post = Post.objects.filter(id=parsed_data.get('id')).first()
+            
+            if existing_post:
+                # Update existing post
+                serializer = PostSerializer(existing_post, data=parsed_data, partial=True)
+            else:
+                # Create new post
+                serializer = PostSerializer(data=parsed_data)
+
+            if serializer.is_valid():
+                try:
+                    post = serializer.save(author=author)  # Set the author explicitly
+                    
+                    # Create or update inbox entry
+                    Inbox.objects.update_or_create(
+                        FQIDorId=post.id,
+                        receiver=request.user,
+                        defaults={
+                            'type': 'post',
+                            'received_at': timezone.now()
+                        }
+                    )
+                    
+                    return Response({
+                        "message": "Post updated" if existing_post else "Post created",
+                        "post": serializer.data
+                    }, status=status.HTTP_200_OK if existing_post else status.HTTP_201_CREATED)
+                    
+                except Exception as e:
+                    logging.error(f"Error saving post: {str(e)}")
+                    return Response({"error": "Error saving post"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=401)
