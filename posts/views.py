@@ -234,7 +234,7 @@ def api_create_like(request, author_serial):
                 post.save()
 
             # Create and save the new Like instance for the post
-            like = Like(username=username, object=post, author=user, id=author_id)
+            like = Like(username=username, object=post, author=user, id=author_serial)
             like.save()
 
             # Add the like to the post's likes collection
@@ -254,7 +254,7 @@ def api_create_like(request, author_serial):
                 comment.save()
 
             # Create and save the new Like instance for the comment
-            like = Like(username=username, object=comment, author=user, id=author_id)
+            like = Like(username=username, object=comment, author=user, id=author_serial)
             like.save()
 
             # Add the like to the comment's likes collection
@@ -609,16 +609,51 @@ def view_post(request, id):
 @api_view(['GET'])
 @authentication_classes([BasicAuthentication, SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def api_view_postLikes(request, author_serial,post_id):
+def api_view_postLikes(request, author_serial, post_id):
     post = get_object_or_404(Post, uuid=post_id)
 
-    if post.visibility == 'DELETED':    # TODO: add "and user is not admin"
+    if post.visibility == 'DELETED' and not request.user.is_staff:
         # Non-admin users should not see deleted posts
         return redirect('home_page')  # Redirect to index or a 404 page
 
     author = get_object_or_404(Author, author_serial=author_serial)
 
+    
+    
+    # Check if the author is a node
+    if author.isNode:
+        try:
+            # Prepare request data to be sent to the remote node
+            endpoint = f"{author.host}/api/authors/{author_serial}/posts/{post_id}/likes"
+            headers = {
+                'Content-Type': 'application/json'
+            }
+            # Assume `displayName` and `password` are available for basic authentication
+            response = requests.get(
+                endpoint,
+                headers=headers,
+                auth=HTTPBasicAuth(author.displayName, author.password),
+                timeout=10
+            )
+
+            response.raise_for_status()  # Raise an exception for any HTTP error responses
+            likes_data = response.json()  # Parse the response data
+
+            # Optionally, you can add custom handling for the response data here
+
+        except requests.RequestException as e:
+            # Handle connection errors, timeouts, etc.
+            logging.error(f"Failed to fetch data from node {author.host}: {e}")
+            likes_data = {"error": "Failed to fetch data from remote node"}
+            # You might decide to return an error response or handle it differently here
+
+        # Render a template or return a response based on `likes_data`
+        return render(request, "posts/viewPostLikes.html", {"post_id": post_id, "post": post, "author": author, "likes_data": likes_data})
+
+    # If not a node, proceed with regular rendering logic
     return render(request, "posts/viewPostLikes.html", {"post_id": post_id, "post": post, "author": author})
+
+
 
 @api_view(['GET'])
 def api_view_Likes(request, post_id):
@@ -634,17 +669,55 @@ def api_view_Likes(request, post_id):
 
 @api_view(['GET'])
 def api_view_Likes_comments(request, author_serial, post_id, comment_id):
-    print("reached comment likes")
+    print("Reached comment likes")
     comment = get_object_or_404(Comment, uuid=comment_id)
     post = get_object_or_404(Post, uuid=post_id)
     author = comment.author
-    # Optionally, you can use `author_id` and `post_id` here if needed
+
+    # Check if the author is a node
+    if author.isNode:
+        try:
+            # Prepare request data to be sent to the remote node
+            endpoint = f"{author.host}/api/authors/{author_serial}/posts/{post_id}/comments/{comment_id}/likes"
+            headers = {
+                'Content-Type': 'application/json'
+            }
+            # Assume `displayName` and `password` are available for basic authentication
+            response = requests.get(
+                endpoint,
+                headers=headers,
+                auth=HTTPBasicAuth(author.displayName, author.password),
+                timeout=10
+            )
+
+            response.raise_for_status()  # Raise an exception for any HTTP error responses
+            likes_data = response.json()  # Parse the response data
+
+            # Optionally, you can add custom handling for the response data here
+
+        except requests.RequestException as e:
+            # Handle connection errors, timeouts, etc.
+            logging.error(f"Failed to fetch data from node {author.host}: {e}")
+            likes_data = {"error": "Failed to fetch data from remote node"}
+            # You might decide to return an error response or handle it differently here
+
+        # Render a template or return a response based on `likes_data`
+        return render(request, "posts/viewCommentLikes.html", {
+            "comment_id": comment_id, 
+            "comment": comment, 
+            "author": author,
+            "post_id": post_id,  # If needed in the template
+            "post": post,
+            "likes_data": likes_data  # Pass likes data to the template
+        })
+
+    # If not a node, proceed with regular rendering logic
     return render(request, "posts/viewCommentLikes.html", {
         "comment_id": comment_id, 
         "comment": comment, 
         "author": author,
         "post_id": post_id,  # If needed in the template
-        "post":post
+        "post": post
     })
 
 @api_view(['POST'])
