@@ -67,9 +67,8 @@
                 {% elif post.contentType == "text/markdown" %}
                     <div id="markdown-content-{{ post.uuid }}" class="markdown-content" data-content="{{ post.content }}"></div>
                 {% elif post.contentType == "image/png;base64" or post.contentType == "image/jpeg;base64" %}
-                    <a href="{% url 'post_image_SERIAL' author.author_serial post.uuid %}" id="post-image-link">
-                        <img src="{{ post.content }}" alt="Post Image" class="postImage">
-                    </a>
+                    <img src="{{ post.content }}" alt="Post Image" class="postImage">
+
                 {% else %}
                     {{ post.content }}
                 {% endif %}        
