@@ -28,8 +28,6 @@ def nodeSignup(request):
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 @api_view(['GET'])
-# @authentication_classes([BasicAuthentication]) 
-# @permission_classes([IsAuthenticated])
 def get_nodes(request):
     '''
     API endpoint for getting all nodes

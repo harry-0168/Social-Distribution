@@ -20,6 +20,9 @@ from rest_framework.permissions import IsAuthenticated
 from author.serializers import AuthorSerializer
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
+import requests
+import base64
+from django.views.decorators.csrf import csrf_exempt
 
 @api_view(['GET'])
 def inbox(request):
@@ -88,8 +91,7 @@ def inbox(request):
         return Response({"error": "Author not found"}, status=404)
     
 @api_view(['POST'])
-@authentication_classes([BasicAuthentication, SessionAuthentication])
-@permission_classes([IsAuthenticated])
+@csrf_exempt
 def inboxApi(request, object_author_serial):
     token = request.COOKIES.get('jwt')
     flag = 1   # flag to check if the request is from my nodes frontend
@@ -112,34 +114,31 @@ def inboxApi(request, object_author_serial):
         # check the type of request object
         if parsed_data['type'] == 'follow':
             try:
-                
-                # if author.FQID != parsed_data['actor']['id']:
-                #     return Response({"error": "Invalid request"}, status=401)
                 if parsed_data['object']['host'] != parsed_data['actor']['host']:
                     
                     # create object author and following object, then forward the request to the next host server
-                    objectAuthor = Author.objects.get(FQID=parsed_data['object']['id'])
+                    objectAuthor = Author.objects.get(id=parsed_data['object']['id'])
                     print(parsed_data['actor']['id'])
-                    actor_data = {
-                        "FQID": parsed_data['actor']['id'],
-                        "host": parsed_data['actor']['host'],
-                        "displayName": parsed_data['actor']['displayName'],
-                        "github": parsed_data['actor']['github'],
-                        "profileImage": parsed_data['actor']['profileImage'],
-                        "page": parsed_data['actor']['page'],
-                    }
-                    actorSerializer = AuthorSerializer(data=actor_data, partial=True)
+                    # actor_data = {
+                    #     "FQID": parsed_data['actor']['id'],
+                    #     "host": parsed_data['actor']['host'],
+                    #     "displayName": parsed_data['actor']['displayName'],
+                    #     "github": parsed_data['actor']['github'],
+                    #     "profileImage": parsed_data['actor']['profileImage'],
+                    #     "page": parsed_data['actor']['page'],
+                    # }
+                    actorSerializer = AuthorSerializer(data=parsed_data["actor"], partial=True)
 
                     if actorSerializer.is_valid():
                         actorSerializer.save()
                     else:
-                        return Response({"error": "Invalid object author data"}, status=400)
-                    actor = Author.objects.get(FQID=parsed_data['actor']['id'])
+                        return Response({"error": "Invalid object author data","serializer":actorSerializer.errors}, status=400)
+                    actor = Author.objects.get(id=parsed_data['actor']['id'])
                 else:
-                    actor = get_object_or_404(Author, FQID=parsed_data['actor']['id'])
-                    objectAuthor = get_object_or_404(Author, FQID=parsed_data['object']['id'])
+                    actor = get_object_or_404(Author, id=parsed_data['actor']['id'])
+                    objectAuthor = get_object_or_404(Author, id=parsed_data['object']['id'])
                     # check if the actor is already following the object_author
-                    if actor.FQID == objectAuthor.FQID:
+                    if actor.id == objectAuthor.id:
                         return Response({"error": "Cannot follow yourself"}, status=400)
                 new = Following.follow(actor, objectAuthor)
                 if not new:
@@ -235,8 +234,6 @@ def inboxApi(request, object_author_serial):
     #     return Response({"error": str(e)}, status=400)
     
 @api_view(['GET', 'DELETE', 'PUT'])
-@authentication_classes([BasicAuthentication, SessionAuthentication])
-@permission_classes([IsAuthenticated])
 def handle_follow_request_response(request, author_serial, foreign_author_fqid):
     token = request.COOKIES.get('jwt')
     if not token:
@@ -274,6 +271,142 @@ def handle_follow_request_response(request, author_serial, foreign_author_fqid):
 
     except jwt.InvalidTokenError: # redirect to /login
         return redirect('login')
+    
+# @api_view(['GET', 'DELETE', 'PUT'])
+# def handle_follow_request_response(request, author_serial, foreign_author_fqid):
+#     token = request.COOKIES.get('jwt')
+#     if not token:
+#         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+    
+#     try:
+#         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+#         author = get_object_or_404(Author, displayName=payload['id']) # author that sent the request
+        
+#         # foreign_author_fqid will be percent encoded, so we need to decode it
+        
+#         foreign_author_fqid = unquote(foreign_author_fqid).rstrip('/')
+#         print(f"Decoded foreign_author_fqid: {foreign_author_fqid}")
+#         foreign_author = get_object_or_404(Author, id=foreign_author_fqid)
+#         if request.method == 'PUT':
+#             if author.author_serial != author_serial: # means the foreign_author is trying to follow the author
+#                 # create a follow request from author to foreign_author
+#                 # check if author is already following foreign_author, and check for self follow
+#                 if author.id == foreign_author.id:
+#                     return Response({"error": "Cannot follow yourself"}, status=400)
+#                 new = Following.follow(author, foreign_author)
+#                 if not new:
+#                     return Response({"error": "Already following"}, status=400)
+#                 # if host of foreign_author is different from author, send the follow request to the foreign_author's host
+#                 if foreign_author.host != author.host:
+#                     # find author with the same host as foreign_author and isNode=True
+#                     node_author = Author.objects.filter(host=foreign_author.host, isNode=True).first()
+#                     if not node_author:
+#                         return Response({"error": "Node author not found"}, status=404)
+#                     # forward the follow request to the foreign_author's host
+#                     payload = {
+#                         "type": "follow",
+#                         "summary": f"{author.displayName} wants to follow {foreign_author.displayName}",
+#                         "actor": {
+#                             "type": "author",
+#                             "id": author.id,
+#                             "host": author.host,
+#                             "displayName": author.displayName,
+#                             "github": author.github,
+#                             "profileImage": author.host + author.profileImage.url,
+#                             "page": author.page
+#                         },
+#                         "object": {
+#                             "type": "author",
+#                             "id": foreign_author.id,
+#                             "host": foreign_author.host,
+#                             "displayName": foreign_author.displayName,
+#                             "page": foreign_author.page,
+#                             "github": foreign_author.github,
+#                             "profileImage": foreign_author.profileImage
+#                         }
+#                     }
+#                     # using http basic auth to authenticate with the node server using the node_author's username and password
+#                     response = requests.post(foreign_author.id+'/inbox', json=payload, auth=(node_author.username, node_author.password))
+#                     print(response.status_code)
+
+
+#                 inboxxx = Inbox(receiver=foreign_author, type='follow', FQIDorId=new.id, received_at=timezone.now()).save()
+
+#                 return Response({"message": "Follow request sent"}, status=200)
+            
+#             # means we recepient is Accepting follow request from foreign_author 
+#             follow_request = get_object_or_404(Following, author1 = foreign_author, author2 = author, status='pending')
+#             follow_request.status = 'accepted'
+#             follow_request.save()
+#             return Response({"message": "Follow request accepted"}, status=200)
+#         elif request.method == 'DELETE':
+#             # Reject follow request from foreign_authorm, status can be 'pending' or 'accepted'
+#             follow_request = get_object_or_404(Following, author1 = author, author2 = foreign_author)
+#             follow_request.delete()
+#             return Response({"message": "Follow request rejected"}, status=200)
+#         elif request.method == 'GET':
+#             # Get the follow request from foreign_author
+#             # check if FOREIGN_AUTHOR_FQID is a follower of AUTHOR_SERIAL Should return 404 if they're not.This is how you can check if follow request is accepted
+#             follow_request = get_object_or_404(Following, author1 = foreign_author, author2 = author, status='accepted')
+#             return Response({"message": "Follow request accepted"}, status=200)
+#     except jwt.ExpiredSignatureError: # redirect to /login
+#         return redirect('login')
+
+#     except jwt.InvalidTokenError: # redirect to /login
+#         return redirect('login')
+
+@api_view(['POST'])
+def forward_follow_request(request):
+    ''' This view is used to forward follow requests to the next host server if the object author is not on the current host server '''
+    request_data = request.data
+    # check if the object author is on the current host server
+    object_author = get_object_or_404(Author, id=request_data['object']['id'])
+    actor = get_object_or_404(Author, id=request_data['actor']['id'])
+    if object_author.host == request.get_host():
+        return Response({"error": "Object author is on the current host server"}, status=400)
+    else:
+        # find author with the same host as object_author and isNode=True
+        node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
+        if not node_author:
+            return Response({"error": "Node author not found"}, status=404)
+        # forward the follow request to the object_author's host
+        payload = {
+            "type": "follow",
+            "summary": f"{actor.displayName} wants to follow {object_author.displayName}",
+            "actor": {
+                "type": "author",
+                "id": actor.id,
+                "host": actor.host,
+                "displayName": actor.displayName,
+                "github": actor.github,
+                "profileImage": actor.host + actor.profileImage,
+                "page": actor.page
+            },
+            "object": {
+                "type": "author",
+                "id": object_author.id,
+                "host": object_author.host,
+                "displayName": object_author.displayName,
+                "page": object_author.page,
+                "github": object_author.github,
+                "profileImage": object_author.profileImage
+            }
+        }
+        print(node_author.displayName, node_author.first_name, object_author.id+'/inbox')
+        # using http basic auth to authenticate with the node server using the node_author's username and password
+        headers = {
+                "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
+                "Content-Type": "application/json",
+                "host": node_author.host.split('//')[1],
+            }
+        print(headers)
+        
+
+        response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
+        print(response.status_code, response.text)
+
+        return Response({"message": "Follow request forwarded"}, status=200)
+
 
 @api_view(['GET'])
 @authentication_classes([BasicAuthentication, SessionAuthentication])
