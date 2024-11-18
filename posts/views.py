@@ -568,18 +568,39 @@ def get_edit_delete_post(request, author_serial, post_id):
 @api_view(['GET'])
 def get_post_image(request, author_serial=None, post_id=None, FQID=None):
     print("in")
-    # If author_id and post_id are provided, retrieve the post by post_id
-    if author_serial:
-        print("gettiing post ...")
-        # Retrieve the post using both author_id and post_id
-        post = get_object_or_404(Post, uuid=post_id, author__author_serial=author_serial)
-        print("got post")
-        print("post: ", post.uuid)
-    elif FQID:
-        post = get_object_or_404(Post, id=FQID)
+    if request.user.is_anonymous:
+        # If author_id and post_id are provided, retrieve the post by post_id
+        if author_serial:
+            print("gettiing post ...")
+            # Retrieve the post using both author_id and post_id
+            post = get_object_or_404(Post, uuid=post_id, author__author_serial=author_serial)
+            print("got post")
+            print("post: ", post.uuid)
+        elif FQID:
+            post = get_object_or_404(Post, id=FQID)
+        else:
+            return Response({'error': 'Post ID or FQID must be provided'}, status=status.HTTP_400_BAD_REQUEST)
     else:
-        return Response({'error': 'Post ID or FQID must be provided'}, status=status.HTTP_400_BAD_REQUEST)
-    
+        auth = BasicAuthentication()
+        user, auth_status = auth.authenticate(request)
+        if not user or not IsAuthenticated().has_permission(request, None):
+                return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
+        if not user.isNode:
+            return Response({"error": "Not approved by admin"}, status=status.HTTP_403_FORBIDDEN)
+        # If author_id and post_id are provided, retrieve the post by post_id
+
+        if author_serial:
+            print("gettiing post ...")
+            # Retrieve the post using both author_id and post_id
+            post = get_object_or_404(Post, uuid=post_id, author__author_serial=author_serial)
+            print("got post")
+            print("post: ", post.uuid)
+        elif FQID:
+            post = get_object_or_404(Post, id=FQID)
+        else:
+            return Response({'error': 'Post ID or FQID must be provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+
     # Check if the content type is a base64 image
     if post.contentType in ['image/png;base64', 'image/jpeg;base64']:
         print("getting image ...")
