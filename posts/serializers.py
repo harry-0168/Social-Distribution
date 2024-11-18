@@ -47,7 +47,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         # Remove author from validated_data as it should be set from the view
-        author = validated_data.pop('author', None)
+        # author = validated_data.pop('author', None)
         post = Post.objects.create(**validated_data)
         return post
 
