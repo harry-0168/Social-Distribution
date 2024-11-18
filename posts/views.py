@@ -434,6 +434,9 @@ def get_posts_create_post(request, author_serial):
             author=author,  # Use the author from the token
         )
         post.save()
+        
+        print("author111: ", author)
+        print("author_id111: ", post.author.id)
 
         # Serialize the post and return the response
         serializer = PostSerializer(post)
@@ -898,28 +901,49 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
     # Send to each remote recipient's inbox
     nodes = Author.objects.filter(isNode=True)
     for recipient in recipients:
-        # Ensure that the recipient is in remote nodes that we have access to
         for node in nodes:
-            if recipient.host == node.host and recipient.host != post.author.host: # Only send to remote nodes 
+            
+            print("recipient: ", recipient)
+            print("node: ", node)
+            
+            print("recipient.host: ", recipient.host)
+            print("node.host: ", node.host)
+            print("post.author.host: ", post.author.host)
+            
+            
+            if recipient.host == node.host and recipient.host != post.author.host:
                 try:
-                    # Create inbox entry first
-                    Inbox.objects.create(
-                        receiver=recipient,
-                        type='post',
-                        FQIDorId=post.id,
-                        received_at=timezone.now()
-                    )
+                    # For edit actions, update existing inbox entry
+                    if action_type == 'edit' or action_type == 'delete':
+                        Inbox.objects.filter(
+                            FQIDorId=post.id,
+                            receiver=recipient,
+                            type='post'
+                        ).update(received_at=timezone.now())
+                    else:
+                        # For new posts, create new inbox entry
+                        Inbox.objects.create(
+                            receiver=recipient,
+                            type='post',
+                            FQIDorId=post.id,
+                            received_at=timezone.now()
+                        )
                     
-                    # Send to remote node
+                    # Send to remote node using recipient's author_serial
                     response = requests.post(
                         f"{recipient.host}/api/authors/{recipient.author_serial}/inbox",
                         json=serializer_data,
-                        headers={'Content-Type': 'application/json'},
-                        auth=HTTPBasicAuth(node.displayName, node.password),
+                        headers={
+                            'Content-Type': 'application/json',
+                            'host': node.host.split('//')[1]
+                        },
+                        auth=HTTPBasicAuth(node.displayName, node.first_name),
                         timeout=10
                     )
                     response.raise_for_status()
                     
                 except Exception as e:
                     logging.error(f"Failed to send post to {recipient.host}: {str(e)}")
+                    if hasattr(e, 'response'):
+                        logging.error(f"Response content: {e.response.content}")
                     continue

@@ -16,6 +16,10 @@ from author.serializers import AuthorSerializer
 from .models import Inbox
 from django.utils import timezone
 import logging
+from urllib.parse import unquote
+from rest_framework.authentication import BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
+from author.serializers import AuthorSerializer
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 import requests
@@ -141,9 +145,11 @@ def inboxApi(request, object_author_serial):
 
                     if actorSerializer.is_valid():
                         actorSerializer.save()
-                    else:
-                        return Response({"error": "Invalid object author data","serializer":actorSerializer.errors}, status=400)
+                    # else:
+                    #     return Response({"error": "Invalid object author data","serializer":actorSerializer.errors}, status=400)
                     actor = Author.objects.get(id=parsed_data['actor']['id'])
+                    if not actor:
+                        return Response({"error": "Actor not found"}, status=404)
                 else:
                     actor = get_object_or_404(Author, id=parsed_data['actor']['id'])
                     objectAuthor = get_object_or_404(Author, id=parsed_data['object']['id'])
@@ -290,23 +296,59 @@ def inboxApi(request, object_author_serial):
             except Exception as e:
                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         elif parsed_data['type'] == 'post':
-            serializer = PostSerializer(data=parsed_data)
-            if serializer.is_valid():
-                # Check if post exists and update it if needed
-                post, created = Post.objects.update_or_create(
-                    id=parsed_data.get('id'),
+            # Extract author data from the parsed_data
+            author_data = parsed_data.get('author')
+            if not author_data:
+                return Response({"error": "Author data missing from post"}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                # Try to get or create the author
+                author, _ = Author.objects.get_or_create(
+                    id=author_data.get('id'),
                     defaults={
-                        'type': 'post',
-                        'title': parsed_data.get('title'),
-                        'description': parsed_data.get('description'),
-                        'contentType': parsed_data.get('contentType'),
-                        'content': parsed_data.get('content'),
-                        'visibility': parsed_data.get('visibility'),
-                        'author': author,
-                        'page': parsed_data.get('page')
+                        'displayName': author_data.get('displayName'),
+                        'host': author_data.get('host'),
+                        'github': author_data.get('github', ''),
+                        'profileImage': author_data.get('profileImage', '')
                     }
                 )
-                return Response({"message": "Post received"}, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                logging.error(f"Error processing author data: {str(e)}")
+                return Response({"error": "Invalid author data"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Check if post exists
+            existing_post = Post.objects.filter(id=parsed_data.get('id')).first()
+            
+            if existing_post:
+                # Update existing post
+                serializer = PostSerializer(existing_post, data=parsed_data, partial=True)
+            else:
+                # Create new post
+                serializer = PostSerializer(data=parsed_data)
+
+            if serializer.is_valid():
+                try:
+                    post = serializer.save(author=author)  # Set the author explicitly
+                    
+                    # Create or update inbox entry
+                    Inbox.objects.update_or_create(
+                        FQIDorId=post.id,
+                        receiver=request.user,
+                        defaults={
+                            'type': 'post',
+                            'received_at': timezone.now()
+                        }
+                    )
+                    
+                    return Response({
+                        "message": "Post updated" if existing_post else "Post created",
+                        "post": serializer.data
+                    }, status=status.HTTP_200_OK if existing_post else status.HTTP_201_CREATED)
+                    
+                except Exception as e:
+                    logging.error(f"Error saving post: {str(e)}")
+                    return Response({"error": "Error saving post"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=401)
@@ -415,8 +457,6 @@ def forward_follow_request(request):
 
 
 @api_view(['GET', 'DELETE', 'PUT'])
-@authentication_classes([BasicAuthentication, SessionAuthentication])
-@permission_classes([IsAuthenticated])
 def handle_follow_request_response(request, author_serial, foreign_author_fqid):
     token = request.COOKIES.get('jwt')
     if not token:
@@ -428,7 +468,7 @@ def handle_follow_request_response(request, author_serial, foreign_author_fqid):
 
         
         # foreign_author_fqid will be percent encoded, so we need to decode it
-        from urllib.parse import unquote
+        
         foreign_author_fqid = unquote(foreign_author_fqid).rstrip('/')
         print(f"Decoded foreign_author_fqid: {foreign_author_fqid}")
         foreign_author = get_object_or_404(Author, id=foreign_author_fqid)
@@ -453,6 +493,65 @@ def handle_follow_request_response(request, author_serial, foreign_author_fqid):
 
     except jwt.InvalidTokenError: # redirect to /login
         return redirect('login')
+
+@api_view(['POST'])
+def forward_follow_request(request):
+    ''' This view is used to forward follow requests to the next host server if the object author is not on the current host server '''
+    request_data = request.data
+    # check if the object author is on the current host server
+    object_author = get_object_or_404(Author, id=request_data['object']['id'])
+    actor = get_object_or_404(Author, id=request_data['actor']['id'])
+    if object_author.host == request.get_host():
+        return Response({"error": "Object author is on the current host server"}, status=400)
+    else:
+        # find author with the same host as object_author and isNode=True
+        print(object_author.host, object_author.displayName)
+        node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
+        if not node_author:
+            return Response({"error": "Node author not found"}, status=404)
+        # forward the follow request to the object_author's host
+        payload = {
+            "type": "follow",
+            "summary": f"{actor.displayName} wants to follow {object_author.displayName}",
+            "actor": {
+                "type": "author",
+                "id": actor.id,
+                "host": actor.host,
+                "displayName": actor.displayName,
+                "github": actor.github,
+                "profileImage": actor.host + actor.profileImage,
+                "page": actor.page
+            },
+            "object": {
+                "type": "author",
+                "id": object_author.id,
+                "host": object_author.host,
+                "displayName": object_author.displayName,
+                "page": object_author.page,
+                "github": object_author.github,
+                "profileImage": object_author.profileImage
+            }
+        }
+        print(node_author.displayName, node_author.first_name, object_author.id+'/inbox')
+        # using http basic auth to authenticate with the node server using the node_author's username and password
+        headers = {
+                "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
+                "Content-Type": "application/json",
+                "host": node_author.host.split('//')[1],
+            }
+        print(headers)
+        new = Following.follow(actor, object_author)
+        if not new:
+            return Response({"error": "Already following"}, status=400)
+        new.status = 'accepted' # set the status to accepted since the follow request has been forwarded
+        
+
+        response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
+        print(response.status_code, response.text)
+
+        return Response({"message": "Follow request forwarded"}, status=200)
+
+
 
 @api_view(['GET'])
 @authentication_classes([BasicAuthentication, SessionAuthentication])
