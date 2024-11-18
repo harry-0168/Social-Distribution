@@ -131,29 +131,50 @@ def get_posts_comments(request, author_serial=None, post_id=None, post_FQID=None
     return paginator.get_paginated_response(serializer.data)
 
 @api_view(['GET', 'POST'])
-def get_author_comments(request,  author_serial=None, id=None):
+def get_author_comments(request, author_serial=None, id=None):
+    print("author_serial:", author_serial)
+
     # Determine if the author is specified by UUID or FQID
-    author = None
     if author_serial:
+        print("1")
+        print("author_serial:", author_serial)
         author = get_object_or_404(Author, author_serial=author_serial)
+        print("author: ", author)
     elif id:
+        print("2")
         author = get_object_or_404(Author, id=id)
+    print("done1")
 
     if request.method == 'GET':
-        # Retrieve comments by the specified author
-        comments = Comment.objects.filter(author=author)
-        
-        # Filter comments based on the visibility of the posts (for remote access)
-        if request.user.is_anonymous:
+        # Check if the request is from a local or remote user
+        print("user: ", request.user)
+        if request.user.is_authenticated:
+            # Local user: return all comments by the author
+            # Retrieve comments by the specified author
+            comments = Comment.objects.filter(author=author)
+        else:
+            # Remote user request handling
+            auth = BasicAuthentication()
+            user, auth_status = auth.authenticate(request)
+
+            if not user or not IsAuthenticated().has_permission(request, None):
+                return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if the authenticated user is an approved remote node
+            if not hasattr(user, 'isNode') or not user.isNode:
+                return Response({"error": "Not approved by admin"}, status=status.HTTP_403_FORBIDDEN)
+            
+            comments = Comment.objects.filter(author=author)
+            # Remote users: Filter comments to include only those on public or unlisted posts
             comments = comments.filter(post__visibility__in=["PUBLIC", "UNLISTED"])
 
         # Apply pagination
         paginator = CommentPagination()
         paginated_comments = paginator.paginate_queryset(comments, request)
-        
+
         # Serialize the paginated data
         serializer = CommentSerializer(paginated_comments, many=True)
-        
+
         # Return the paginated response
         return paginator.get_paginated_response(serializer.data)
 
@@ -162,10 +183,10 @@ def get_author_comments(request,  author_serial=None, id=None):
         data = request.data
         if data.get('type') != 'comment':
             return Response({'error': 'Invalid data type. Expected "comment".'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         post_id = data.get('post')
         post = get_object_or_404(Post, uuid=post_id)
-        
+
         serializer = CommentSerializer(data=data)
         if serializer.is_valid():
             serializer.save(author_serial=author_serial, post=post)
@@ -173,13 +194,20 @@ def get_author_comments(request,  author_serial=None, id=None):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
-@authentication_classes([BasicAuthentication, SessionAuthentication])
-@permission_classes([IsAuthenticated])
+# @authentication_classes([BasicAuthentication, SessionAuthentication])
+# @permission_classes([IsAuthenticated])
 def get_commented_comment(request, author_serial=None, comment_id=None, FQID=None):
     print("comment_uuid: ", comment_id)
     print("author_serial: ", author_serial)
     if author_serial and comment_id:
         # Get the comment by author and comment UUIDs
+        auth = BasicAuthentication()
+        user, auth_status = auth.authenticate(request)
+        if not user or not IsAuthenticated().has_permission(request, None):
+                return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
+        if not user.isNode:
+            return Response({"error": "Not approved by admin"}, status=status.HTTP_403_FORBIDDEN)
+        
         comment = get_object_or_404(Comment, uuid=comment_id, author__author_serial=author_serial)
 
     # Handle URL: /api/commented/{COMMENT_FQID}
