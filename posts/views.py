@@ -637,7 +637,7 @@ def api_view_Likes(request, post_id):
     return render(request, "posts/viewPostLikes.html", {"post_id": post_id, "post": post, "author": author})
 
 @api_view(['GET'])
-def api_view_Likes_comments(request, author_id, post_id, comment_id):
+def api_view_Likes_comments(request, author_serial, post_id, comment_id):
     print("reached comment likes")
     comment = get_object_or_404(Comment, uuid=comment_id)
     post = get_object_or_404(Post, uuid=post_id)

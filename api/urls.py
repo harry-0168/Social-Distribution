@@ -54,7 +54,7 @@ urlpatterns = [
     path("authors/<uuid:author_serial>/inbox", api_create_like, name="api_create_like"),  # API for liking a post
     path("authors/<uuid:author_serial>/posts/<uuid:post_id>/likes", api_view_postLikes, name="api_likes"), # path to posts view likes
     path("posts/<uuid:post_id>/likes",api_view_Likes,name="api_view_Likes"),
-    path("authors/<uuid:author_id>/posts/<uuid:post_id>/comments/<uuid:comment_id>/likes",api_view_Likes_comments,name="api_likes_comments"),
+    path("authors/<uuid:author_serial>/posts/<uuid:post_id>/comments/<uuid:comment_id>/likes",api_view_Likes_comments,name="api_likes_comments"),
     
 
     

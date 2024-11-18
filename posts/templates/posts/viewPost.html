@@ -227,7 +227,7 @@
                 
                     const likeForm = document.createElement('form');
                     likeForm.setAttribute('method', 'POST');
-                    likeForm.setAttribute('action', `/api/authors/${comment.author.id}/inbox`); // Adjust endpoint as needed
+                    likeForm.setAttribute('action', `/api/authors/${comment.author.author_serial}/inbox`); // Adjust endpoint as needed
                     likeForm.innerHTML = `
                         {% csrf_token %}
                         <input type="hidden" name="type" value="like">
@@ -236,12 +236,15 @@
                             <img class="heart" src="{% static 'heart.png' %}" alt="Like">
                         </button>
                     `;
-
+                    console.log("author")
+                    console.log(comment.author.serial)
                     // Construct URL for Viewing Likes
                     let post_url = comment.post;
                     let post_uuid = post_url.split('/').pop(); // Extract the post UUID from the URL
                     const viewLikesLink = document.createElement('a');
-                    viewLikesLink.href = `/api/authors/${comment.author.id}/posts/${post_uuid}/comments/${comment.uuid}/likes`; // Build the URL dynamically using JavaScript
+                    console.log("author")
+                    console.log(comment.author.serial)
+                    viewLikesLink.href = `/api/authors/${comment.author.author_serial}/posts/${post_uuid}/comments/${comment.uuid}/likes`; // Build the URL dynamically using JavaScript
                     viewLikesLink.textContent = 'View Likes';
                     viewLikesLink.classList.add('viewLikes');
                     
