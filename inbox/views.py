@@ -366,6 +366,7 @@ def forward_follow_request(request):
         return Response({"error": "Object author is on the current host server"}, status=400)
     else:
         # find author with the same host as object_author and isNode=True
+        print(object_author.host, object_author.displayName)
         node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
         if not node_author:
             return Response({"error": "Node author not found"}, status=404)

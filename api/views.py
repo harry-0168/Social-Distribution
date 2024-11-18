@@ -22,6 +22,10 @@ def nodeSignup(request):
         serializer = AuthorSerializer(data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            # get the user object
+            user = Author.objects.get(displayName=data['displayName'])
+            user.isNode = True
+            user.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

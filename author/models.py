@@ -40,15 +40,26 @@ class Author(AbstractUser):
         Override the save method to set the host field if not already set
         '''
         Default_profile_image_BASE64 = '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'
-        if not self.host:  # Only set if host is not already set
-            self.host = f"http://{kwargs.get('request_host', 'localhost')}"
-        if not self.id:  # Only set if id is not already set
+        request = kwargs.pop('request', None)
+    
+        if not self.host and request:
+            # Use the request object to determine the scheme (http or https)
+            scheme = request.scheme
+            host = request.get_host()
+            self.host = f"{scheme}://{host}"
+        elif not self.host:
+            # Fallback if no request object is provided
+            self.host = "http://localhost"
+
+        if not self.id:  # Set the id if not already set
             self.id = f"{self.host}/api/authors/{self.author_serial}"
+
         if not self.profileImage:
             self.profileImage = Default_profile_image_BASE64
+
         if not self.page:
             self.page = f"{self.host}/authors/{self.displayName}"
-        
+
         super().save(*args, **kwargs)
         
     def is_friend(self, other_author):
