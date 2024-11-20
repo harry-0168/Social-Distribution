@@ -183,6 +183,7 @@ def inboxApi(request, object_author_serial):
             # Get the post_id from form data
             post_id = request.POST.get('post_id')
             comment_id = request.POST.get('comment_id')
+            #sender = request.POST.get('sender')
 
             token = request.COOKIES.get('jwt')
             if not token:
@@ -359,14 +360,40 @@ def inboxApi(request, object_author_serial):
     
 @api_view(['POST'])
 def forward_like_request(request):
+    print(request.data)
     ''' This view is used to forward like requests to the next host server if the object or author being liked is not on the current host server '''
     request_data = request.data
-    liked_object = get_object_or_404(Like, id=request_data['like']['id'])
-    liked_object_receiver = get_object_or_404(Author, id=request_data['receiver']['id'])
-    liked_object_post = liked_object.post
-    liked_object_comment = liked_object.comment
-    
+    #liked_object = get_object_or_404(Like, id=request_data['like']['id'])
+    liked_object_receiver = get_object_or_404(Author, id=request_data['receiver_id'])
+    liked_object_post = request_data['post_id']
+    liked_object_comment = request_data['comment_id']
+    #post = get_object_or_404(Post, uuid=liked_object_post)
+    token = request.COOKIES.get('jwt')
+    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+    author = get_object_or_404(Author, displayName=payload['id']) # author that sent the request
+    payload = {
+        "type": "like",
+        "post_id": liked_object_post,
+        "comment_id": liked_object_comment,
+        "sender": author
+        #"post_author": post.author.id
+    }
+    print(payload)
+    node_author = Author.objects.filter(host=liked_object_receiver.host, isNode=True).first()
+    if not node_author:
+        return Response({"error": "Node author not found"}, status=404)
+    # Use HTTP basic auth to authenticate with the target node
+    headers = {
+        "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
+        "Content-Type": "application/json",
+    }
 
+    response = requests.post(liked_object_receiver.id + '/inbox', json=payload, headers=headers)
+    print(response.status_code, response.text)
+    return Response({"message": "Like sent successfully"}, status=200)
+
+    
+"""
     # Check if liked object is hosted on the current server
     if liked_object_receiver.host == request.get_host():
         return Response({"error": "Liked object is on the current host server"}, status=400)
@@ -398,7 +425,7 @@ def forward_like_request(request):
 
     response = requests.post(liked_object_receiver.id + '/inbox', json=payload, headers=headers)
     print(response.status_code, response.text)
-    return Response({"message": "Like sent successfully"}, status=200)
+    return Response({"message": "Like sent successfully"}, status=200)"""
 
     
 @api_view(['POST'])

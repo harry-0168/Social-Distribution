@@ -59,6 +59,4 @@ urlpatterns = [
     path("authors/<uuid:author_serial>/posts/<uuid:post_id>/comments/<uuid:comment_id>/likes",api_view_Likes_comments,name="api_likes_comments"),
     path("forward_like_request", forward_like_request, name="forward_like_request"), # forward follow request to remote node, name="forward_follow_request"), # forward follow request to remote node
     
-
-    
 ]

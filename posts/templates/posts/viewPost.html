@@ -74,18 +74,66 @@
                 {% endif %}        
             </div>
             <section class="likeCommentShare">
-                <form action="{% url 'api_create_like' post.author.author_serial %}" method="POST">
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        // Get the current host (domain) from the browser
+                        const currentHost = window.location.host;
+                
+                        // Get the post.author.host from the template context, extracting just the UUID part
+                        const postAuthorHost = "{{ post.author.host }}".split('/').pop();
+                
+                        // Log both values to the console
+                        console.log("Current Host:", currentHost);
+                        console.log("Post Author Host:", postAuthorHost);
+                
+                        // Get the forms (they should exist in the DOM)
+                        const sameHostForm = document.querySelector('#sameHostForm');
+                        const differentHostForm = document.querySelector('#differentHostForm');
+                
+                        // Check if the forms exist in the DOM before manipulating their style
+                        if (sameHostForm && differentHostForm) {
+                            // Check if the hosts are the same
+                            if (currentHost === postAuthorHost) {
+                                // Show the form for the same host
+                                sameHostForm.style.display = 'block';
+                                differentHostForm.style.display = 'none';
+                            } else {
+                                // Show the form for the different host
+                                sameHostForm.style.display = 'none';
+                                differentHostForm.style.display = 'block';
+                            }
+                        } else {
+                            console.error("Forms not found in the DOM");
+                        }
+                    });
+                </script>
+                
+                <!-- Form for when the hosts are the same -->
+                <form id="sameHostForm" action="{% url 'api_create_like' post.author.author_serial %}" method="POST" style="display: none;">
                     {% csrf_token %}
-                    <script>
-                    console.log("post_id")
-                    console.log(post.uuid)
-                    </script>
                     <input type="hidden" name="post_id" value="{{ post.uuid }}"> <!-- Use post.uuid here -->
                     <input type="hidden" name="type" value="like">
+                    <input type="hidden" name="comment_id" value="">
                     <button type="submit" class="like-button">
                         <img class="heart" src="{% static 'heart.png' %}" alt="Like">
                     </button>
                 </form>
+                
+                <!-- Form for when the hosts are different -->
+                <form id="differentHostForm" action="{% url 'forward_like_request' %}" method="POST" style="display: none;">
+                    {% csrf_token %}
+                    <!-- Include necessary hidden inputs for your function -->
+                    <input type="hidden" name="receiver_id" value="{{ post.author.id }}"> <!-- Replace with the receiver's id -->
+                    <input type="hidden" name="post_id" value="{{ post.uuid }}"> <!-- Use post.uuid if relevant -->
+                    <input type="hidden" name="type" value="like">
+                    <input type="hidden" name="comment_id" value="">
+                    <button type="submit" class="like-button">
+                        <img class="heart" src="{% static 'heart.png' %}" alt="Like">
+                    </button>
+                </form>
+                
+                
+                
                 <h3>{{ post.likes_collection.count }} like(s)</h3>
                 <a type="submit" class="comment-button" href="#comment-input">
                     <img class="commentBubble"src="/static/messageCircle.png">
@@ -208,6 +256,10 @@
                 }
 
                 function createCommentElement(comment) {
+                    console.log("post-")
+                    console.log(comment.author)
+                    console.log("author2-")
+                    console.log(comment.author.id)
                     const commentDiv = document.createElement('div');
                     commentDiv.classList.add('comment');
                 
@@ -228,36 +280,75 @@
                     contentDiv.classList.add('commentContent');
                     contentDiv.textContent = comment.comment;
                 
-                    const likeForm = document.createElement('form');
-                    likeForm.setAttribute('method', 'POST');
-                    likeForm.setAttribute('action', `/api/authors/${comment.author.author_serial}/inbox`); // Adjust endpoint as needed
-                    likeForm.innerHTML = `
+                    // Determine hosts for form handling
+                    const currentHost = window.location.host;
+                    const commentAuthorHost = comment.author.host.split('/').pop(); // Extract host part
+
+                    console.log("Current Host:", currentHost);
+                    console.log("Comment Author Host:", commentAuthorHost);
+
+                    // Create like form for same host
+                    const sameHostForm = document.createElement('form');
+                    sameHostForm.setAttribute('method', 'POST');
+                    sameHostForm.style.display = 'none'; // Initially hidden
+
+                    // Action URL for same host form
+                    const uuid = comment.author.id.split('/').pop(); // Extract UUID from author's ID
+                    sameHostForm.setAttribute('action', `/api/authors/${uuid}/inbox`);
+                    sameHostForm.innerHTML = `
                         {% csrf_token %}
                         <input type="hidden" name="type" value="like">
                         <input type="hidden" name="comment_id" value="${comment.id}">
+                        <input type="hidden" name="receiver_id" value="${post.author.id}">
+                        <input type="hidden" name="post_id" value="">
                         <button type="submit" class="like-button">
                             <img class="heart" src="{% static 'heart.png' %}" alt="Like">
                         </button>
                     `;
-                    console.log("author")
-                    console.log(comment.author.serial)
+                    console.log("comment author id")
+                    console.log(comment.author.id)
+                    console.log("comment post author id")
+                    console.log(post.author.id)
+                    // Create like form for different host
+                    const differentHostForm = document.createElement('form');
+                    differentHostForm.setAttribute('method', 'POST');
+                    differentHostForm.style.display = 'none'; // Initially hidden
+                    differentHostForm.setAttribute('action', '{% url "forward_like_request" %}');
+                    differentHostForm.innerHTML = `
+                        {% csrf_token %}
+                        <input type="hidden" name="comment_id" value="${comment.id}">
+                        <input type="hidden" name="receiver_id" value="${post.author.id}">
+                        <input type="hidden" name="post_id" value="">
+                        <input type="hidden" name="type" value="like">
+                        <button type="submit" class="like-button">
+                            <img class="heart" src="{% static 'heart.png' %}" alt="Like">
+                        </button>
+                    `;
+
+                    // Check and display the appropriate form
+                    if (currentHost === commentAuthorHost) {
+                        sameHostForm.style.display = 'block';
+                    } else {
+                        differentHostForm.style.display = 'block';
+                    }
+
                     // Construct URL for Viewing Likes
-                    let post_url = comment.post;
-                    let post_uuid = post_url.split('/').pop(); // Extract the post UUID from the URL
+                    const postUrl = comment.post;
+                    const postUuid = postUrl.split('/').pop(); // Extract post UUID from URL
+                    const decodedUuid = decodeURIComponent(uuid);
                     const viewLikesLink = document.createElement('a');
-                    console.log("author")
-                    console.log(comment.author.serial)
-                    viewLikesLink.href = `/api/authors/${comment.author.author_serial}/posts/${post_uuid}/comments/${comment.uuid}/likes`; // Build the URL dynamically using JavaScript
+                    viewLikesLink.href = `/api/authors/${decodedUuid}/posts/${postUuid}/comments/${comment.uuid}/likes`; // Build the URL dynamically
                     viewLikesLink.textContent = 'View Likes';
                     viewLikesLink.classList.add('viewLikes');
-                    
 
                     // Append elements to the comment div
                     commentDiv.appendChild(img);
                     commentDiv.appendChild(h5);
                     commentDiv.appendChild(contentDiv);
-                    commentDiv.appendChild(likeForm);
-                    commentDiv.appendChild(viewLikesLink); // Append the new link
+                    commentDiv.appendChild(sameHostForm);
+                    commentDiv.appendChild(differentHostForm);
+                    commentDiv.appendChild(viewLikesLink);
+
                     return commentDiv;
                 }
             </script>
