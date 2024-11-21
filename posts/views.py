@@ -284,40 +284,9 @@ def get_commented_comment(request, author_serial=None, comment_id=None, FQID=Non
 
 @api_view(['POST'])
 def api_create_like(request, author_serial):
-    """post = get_object_or_404(Post, uuid=post_uuid)
-    token = request.COOKIES.get('jwt')
-    
-    if not token:
-        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        username = payload['id']  # Assuming 'id' is the username or display name
-        user = Author.objects.get(displayName=username)
-    except jwt.ExpiredSignatureError:
-        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
-
-    # Process the comment data
-    content = request.data.get('comment')
-    if not content:
-        return Response({"error": "Content is required"}, status=status.HTTP_400_BAD_REQUEST)
-    
-    comment = Comment(username=username, comment=content, post=post, author=user, type='comment')
-    comment.save()
-    
-    # Serialize the created comment
-    comment_serializer = CommentSerializer(comment)
-
-    # Returning JSON for Ajax or redirect
-    if request.accepts('application/json'):
-        return Response(comment_serializer.data, status=status.HTTP_201_CREATED)
-    else:
-        #return redirect('viewPost', id=post.uuid)
-        return redirect(request.META.get('HTTP_REFERER'))"""
-    author = get_object_or_404(Author, author_serial=author_serial)
-
     # Get the post_id from form data
-    post_id = request.POST.get('post_id')
-    comment_id = request.POST.get('comment_id')
+    post_id = request.data['post_id']
+    comment_id = request.data['comment_id']
     #sender = request.POST.get('sender')
 
     token = request.COOKIES.get('jwt')
@@ -330,21 +299,13 @@ def api_create_like(request, author_serial):
         user = get_object_or_404(Author, displayName=username)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
-
     try:
         if post_id:
             post = get_object_or_404(Post, uuid=post_id)
-            print("level1")
             
-
-    
-
             # Check if a like already exists
             if Like.objects.filter(username=username, post=post).exists():
-                print("level2")
                 likes = Like.objects.filter(username=username, post=post)
-                for like in likes:
-                    print(f"Like ID: {like.uuid}, Username: {like.username}, Author: {like.author}, Post ID: {like.post.id}")
                 return redirect(request.META.get('HTTP_REFERER'))
 
             try:
@@ -357,11 +318,8 @@ def api_create_like(request, author_serial):
                 # Create and save the new Like instance
                 like = Like(username=username, post=post, author=user)
                 like.save()
-                print(like)
                 # Add the like to the post's likes collection
                 post.likes_collection.add_like(like)
-                #Inbox(receiver=author, type='like', FQIDorId=parsed_data['object']['id'], received_at=timezone.now()).save()
-                print("level3")
                 like_serializer = LikeSerializer(like)
 
                 # Returning JSON for Ajax or redirect
@@ -376,32 +334,9 @@ def api_create_like(request, author_serial):
 
         elif comment_id:
             comment = get_object_or_404(Comment, id=comment_id)
-            print("level1")
-            
-
-    
 
             # Check if a like already exists
             if Like.objects.filter(username=username, comment=comment).exists():
-                print("level2")
-                likes = Like.objects.filter(username=username, comment=comment)
-                for like in likes:
-                    print(f"Like ID: {like.uuid}, Username: {like.username}, Author: {like.author}, Comment ID: {like.comment.id}")
-                likes_collections = Likes.objects.all()
-                print("All Likes Collections:")
-                for collection in likes_collections:
-                    print(f"Likes Collection ID: {collection.id}")
-                    print(f"Page: {collection.page}")
-                    print(f"Page Number: {collection.page_number}")
-                    print(f"Size: {collection.size}")
-                    print(f"Total Likes: {collection.count}")
-                    
-                    # Print all likes in the collection (related Like objects)
-                    print("Likes in this collection:")
-                    for like in collection.src.all():
-                        print(f"  - {like.username} liked {'post' if like.post else 'comment'} ID {like.post.id if like.post else like.comment.id}")
-                    
-                    print("-" * 50)
                 return redirect(request.META.get('HTTP_REFERER'))
                     
 
