@@ -12,7 +12,7 @@ class LikeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Like
         # specifies which fields to serialize
-        fields = ['type','username', 'object', 'published','author','id']
+        fields = ['type', 'object', 'published','author','id']
 
 class PostSerializer(serializers.ModelSerializer):
     author = AuthorSerializer(read_only=True) # So the response actually return the author object instead of just id

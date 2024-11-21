@@ -284,16 +284,11 @@ def get_commented_comment(request, author_serial=None, comment_id=None, FQID=Non
 
 @api_view(['POST'])
 def api_create_like(request, author_serial):
-    print("Request Data:", request.data)  # Debugging line to see the request data
+    # Get the post_id from form data
+    post_id = request.data['post_id']
+    comment_id = request.data['comment_id']
+    #sender = request.POST.get('sender')
 
-    # Validate and retrieve the author
-    author = get_object_or_404(Author, author_serial=author_serial)
-
-    # Retrieve either post_id or comment_id from the form data
-    post_id = request.POST.get('post_id')
-    comment_id = request.POST.get('comment_id')
-
-    # Token validation
     token = request.COOKIES.get('jwt')
     if not token:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -304,54 +299,80 @@ def api_create_like(request, author_serial):
         user = get_object_or_404(Author, displayName=username)
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
-
-    # Handling likes for posts or comments
     try:
         if post_id:
             post = get_object_or_404(Post, uuid=post_id)
-
-            # Check if a like already exists for the post
-            if Like.objects.filter(username=username, object=post).exists():
+            
+            # Check if a like already exists
+            if Like.objects.filter(username=username, post=post).exists():
+                likes = Like.objects.filter(username=username, post=post)
                 return redirect(request.META.get('HTTP_REFERER'))
 
-            # Ensure post has a likes collection or create one
-            if not post.likes_collection:
-                likes_collection = Likes.objects.create()
-                post.likes_collection = likes_collection
-                post.save()
+            try:
+                # Ensure post has a likes collection or create one
+                if not post.likes_collection:
+                    likes_collection = Likes.objects.create()
+                    post.likes_collection = likes_collection
+                    post.save()
 
-            # Create and save the new Like instance for the post
-            like = Like(username=username, object=post, author=user, id=author_serial)
-            like.save()
+                # Create and save the new Like instance
+                like = Like(username=username, post=post, author=user)
+                like.save()
+                # Add the like to the post's likes collection
+                post.likes_collection.add_like(like)
+                like_serializer = LikeSerializer(like)
 
-            # Add the like to the post's likes collection
-            post.likes_collection.add_like(like)
+                # Returning JSON for Ajax or redirect
+                if request.accepts('application/json'):
+                    return Response(like_serializer.data, status=status.HTTP_201_CREATED)
+                else:
+                    #return redirect('viewPost', id=post.uuid)
+                    return redirect(request.META.get('HTTP_REFERER'))
+            except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
         elif comment_id:
             comment = get_object_or_404(Comment, id=comment_id)
 
-            # Check if a like already exists for the comment
-            if Like.objects.filter(username=username, object=comment).exists():
+            # Check if a like already exists
+            if Like.objects.filter(username=username, comment=comment).exists():
                 return redirect(request.META.get('HTTP_REFERER'))
+                    
 
-            # Ensure comment has a likes collection or create one
-            if not comment.likes_collection:
-                likes_collection = Likes.objects.create()
-                comment.likes_collection = likes_collection
-                comment.save()
+            try:
+                # Ensure post has a likes collection or create one
+                if not comment.likes_collection:
+                    likes_collection = Likes.objects.create()
+                    comment.likes_collection = likes_collection
+                    comment.save()
 
-            # Create and save the new Like instance for the comment
-            like = Like(username=username, object=comment, author=user, id=author_serial)
-            like.save()
+                # Create and save the new Like instance
+                like = Like(username=username, comment=comment, author=user)
+                like.save()
 
-            # Add the like to the comment's likes collection
-            comment.likes_collection.add_like(like)
+                # Add the like to the post's likes collection
+                comment.likes_collection.add_like(like)
+                print("level3")
+                like_serializer = LikeSerializer(like)
+
+                # Returning JSON for Ajax or redirect
+                if request.accepts('application/json'):
+                    return Response(like_serializer.data, status=status.HTTP_201_CREATED)
+                else:
+                    #return redirect('viewPost', id=post.uuid)
+                    return redirect(request.META.get('HTTP_REFERER'))
+           
+                #Inbox(receiver=author, type='like', FQIDorId=parsed_data['object']['id'], received_at=timezone.now()).save()
+
+            except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        
 
         else:
             return Response({"error": "Post ID or Comment ID not found"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Serialize and return the response
-        return redirect(request.META.get('HTTP_REFERER'))
 
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

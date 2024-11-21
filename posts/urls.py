@@ -20,4 +20,5 @@ urlpatterns = [
 
     # API paths for creating comments and likes
     path("api/<uuid:post_uuid>/comment/", views.create_comment, name="create_comment"),  # API for creating comments
+    path("api/<uuid:author_serial>/like/", views.api_create_like, name="api_create_like")
 ]
