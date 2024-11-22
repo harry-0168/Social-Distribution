@@ -882,14 +882,11 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
         ).select_related('receiver')
         for inbox_entry in previous_recipients:
             recipients.add(inbox_entry.receiver)
-
+    print(serializer_data)
     # Send to each remote recipient's inbox
     nodes = Author.objects.filter(isNode=True)
     for recipient in recipients:
         for node in nodes:
-            
-            print("recipient: ", recipient)
-            print("node: ", node)
             
             print("recipient.host: ", recipient.host)
             print("node.host: ", node.host)
