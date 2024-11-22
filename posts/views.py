@@ -128,6 +128,66 @@ def get_comment(request, comment_id=None, author_serial=None, post_serial=None, 
     # Return the serialized comment
     return Response(comment_serializer.data, status=status.HTTP_200_OK)
 
+@api_view(['POST'])
+def forward_comment(request, post_uuid=None):
+    print("in")
+    request_data = request.data
+    print("request_data: ", request_data)
+    print("\nobject_author_id: ",request_data['object']['id'])
+    object_author = get_object_or_404(Author, id=request_data['object']['id']) # the object we are commenting on (post object)
+    print("object_author: ", object_author)
+
+    print("\nactor_id: ",request_data['actor']['id'])
+    actor = get_object_or_404(Author, id=request_data['actor']['id'])    # the person making the comment
+    print("actor: ", actor)
+
+    # check if the object_author is on a remote node
+    print("current host: ", request.get_host())
+    if object_author.host == ("http://" + request.get_host()):
+        return Response({"error": "Object author is on the current host server"}, status = 400)
+    else:
+        # find the node that the object_author belongs to
+        print("\nobject_author.host: ", object_author.host)
+        node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
+        if not node_author:
+            return Response({"error": "Node Author not found"}, status = 404)
+        # forward the comment to the object_author's host
+        payload = {
+            "type": "comment",
+            "summary": f"{object_author.username} commented on your post",
+            "actor": {
+                "type": "author",
+                "id": actor.id,
+                "host": actor.host,
+                "displayName": actor.displayName,
+                "github": actor.github,
+                "profileImage": actor.host + actor.profileImage,
+                "page": actor.page
+            },
+            "object": {
+                "type": "author",
+                "id": object_author.id,
+                "host": object_author.host,
+                "displayName": object_author.displayName,
+                "page": object_author.page,
+                "github": object_author.github,
+                "profileImage": object_author.profileImage
+            } 
+        }
+        print(node_author.displayName, node_author.first_name, object_author.id+'/inbox')
+        # using http basic auth to authenticate with the node server using the node_author's username and password
+        headers = {
+                "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
+                "Content-Type": "application/json",
+                "host": node_author.host.split('//')[1],
+            }
+        print(headers)
+        
+        response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
+        print(response.status_code, response.text)
+
+        return Response({"message": "comment request forwarded"}, status=200)
+
 class CommentPagination(PageNumberPagination):
     page_size = 5
     page_size_query_param = 'size'
