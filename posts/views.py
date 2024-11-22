@@ -154,14 +154,14 @@ def forward_comment(request, post_uuid=None):
         # forward the comment to the object_author's host
         payload = {
             "type": "comment",
-            "summary": f"{object_author.username} commented on your post",
+            "summary": f"{actor.displayName} commented on your post",
             "actor": {
                 "type": "author",
                 "id": actor.id,
                 "host": actor.host,
                 "displayName": actor.displayName,
                 "github": actor.github,
-                "profileImage": actor.host + actor.profileImage,
+                #"profileImage": actor.host + actor.profileImage,
                 "page": actor.page
             },
             "object": {
@@ -171,9 +171,13 @@ def forward_comment(request, post_uuid=None):
                 "displayName": object_author.displayName,
                 "page": object_author.page,
                 "github": object_author.github,
-                "profileImage": object_author.profileImage
-            } 
+                #"profileImage": object_author.profileImage
+            },
+            "comment":{
+                "id":request_data['comment']['id']
+            }
         }
+        print("payload: ", payload)
         print(node_author.displayName, node_author.first_name, object_author.id+'/inbox')
         # using http basic auth to authenticate with the node server using the node_author's username and password
         headers = {
@@ -181,12 +185,15 @@ def forward_comment(request, post_uuid=None):
                 "Content-Type": "application/json",
                 "host": node_author.host.split('//')[1],
             }
-        print(headers)
+        print("headers: ",headers)
+        print("username: ", node_author.displayName)
+        print("password: ", node_author.first_name)
         
+        print("sending request...")
         response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
-        print(response.status_code, response.text)
+        print(response.status_code)
 
-        return Response({"message": "comment request forwarded"}, status=200)
+        return Response({"object_author_id": object_author.id, "response": response, "message": "comment request forwarded"}, status=200)
 
 class CommentPagination(PageNumberPagination):
     page_size = 5

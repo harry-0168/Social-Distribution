@@ -107,6 +107,7 @@ def inbox(request):
 @api_view(['POST'])
 @csrf_exempt
 def inboxApi(request, object_author_serial):
+    print("in Inbox API")
     token = request.COOKIES.get('jwt')
     flag = 1   # flag to check if the request is from my nodes frontend
     payload, author, actor, object_author = None, None, None, None
@@ -173,8 +174,8 @@ def inboxApi(request, object_author_serial):
                 return Response({"error": "Actor not found"}, status=404)
             
         elif parsed_data['type'] == 'comment':
-            object_author = Author.objects.get(author_serial=parsed_data['object']['post']['author'])
-            Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['object']['id'], received_at=timezone.now()).save()
+            object_author = Author.objects.get(author_serial=parsed_data['object']['id'])
+            Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['comment']['id'], received_at=timezone.now()).save()
             return Response({"message": "Comment sent"}, status=200)
         
         elif parsed_data['type'] == 'like':
