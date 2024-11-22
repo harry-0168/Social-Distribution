@@ -174,7 +174,7 @@ def inboxApi(request, object_author_serial):
                 return Response({"error": "Actor not found"}, status=404)
             
         elif parsed_data['type'] == 'comment':
-            object_author = Author.objects.get(author_serial=parsed_data['object']['id'])
+            object_author = Author.objects.get(author_id=parsed_data['object']['id'])
             Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['comment']['id'], received_at=timezone.now()).save()
             return Response({"message": "Comment sent"}, status=200)
         
