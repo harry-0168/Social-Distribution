@@ -49,11 +49,6 @@ class Author(AbstractUser):
         elif not self.host:
             self.host = "http://localhost"
 
-        host = self.host.rstrip('/')
-        if not host.endswith('/api'):
-            host = f"{host}/api"
-            self.host = host
-
         if not self.id:
             self.id = f"{self.host}/authors/{self.author_serial}"
 
