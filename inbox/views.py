@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from rest_framework.response import Response
+from django.utils.dateformat import format
 from rest_framework import status
 import jwt
 from django.conf import settings
@@ -107,15 +108,19 @@ def inbox(request):
     
 @api_view(['POST'])
 def inboxApi(request, object_author_serial):
+    print("stage1 logic")
     token = request.COOKIES.get('jwt')
     flag = 1   # flag to check if the request is from my nodes frontend
     payload, author, actor, object_author = None, None, None, None
     if not token:
+        print("stage3 logic")
         flag = 0
         auth = BasicAuthentication()
         user, auth_status = auth.authenticate(request)
         if  not user or not IsAuthenticated().has_permission(request, None):
+            
             return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
+        
     
     try:
         if flag == 1:
@@ -173,7 +178,21 @@ def inboxApi(request, object_author_serial):
             return Response({"message": "Comment sent"}, status=200)
         
         elif parsed_data['type'] == 'like':
-            sender_author = Author.objects.get(author_serial=parsed_data['author'])
+            print("stage2 logic")
+            # Check if 'author' is a string or a dictionary
+            if isinstance(parsed_data['author'], str):
+                # If 'author' is a string, query using author_serial
+                sender_author = Author.objects.filter(author_serial=parsed_data['author']).first()
+                if not sender_author:
+                    return Response({"error": "Author with the given serial not found"}, status=404)
+            else:
+                # If 'author' is a dictionary, query using the nested 'id'
+                sender_author = Author.objects.filter(id=parsed_data['author'].get('id')).first()
+                if not sender_author:
+                    return Response({"error": "Author with the given ID not found"}, status=404)
+
+            # Continue processing with sender_author
+
             object_author = Author.objects.get(author_serial=object_author_serial)
             sender_host = sender_author.host
             object_host = object_author.host
@@ -191,7 +210,7 @@ def inboxApi(request, object_author_serial):
                         comment = get_object_or_404(Comment, id=comment_id)
 
                         # Check if a like already exists for the comment
-                        if Like.objects.filter(username=sender_author.username, comment=comment).exists():
+                        if Like.objects.filter(username=sender_author.displayName, comment=comment).exists():
                             return Response({"message": "Like already exists for comment"}, status=200)
 
                         # Ensure the comment has a likes collection or create one
@@ -214,7 +233,7 @@ def inboxApi(request, object_author_serial):
                         post = get_object_or_404(Post, id=post_id)
 
                         # Check if a like already exists for the post
-                        if Like.objects.filter(username=sender_author.username, post=post).exists():
+                        if Like.objects.filter(username=sender_author.displayName, post=post).exists():
                             return Response({"message": "Like already exists for post"}, status=200)
 
                         # Ensure the post has a likes collection or create one
@@ -224,11 +243,12 @@ def inboxApi(request, object_author_serial):
                             post.save()
 
                         # Create and save the Like instance for the post
-                        like = Like(username=sender_author.username, post=post, author=sender_author)
+                        like = Like(username=sender_author.displayName, post=post, author=sender_author)
                         like.save()
 
                         # Add the like to the post's likes collection
                         post.likes_collection.add_like(like)
+                        
                         
                 except Exception as e:
                     print(f"Error saving like: {e}")
@@ -236,7 +256,7 @@ def inboxApi(request, object_author_serial):
                 
             else:
                 print("hosts equal")
-            Inbox(receiver=object_author, type='like', FQIDorId=parsed_data['id'], received_at=timezone.now()).save()
+            #Inbox(receiver=object_author, type='like', FQIDorId=parsed_data['id'], received_at=timezone.now()).save()
             return Response({"message": "Like sent"}, status=200)
         
         elif parsed_data['type'] == 'post':
@@ -345,6 +365,10 @@ def forward_like_request(request):
                 post.likes_collection.add_like(like)
                 like_serializer = LikeSerializer(like)
                 # forward the follow request to the object_author's host
+                # Convert to string
+                published_as_string = like.published.isoformat()
+
+                
                 payload = {
                     "type":"like",
                     "author":{
@@ -356,7 +380,7 @@ def forward_like_request(request):
                         "github": user.github,
                         "profileImage": user.profileImage
                     },
-                    "published":like.published,
+                    "published": published_as_string,
                     "id": like.id,
                     "object": like.object
                 }
@@ -377,7 +401,7 @@ def forward_like_request(request):
                 response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
                 print(response.status_code, response.text)
 
-                return Response({"message": "Follow request forwarded"}, status=200)
+                return Response({"message": "Like request forwarded"}, status=200)
 
                 
             except Exception as e:
@@ -408,6 +432,25 @@ def forward_like_request(request):
                 print("level3")
                 like_serializer = LikeSerializer(like)
 
+                published_as_string = like.published.isoformat()
+
+                
+                payload = {
+                    "type":"like",
+                    "author":{
+                        "type":"author",
+                        "id":user.id,
+                        "host":user.host,
+                        "displayName":user.displayName,
+                        "page":user.page,
+                        "github": user.github,
+                        "profileImage": user.profileImage
+                    },
+                    "published": published_as_string,
+                    "id": like.id,
+                    "object": like.object
+                }
+                
                 node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
                 if not node_author:
                     return Response({"error": "Node author not found"}, status=404)
@@ -424,7 +467,8 @@ def forward_like_request(request):
                 response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
                 print(response.status_code, response.text)
 
-                return Response({"message": "Follow request forwarded"}, status=200)
+                return Response({"message": "Like request forwarded"}, status=200)
+
 
             except Exception as e:
                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

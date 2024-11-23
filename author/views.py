@@ -22,6 +22,9 @@ from posts.serializers import LikeSerializer
 import json
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
+import base64
+import imghdr
+
 from django.urls import reverse
 
 
@@ -446,7 +449,7 @@ def manage_follower(request, author_serial, foreign_author_id):
                 "displayName": foreign_author.displayName,
                 "page": f"{foreign_author.host}/authors/{foreign_author.author_serial}",
                 "github": foreign_author.github,
-                "profileImage": foreign_author.profileImage
+                "profileImage": f"{foreign_author.host}/api/authors/{foreign_author.author_serial}/image" if foreign_author.profileImage else None
             }
             return Response(follower_data, status=status.HTTP_200_OK)
         
@@ -471,7 +474,7 @@ def manage_follower(request, author_serial, foreign_author_id):
                 "displayName": foreign_author.displayName,
                 "page": f"{foreign_author.host}/authors/{foreign_author.author_serial}",
                 "github": foreign_author.github,
-                "profileImage": foreign_author.profileImage,
+                "profileImage": f"{foreign_author.host}/api/authors/{foreign_author.author_serial}/image" if foreign_author.profileImage else None,
                 "message": f"New follower created for author {author.displayName}"
             }
             return Response(follower_data, status=status.HTTP_201_CREATED)
@@ -508,7 +511,7 @@ def api_list_authors(request):
         )
 
     # Get all authors
-    authors = Author.objects.all()
+    authors = Author.objects.filter(isNode=False, is_superuser=False)
     
     # Calculate pagination
     start_index = (page - 1) * size
@@ -520,15 +523,21 @@ def api_list_authors(request):
     # Format authors according to spec
     formatted_authors = []
     for author in paginated_authors:
-        if not author.host.endswith('/api/'):
-            author.host = author.host + '/api/'
+        author_id = f"{author.host}/api/authors/{author.author_serial}"  # Use author_serial instead of id
+        profile_image_url = (
+            f"{author.host}/api/authors/{author.author_serial}/image"
+            if author.profileImage
+            else None
+        )
+
         formatted_authors.append({
             "type":"author",
             "id": author.id,
             "host": author.host,
             "displayName": author.displayName,
             "github": author.github,
-            "profileImage": author.profileImage,
+            "profileImage": profile_image_url,
+
             "page": author.page
         })
 
@@ -623,6 +632,11 @@ def get_author_data(author):
     Helper function to format author data according to the API specification
     """
     # Handle profile image properly
+    profile_image = (
+        f"{author.host}/api/authors/{author.author_serial}/image"
+        if author.profileImage
+        else None
+    )
     profile_image = author.profileImage.url if hasattr(author.profileImage, 'url') else author.profileImage
 
     # Ensure host ends with /api/
@@ -839,3 +853,18 @@ def user_settings(request, author_id):
         print(f"Error in user settings: {str(e)}")
         print(traceback.format_exc())
         raise Http404(f"Error in user settings: {str(e)}")
+
+def serve_profile_image(request, author_serial):
+    author = get_object_or_404(Author, author_serial=author_serial)
+    
+    if author.profileImage:
+        image_data = base64.b64decode(author.profileImage)
+
+        image_type = imghdr.what(None, image_data)
+        
+        if not image_type:
+            return HttpResponse(image_data, content_type="application/octet-stream")
+        
+        return HttpResponse(image_data, content_type=f"image/{image_type}")
+    else:
+        return HttpResponse(status=404) 
