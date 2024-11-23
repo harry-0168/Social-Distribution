@@ -394,7 +394,7 @@ def api_list_authors(request):
         )
 
     # Get all authors
-    authors = Author.objects.all()
+    authors = Author.objects.filter(isNode=False, is_superuser=False)
     
     # Calculate pagination
     start_index = (page - 1) * size
@@ -412,13 +412,15 @@ def api_list_authors(request):
             if author.profileImage
             else None
         )
+
         formatted_authors.append({
-            "type": "author",
-            "id": author_id,  # This should now be correct
+            "type":"author",
+            "id": author.id,
             "host": author.host,
             "displayName": author.displayName,
             "github": author.github,
             "profileImage": profile_image_url,
+
             "page": author.page
         })
 

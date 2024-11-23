@@ -106,7 +106,6 @@ def inbox(request):
         return Response({"error": "Author not found"}, status=404)
     
 @api_view(['POST'])
-@csrf_exempt
 def inboxApi(request, object_author_serial):
     token = request.COOKIES.get('jwt')
     flag = 1   # flag to check if the request is from my nodes frontend
@@ -133,17 +132,10 @@ def inboxApi(request, object_author_serial):
             try:
                 if parsed_data['object']['host'] != parsed_data['actor']['host']:
                     
-                    # create object author and following object, then forward the request to the next host server
-                    objectAuthor = Author.objects.get(id=parsed_data['object']['id'])
+                    objectAuthor = get_object_or_404(Author, id=parsed_data['object']['id'])
                     print(parsed_data['actor']['id'])
-                    # actor_data = {
-                    #     "FQID": parsed_data['actor']['id'],
-                    #     "host": parsed_data['actor']['host'],
-                    #     "displayName": parsed_data['actor']['displayName'],
-                    #     "github": parsed_data['actor']['github'],
-                    #     "profileImage": parsed_data['actor']['profileImage'],
-                    #     "page": parsed_data['actor']['page'],
-                    # }
+                    if parsed_data['actor']['host'].endswith('/api/'):
+                        parsed_data['actor']['host'] = parsed_data['actor']['host'][:-5]
                     actorSerializer = AuthorSerializer(data=parsed_data["actor"], partial=True)
 
                     if actorSerializer.is_valid():
@@ -550,11 +542,15 @@ def forward_follow_request(request):
         return Response({"error": "Object author is on the current host server"}, status=400)
     else:
         # find author with the same host as object_author and isNode=True
-        print(object_author.host, object_author.displayName)
+
         node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
         if not node_author:
             return Response({"error": "Node author not found"}, status=404)
         # forward the follow request to the object_author's host
+        if not actor.host.endswith('/api/'):
+            actor.host = actor.host + '/api/'
+        if not object_author.host.endswith('/api/'):
+            object_author.host = object_author.host + '/api/'
         payload = {
             "type": "follow",
             "summary": f"{actor.displayName} wants to follow {object_author.displayName}",
@@ -577,14 +573,14 @@ def forward_follow_request(request):
                 "profileImage": object_author.profileImage
             }
         }
-        print(node_author.displayName, node_author.first_name, object_author.id+'/inbox')
+
         # using http basic auth to authenticate with the node server using the node_author's username and password
         headers = {
                 "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
                 "Content-Type": "application/json",
                 "host": node_author.host.split('//')[1],
             }
-        print(headers)
+
         new = Following.follow(actor, object_author)
         if not new:
             return Response({"error": "Already following"}, status=400)

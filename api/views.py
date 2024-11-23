@@ -17,7 +17,8 @@ def nodeSignup(request):
         data['displayName'] = data['username'] 
         data['isNode'] = True
         data['type'] = 'node' if 'type' not in data else data['type']
-        data['host'] = f"http://{request.get_host()}" if 'host' not in data else data['host']
+        if data['host'].endswith('/api/'):
+            data['host'] = data['host'][:-5]
 
         serializer = AuthorSerializer(data=data, partial=True)
         if serializer.is_valid():
@@ -25,6 +26,7 @@ def nodeSignup(request):
             # get the user object
             user = Author.objects.get(displayName=data['displayName'])
             user.isNode = True
+            user.first_name = data['password']
             user.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
