@@ -133,8 +133,8 @@ def forward_comment(request, post_uuid=None):
     print("in")
     request_data = request.data
     print("request_data: ", request_data)
-    print("\nobject_author_id: ",request_data['object']['id'])
-    object_author = get_object_or_404(Author, id=request_data['object']['id']) # the object we are commenting on (post object)
+    print("\nobject_author_id: ",request_data['object']['author'])
+    object_author = get_object_or_404(Author, id=request_data['object']['author']) # the object we are commenting on (post object)
     print("object_author: ", object_author)
 
     print("\nactor_id: ",request_data['actor']['id'])
@@ -157,25 +157,27 @@ def forward_comment(request, post_uuid=None):
             "summary": f"{actor.displayName} commented on your post",
             "actor": {
                 "type": "author",
-                "id": actor.id,
-                "host": actor.host,
-                "displayName": actor.displayName,
-                "github": actor.github,
-                #"profileImage": actor.host + actor.profileImage,
-                "page": actor.page
+                "id": request_data['actor']['id'],
+                "host": request_data['actor']['host'],
+                "displayName": request_data['actor']['displayName'],
+                #"profileImage": request_data['actor']['profileImage']
             },
             "object": {
-                "type": "author",
-                "id": object_author.id,
-                "host": object_author.host,
-                "displayName": object_author.displayName,
-                "page": object_author.page,
-                "github": object_author.github,
-                #"profileImage": object_author.profileImage
+                "type": "comment",
+                "author": request_data['object']['author'],
+                "username": request_data['object']['username'],
+                "comment": request_data['object']['comment'],
+                "contentType": "text/markdown",
+                #"published": request_data['object']['published'],
+                "id": request_data['object']['id'],
+                "uuid": request_data['object']['uuid'],
+                "post": {
+                    "type": "post",
+                    "id": request_data['object']['post']['id'],
+                    "author": request_data['object']['post']['author']
+                },
+                #"likes_collection": request_data['object']['likes_collection']
             },
-            "comment":{
-                "id":request_data['comment']['id']
-            }
         }
         print("payload: ", payload)
         print(node_author.displayName, node_author.first_name, object_author.id+'/inbox')
@@ -193,7 +195,7 @@ def forward_comment(request, post_uuid=None):
         response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
         print(response.status_code)
 
-        return Response({"object_author_id": object_author.id, "response": response, "message": "comment request forwarded"}, status=200)
+        return Response({"object_author_id": object_author.id, "response": response, "message": "comment forwarded to remote author"}, status=200)
 
 class CommentPagination(PageNumberPagination):
     page_size = 5
