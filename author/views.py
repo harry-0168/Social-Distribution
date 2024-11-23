@@ -403,14 +403,15 @@ def api_list_authors(request):
     # Format authors according to spec
     formatted_authors = []
     for author in paginated_authors:
-        author_id = f"{author.host}/api/authors/{author.author_serial}"  # Use author_serial instead of id
+        if not author.host.endswith('/api/'):
+            author.host = author.host + '/api/'
         formatted_authors.append({
-            "type": "author",
-            "id": author_id,  # This should now be correct
+            "type":"author",
+            "id": author.id,
             "host": author.host,
             "displayName": author.displayName,
             "github": author.github,
-            "profileImage": author.profileImage.url if hasattr(author.profileImage, 'url') else author.profileImage,
+            "profileImage": author.profileImage,
             "page": author.page
         })
 
