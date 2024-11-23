@@ -125,6 +125,7 @@ def inboxApi(request, object_author_serial):
 
         # Parse JSON string into a Python dictionary
         parsed_data = request.data
+        print("parsed_data: ", parsed_data)
 
         # check the type of request object
         if parsed_data['type'] == 'follow':
@@ -174,8 +175,8 @@ def inboxApi(request, object_author_serial):
                 return Response({"error": "Actor not found"}, status=404)
             
         elif parsed_data['type'] == 'comment':
-            object_author = Author.objects.get(id=parsed_data['object']['id'])
-            Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['comment']['id'], received_at=timezone.now()).save()
+            object_author = Author.objects.get(id=parsed_data['object']['author'])
+            Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['object']['comment'], received_at=timezone.now()).save()
             return Response({"message": "Comment sent"}, status=200)
         
         elif parsed_data['type'] == 'like':
