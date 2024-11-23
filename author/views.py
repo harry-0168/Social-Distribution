@@ -30,22 +30,28 @@ def profile_view(request, author_id):
     This view fetches the author by either FQID or author_serial
     '''
     try:
+        # Clean the author_id by removing any trailing paths (like /following)
+        clean_author_id = author_id.split('/')[0]
+        
         # Try to get author by FQID first (for remote authors)
-        author = Author.objects.get(id=author_id)
-    except Author.DoesNotExist:
-        try:
+        author = Author.objects.filter(id=clean_author_id).first()
+        if not author:
             # If not found by FQID, try author_serial (for local authors)
-            author = Author.objects.get(author_serial=author_id)
-        except (Author.DoesNotExist, ValueError):
-            raise Http404("Author not found")
+            try:
+                author = Author.objects.get(author_serial=clean_author_id)
+            except (Author.DoesNotExist, ValueError):
+                raise Http404("Author not found")
+
+    except Exception as e:
+        raise Http404(f"Author not found: {str(e)}")
 
     # Check if this is a remote author
     is_remote = not author.host.startswith(request.build_absolute_uri('/').rstrip('/'))
 
     # Redirect if needed to ensure consistent URLs
-    if is_remote and author.id != author_id:
+    if is_remote and author.id != clean_author_id:
         return redirect('author_profile', author_id=author.id)
-    elif not is_remote and str(author.author_serial) != str(author_id):
+    elif not is_remote and str(author.author_serial) != str(clean_author_id):
         return redirect('author_profile', author_id=author.author_serial)
 
     # Rest of your existing profile_view code...
