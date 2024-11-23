@@ -3,6 +3,8 @@ from .models import Author, FollowRequest
 from django import forms
 
 class AuthorSerializer(serializers.ModelSerializer):
+    profileImage = serializers.SerializerMethodField()
+
     class Meta:
         model = Author
         fields = ['type','id', 'host', 'displayName', 'github', 'profileImage', 'page', 'password']
@@ -15,6 +17,8 @@ class AuthorSerializer(serializers.ModelSerializer):
             instance.set_password(password)
         instance.save()
         return instance
+    def get_profileImage(self, obj):
+        return f"{obj.host}api/authors/{obj.id.split('/')[-1]}/image"
     
     # def update(self, instance, validated_data):
     #     instance.choice_text = validated_data.get('choice_text', instance.choice_text)
