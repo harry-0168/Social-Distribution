@@ -579,8 +579,8 @@ def forward_follow_request(request):
         follow.status = 'accepted'
         follow.save()
         
-        print(object_author.author_serial + '/inbox')
-        response = requests.post(object_author.author_serial + '/inbox', json=payload, headers=headers)
+        print(object_author.id)
+        response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
         print(response.status_code, response.text)
 
         return Response({"message": "Follow request forwarded"}, status=200)
