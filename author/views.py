@@ -632,12 +632,12 @@ def get_author_data(author):
         if hasattr(author.profileImage, 'url'):
             profile_image = author.profileImage.url
         else:
-            profile_image = f"{api_host}/authors/{author.id}/image"
+            profile_image = f"{api_host}/authors/{author.author_serial}/image"
     else:
         profile_image = None
 
     # Construct the author ID
-    author_id = f"{api_host}/authors/{author.id}"
+    author_id = f"{api_host}/authors/{author.author_serial}"
 
     # Build the author data dictionary
     author_data = {
