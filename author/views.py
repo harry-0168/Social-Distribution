@@ -22,6 +22,9 @@ from posts.serializers import LikeSerializer
 import json
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
+import base64
+import imghdr
+
 
 
 def profile_view(request, author_serial):
@@ -329,7 +332,7 @@ def manage_follower(request, author_serial, foreign_author_id):
                 "displayName": foreign_author.displayName,
                 "page": f"{foreign_author.host}/authors/{foreign_author.author_serial}",
                 "github": foreign_author.github,
-                "profileImage": foreign_author.profileImage
+                "profileImage": f"{foreign_author.host}/api/authors/{foreign_author.author_serial}/image" if foreign_author.profileImage else None
             }
             return Response(follower_data, status=status.HTTP_200_OK)
         
@@ -354,7 +357,7 @@ def manage_follower(request, author_serial, foreign_author_id):
                 "displayName": foreign_author.displayName,
                 "page": f"{foreign_author.host}/authors/{foreign_author.author_serial}",
                 "github": foreign_author.github,
-                "profileImage": foreign_author.profileImage,
+                "profileImage": f"{foreign_author.host}/api/authors/{foreign_author.author_serial}/image" if foreign_author.profileImage else None,
                 "message": f"New follower created for author {author.displayName}"
             }
             return Response(follower_data, status=status.HTTP_201_CREATED)
@@ -404,13 +407,18 @@ def api_list_authors(request):
     formatted_authors = []
     for author in paginated_authors:
         author_id = f"{author.host}/api/authors/{author.author_serial}"  # Use author_serial instead of id
+        profile_image_url = (
+            f"{author.host}/api/authors/{author.author_serial}/image"
+            if author.profileImage
+            else None
+        )
         formatted_authors.append({
             "type": "author",
             "id": author_id,  # This should now be correct
             "host": author.host,
             "displayName": author.displayName,
             "github": author.github,
-            "profileImage": author.profileImage.url if hasattr(author.profileImage, 'url') else author.profileImage,
+            "profileImage": profile_image_url,
             "page": author.page
         })
 
@@ -505,8 +513,11 @@ def get_author_data(author):
     Helper function to format author data according to the API specification
     """
     # Handle profile image properly
-    profile_image = author.profileImage.url if hasattr(author.profileImage, 'url') else author.profileImage
-
+    profile_image = (
+        f"{author.host}/api/authors/{author.author_serial}/image"
+        if author.profileImage
+        else None
+    )
     # Construct the clean FQID without duplication
     author_id = f"{author.host}/api/authors/{author.author_serial}"
 
@@ -703,3 +714,18 @@ def user_settings(request, author_serial):
         form = UserSettingsForm(instance=author)
 
     return render(request, 'author/user_settings.html', {'form': form, 'author': author, 'followers_count': followers_count, 'following_count': following_count})
+
+def serve_profile_image(request, author_serial):
+    author = get_object_or_404(Author, author_serial=author_serial)
+    
+    if author.profileImage:
+        image_data = base64.b64decode(author.profileImage)
+
+        image_type = imghdr.what(None, image_data)
+        
+        if not image_type:
+            return HttpResponse(image_data, content_type="application/octet-stream")
+        
+        return HttpResponse(image_data, content_type=f"image/{image_type}")
+    else:
+        return HttpResponse(status=404) 
