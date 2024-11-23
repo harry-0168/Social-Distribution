@@ -120,7 +120,7 @@
                     </button>
                 </form>
                 <h3>{{ post.likes_collection.count }} like(s)</h3>
-                <a type="submit" class="comment-button" href="{% url 'viewPost' id=post.uuid %}">
+                <a type="submit" class="comment-button" href="{% url 'viewPost' fqid=post.id %}">
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
                 <h3>{{ post.comments.count }} comment(s)</h3>
@@ -129,7 +129,7 @@
             </section>
             <section class="viewLikesComments">
                 <a class="viewLikes">view likes</a>
-                <a class="viewComments" href="{% url 'viewPost' id=post.uuid %}">view comments</a>
+                <a class="viewComments" href="{% url 'viewPost' fqid=post.id %}">view comments</a>
             </section>
         </section>
     </section>
