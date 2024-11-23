@@ -527,7 +527,7 @@ def forward_follow_request(request):
         headers = {
                 "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
                 "Content-Type": "application/json",
-                "host": "https://" + node_author.host.split('//')[1],
+                "host": node_author.host.split('//')[1],
             }
         print(headers)
         
@@ -577,7 +577,6 @@ def handle_follow_request_response(request, author_serial, foreign_author_fqid):
     except jwt.InvalidTokenError: # redirect to /login
         return redirect('login')
 
-"""
 @api_view(['POST'])
 def forward_follow_request(request):
     ''' This view is used to forward follow requests to the next host server if the object author is not on the current host server '''
@@ -641,7 +640,7 @@ def forward_follow_request(request):
 
         return Response({"message": "Follow request forwarded"}, status=200)
 
-"""
+
 
 @api_view(['GET'])
 @authentication_classes([BasicAuthentication, SessionAuthentication])
