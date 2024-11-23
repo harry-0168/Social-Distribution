@@ -531,6 +531,9 @@ def api_list_authors(request):
         "type": "authors",
         "authors": formatted_authors
     }
+    
+    print("api: ")
+    print(response_data)
 
     return Response(response_data, status=status.HTTP_200_OK)
 
