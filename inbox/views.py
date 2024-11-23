@@ -527,7 +527,7 @@ def forward_follow_request(request):
         headers = {
                 "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
                 "Content-Type": "application/json",
-                "host": node_author.host.split('//')[1],
+                "host": "https://" + node_author.host.split('//')[1],
             }
         print(headers)
         
