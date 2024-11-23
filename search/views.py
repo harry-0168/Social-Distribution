@@ -26,11 +26,11 @@ def search_results(request):
             }
         print(node.host + 'authors', node.displayName, node.first_name)
         response = requests.get( url = node.host + '/api/authors', headers=headers)
+        print("response: ", response.json())
+        
         if response.status_code == 200:
             print(response.status_code)
             authors = response.json()['authors']
-            print("==================")
-            print(authors)
 
             for author in authors:
                 # check if the author already exists in the database
