@@ -486,56 +486,114 @@ def forward_like_request(request):
     
 @api_view(['POST'])
 def forward_follow_request(request):
-    ''' This view is used to forward follow requests to the next host server if the object author is not on the current host server '''
     request_data = request.data
-    # check if the object author is on the current host server
+    print("Received request data:", request_data)
+    
     object_author = get_object_or_404(Author, id=request_data['object']['id'])
     actor = get_object_or_404(Author, id=request_data['actor']['id'])
+    
+    print(f"Object author host: {object_author.host}")
+    print(f"Object author ID: {object_author.id}")
+    
     if object_author.host == request.get_host():
         return Response({"error": "Object author is on the current host server"}, status=400)
-    else:
-        # find author with the same host as object_author and isNode=True
-        print(object_author.host, object_author.displayName)
-        node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
-        if not node_author:
-            return Response({"error": "Node author not found"}, status=404)
-        # forward the follow request to the object_author's host
-        payload = {
-            "type": "follow",
-            "summary": f"{actor.displayName} wants to follow {object_author.displayName}",
-            "actor": {
-                "type": "author",
-                "id": actor.id,
-                "host": actor.host,
-                "displayName": actor.displayName,
-                "github": actor.github,
-                "profileImage": actor.host + actor.profileImage,
-                "page": actor.page
-            },
-            "object": {
-                "type": "author",
-                "id": object_author.id,
-                "host": object_author.host,
-                "displayName": object_author.displayName,
-                "page": object_author.page,
-                "github": object_author.github,
-                "profileImage": object_author.profileImage
-            }
-        }
-        print(node_author.displayName, node_author.first_name, object_author.id+'/inbox')
-        # using http basic auth to authenticate with the node server using the node_author's username and password
-        headers = {
-                "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
-                "Content-Type": "application/json",
-                "host": node_author.host.split('//')[1],
-            }
-        print(headers)
+    
+    # Clean up the host URL - remove any duplicate /api/ and ensure proper format
+    object_host = object_author.host.rstrip('/')
+    if '/api/api/' in object_host:
+        object_host = object_host.replace('/api/api/', '/api/')
+    if not object_host.endswith('/api'):
+        object_host += '/api'
         
-
-        response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
-        print(response.status_code, response.text)
-
-        return Response({"message": "Follow request forwarded"}, status=200)
+    print(f"Cleaned object host: {object_host}")
+    
+    # Find the node author
+    node_author = Author.objects.filter(host__icontains=object_host.split('/api')[0], isNode=True).first()
+    if not node_author:
+        return Response({
+            "error": "Node author not found",
+            "details": {
+                "object_host": object_host,
+                "available_nodes": list(Author.objects.filter(isNode=True).values('host', 'displayName'))
+            }
+        }, status=404)
+    
+    # Extract author ID from the full URL
+    author_id = object_author.id.split('/authors/')[-1]
+    if not author_id:
+        return Response({"error": "Could not extract author ID from URL"}, status=400)
+    
+    # Construct the inbox URL
+    inbox_url = f"{object_host}/authors/{author_id}/inbox"
+    print(f"Constructed inbox URL: {inbox_url}")
+    
+    payload = {
+        "type": "follow",
+        "summary": f"{actor.displayName} wants to follow {object_author.displayName}",
+        "actor": {
+            "type": "author",
+            "id": actor.id,
+            "host": actor.host.rstrip('/'),
+            "displayName": actor.displayName,
+            "github": actor.github,
+            "profileImage": f"{actor.host.rstrip('/')}{actor.profileImage.url}" if actor.profileImage else "",
+            "page": actor.page
+        },
+        "object": {
+            "type": "author",
+            "id": object_author.id,
+            "host": object_host,
+            "displayName": object_author.displayName,
+            "page": object_author.page,
+            "github": object_author.github,
+            "profileImage": f"{object_host}{object_author.profileImage.url}" if object_author.profileImage else ""
+        }
+    }
+    
+    # Clean up headers
+    headers = {
+        "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "host": object_host.split('//')[1]
+    }
+    
+    try:
+        print(f"Sending request to: {inbox_url}")
+        print(f"With headers: {headers}")
+        print(f"With payload: {json.dumps(payload, indent=2)}")
+        
+        response = requests.post(inbox_url, json=payload, headers=headers, timeout=10)
+        
+        print(f"Response status: {response.status_code}")
+        print(f"Response text: {response.text}")
+        
+        if response.status_code >= 400:
+            return Response({
+                "error": f"Remote server returned {response.status_code}",
+                "details": {
+                    "url": inbox_url,
+                    "response": response.text
+                }
+            }, status=response.status_code)
+            
+        # Create a local record of the follow request
+        try:
+            new = Following.follow(actor, object_author)
+            if new:
+                new.status = 'pending'
+                new.save()
+        except Exception as e:
+            print(f"Error creating local follow record: {str(e)}")
+        
+        return Response({"message": "Follow request forwarded successfully"}, status=200)
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Request failed: {str(e)}")
+        return Response({
+            "error": "Failed to forward follow request",
+            "details": str(e)
+        }, status=500)
 
 
 
@@ -576,71 +634,6 @@ def handle_follow_request_response(request, author_serial, foreign_author_fqid):
 
     except jwt.InvalidTokenError: # redirect to /login
         return redirect('login')
-
-@api_view(['POST'])
-def forward_follow_request(request):
-    ''' This view is used to forward follow requests to the next host server if the object author is not on the current host server '''
-    request_data = request.data
-    # check if the object author is on the current host server
-    object_author = get_object_or_404(Author, id=request_data['object']['id'])
-    actor = get_object_or_404(Author, id=request_data['actor']['id'])
-    if object_author.host == request.get_host():
-        return Response({"error": "Object author is on the current host server"}, status=400)
-    else:
-        # find author with the same host as object_author and isNode=True
-
-        node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
-        if not node_author:
-            return Response({"error": "Node author not found"}, status=404)
-        # forward the follow request to the object_author's host
-        if not actor.host.endswith('/api/'):
-            actor.host = actor.host + '/api/'
-        if not object_author.host.endswith('/api/'):
-            object_author.host = object_author.host + '/api/'
-        payload = {
-            "type": "follow",
-            "summary": f"{actor.displayName} wants to follow {object_author.displayName}",
-            "actor": {
-                "type": "author",
-                "id": actor.id,
-                "host": actor.host,
-                "displayName": actor.displayName,
-                "github": actor.github,
-                "profileImage": actor.host + actor.profileImage,
-                "page": actor.page
-            },
-            "object": {
-                "type": "author",
-                "id": object_author.id,
-                "host": object_author.host,
-                "displayName": object_author.displayName,
-                "page": object_author.page,
-                "github": object_author.github,
-                "profileImage": object_author.profileImage
-            }
-        }
-
-        # using http basic auth to authenticate with the node server using the node_author's username and password
-        headers = {
-                "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
-                "Content-Type": "application/json",
-                "host": node_author.host.split('//')[1],
-            }
-
-        new = Following.follow(actor, object_author)
-        if not new:
-            return Response({"error": "Already following"}, status=400)
-        follow = Following.objects.get(author1=actor, author2=object_author)
-        follow.status = 'accepted'
-        follow.save()
-        
-
-        response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
-        print(response.status_code, response.text)
-
-        return Response({"message": "Follow request forwarded"}, status=200)
-
-
 
 @api_view(['GET'])
 @authentication_classes([BasicAuthentication, SessionAuthentication])
