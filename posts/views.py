@@ -156,13 +156,13 @@ def forward_comment(request, post_uuid=None):
         payload = {
             "type": "comment",
             "summary": f"{actor.displayName} commented on your post",
-            "actor": {
-                "type": "author",
-                "id": request_data['actor']['id'],
-                "host": request_data['actor']['host'],
-                "displayName": request_data['actor']['displayName'],
-                #"profileImage": request_data['actor']['profileImage']
-            },
+            # "actor": {
+            #     "type": "author",
+            #     "id": request_data['actor']['id'],
+            #     "host": request_data['actor']['host'],
+            #     "displayName": request_data['actor']['displayName'],
+            #     #"profileImage": request_data['actor']['profileImage']
+            # },
             "object": {
                 "type": "comment",
                 "author": request_data['object']['author'],
@@ -172,11 +172,11 @@ def forward_comment(request, post_uuid=None):
                 #"published": request_data['object']['published'],
                 "id": request_data['object']['id'],
                 "uuid": request_data['object']['uuid'],
-                "post": {
-                    "type": "post",
-                    "id": request_data['object']['post']['id'],
-                    "author": request_data['object']['post']['author']
-                },
+                # "post": {
+                #     "type": "post",
+                #     "id": request_data['object']['post']['id'],
+                #     "author": request_data['object']['post']['author']
+                # },
                 #"likes_collection": request_data['object']['likes_collection']
             },
         }
