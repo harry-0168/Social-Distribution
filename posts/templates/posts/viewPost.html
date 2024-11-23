@@ -66,7 +66,7 @@
                     {{ post.content }}
                 {% elif post.contentType == "text/markdown" %}
                     <div id="markdown-content-{{ post.uuid }}" class="markdown-content" data-content="{{ post.content }}"></div>
-                {% elif post.contentType == "image/png;base64" or post.contentType == "image/jpeg;base64" %}
+                {% elif post.contentType == "image/png;base64" or post.contentType == "image/jpeg;base64" %}Z
                     <img src="{{ post.content }}" alt="Post Image" class="postImage">
 
                 {% else %}
@@ -339,7 +339,7 @@
                 function createCommentElement(comment) {
                     const commentDiv = document.createElement('div');
                     commentDiv.classList.add('comment');
-                
+
                     const img = document.createElement('img');
                     img.classList.add('profile-pic-small');
                     if (comment.author.profileImage) {
@@ -348,11 +348,11 @@
                     } else {
                         img.src = '/static/avatar.png';
                     }
-                
+
                     const h5 = document.createElement('h5');
                     h5.classList.add('commentUsername');
                     h5.textContent = comment.author.displayName;
-                    
+
                     const contentDiv = document.createElement('div');
                     contentDiv.classList.add('commentContent');
                     contentDiv.textContent = comment.comment;
@@ -599,14 +599,14 @@
                                     "summary": `${comment.username} commented on your post`,
                                     "actor": {
                                         "type": "author",
-                                        "id": comment.author.author_serial,
+                                        "id": comment.author.id,
                                         "host": comment.author.host,
                                         "displayName": comment.author.displayName,
                                         "profileImage": comment.author.profileImage
                                     },
                                     "object": {
                                         "type": "comment",
-                                        "author": "{{author.author_serial}}",
+                                        "author": "{{author.id}}",
                                         "username": "{{author.displayName}}",
                                         "comment": comment.comment,
                                         "contentType": "text/markdown",
@@ -619,15 +619,27 @@
                                             "author": "{{ post.author.author_serial }}"
                                         },
                                         "likes_collection": comment.likes_collection
-                                    }
+                                    },
                                 };
                                 console.log("inbox Request:", inboxRequest);
-                                
+
+                                const post_host = "{{post.author.host}}"
+                                console.log("post_host: ", post_host);
+
+                                console.log ("current host: ", currentHost);
+
+                                let forwardUrl;
 
                                 // Send the comment object to the author's inbox
-                                const inboxUrl = `${currentHost}/inbox/api/authors/${"{{ post.author.author_serial }}"}/inbox/`;
-
-                                fetch(inboxUrl, {
+                                if (currentHost === post_host || post_host === "http://127.0.0.1:8000"){  // object_author is on the current host server
+                                    forwardUrl = `${currentHost}/inbox/api/authors/${"{{ post.author.author_serial }}"}/inbox/`;
+                                    console.log("forwarding comment to local URL inbox: ", forwardUrl);
+                                } else {    // comment needs to be forwarded to remote node
+                                    forwardUrl = `${currentHost}/api/post/${"{{ post.uuid }}"}/viewPost/forward`;
+                                    console.log("forwarding comment to remote URL inbox: ", forwardUrl);
+                                }
+                                console.log("URL to fetch: ", forwardUrl)
+                                fetch(forwardUrl, {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',
@@ -639,6 +651,7 @@
                                     if (!response.ok) {
                                         throw new Error(`HTTP error! Status: ${response.status}`);
                                     }
+                                    console.log("first ok");
                                     return response.json();
                                 })
                                 .then(data => {
