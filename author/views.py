@@ -391,7 +391,7 @@ def api_list_authors(request):
         )
 
     # Get all authors
-    authors = Author.objects.filter(isNode=False)
+    authors = Author.objects.filter(isNode=False, is_superuser=False)
     
     # Calculate pagination
     start_index = (page - 1) * size
