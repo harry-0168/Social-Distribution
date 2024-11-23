@@ -401,7 +401,8 @@ def forward_like_request(request):
                 response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
                 print(response.status_code, response.text)
 
-                return Response({"message": "Like request forwarded"}, status=200)
+                #return Response({"message": "Like request forwarded"}, status=200)
+                return redirect(request.META.get('HTTP_REFERER'))
 
                 
             except Exception as e:
@@ -467,7 +468,8 @@ def forward_like_request(request):
                 response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
                 print(response.status_code, response.text)
 
-                return Response({"message": "Like request forwarded"}, status=200)
+                #return Response({"message": "Like request forwarded"}, status=200)
+                return redirect(request.META.get('HTTP_REFERER'))
 
 
             except Exception as e:
