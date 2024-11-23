@@ -1,5 +1,5 @@
 from django.urls import path
-from posts.views import forward_comment, get_author_comments, get_comment, get_commented_comment, get_edit_delete_post, get_posts_comments,get_posts_create_post,get_post_image
+from posts.views import get_author_comments, get_comment, get_commented_comment, get_edit_delete_post, get_posts_comments,get_posts_create_post,get_post_image
 from posts.views import get_edit_delete_post,get_posts_create_post,get_post_image, github_post, api_create_like, api_view_postLikes, api_view_Likes, get_post_FQID, api_view_Likes_comments
 from author.views import api_list_authors, api_add_author, api_author_detail, login, signup, get_author_from_cookie, logout, get_likes_by_author, get_single_like, api_get_like, serve_profile_image
 from inbox.views import get_followers, get_following
@@ -29,7 +29,6 @@ urlpatterns = [
     path('authors/<uuid:author_serial>/posts/<uuid:post_id>/comments', get_posts_comments, name='SERIAL_get_posts_comments'),
     path('posts/<path:post_FQID>/comments', get_posts_comments, name='FQID_get_posts_comments'),
     path('authors/<uuid:author_serial>/posts/<uuid:post_serial>/comment/<path:remote_comment_FQID>', get_comment, name='get_comment_remote_FQID'),
-    path('post/<uuid:post_uuid>/viewPost/forward', forward_comment, name="forward_comment"),
 
     # Commented API
     path('authors/<uuid:author_serial>/commented', get_author_comments, name='SERIAL_get_author_comments'),
