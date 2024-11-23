@@ -50,7 +50,7 @@ class Author(AbstractUser):
             self.host = "http://localhost"
 
         if not self.id:
-            self.id = f"{self.host}/authors/{self.author_serial}"
+            self.id = f"{self.host}/api/authors/{self.author_serial}"
 
         if not self.profileImage:
             self.profileImage = Default_profile_image_BASE64
