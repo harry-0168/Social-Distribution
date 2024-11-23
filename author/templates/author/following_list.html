@@ -1,40 +1,38 @@
 {% extends 'author/author_base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="follow-info">
-    <!-- Link to Followers page with count -->
-    <a href="{% url 'followers_list' author.author_serial %}" class="followers">
-        <strong>{{ followers_count }}</strong> Followers
-    </a>
-
-    <span> | </span>
-
-    <!-- Current page (Following) with count -->
-    <a href="{% url 'following_list' author.author_serial %}" class="following active">
-        <strong>{{ following_count }}</strong> Following
-    </a>
-</div>
-
-<div class="following-list">
-    {% for item in following %}
-        <div class="following-box">
-            <div class="following-info">
-                <a href="{% url 'author_profile' item.following.author_serial %}">
-                    {% if item.following.profileImage %}
-                        <img class="profile-image" src="data:image/png;base64,{{ item.following.profileImage }}" alt="{{ item.follower.displayName }}'s profile">
-                    {% else %}
-                        <img src="/static/images/default-profile.png" alt="Default profile" class="profile-image">
-                    {% endif %}
-                    <span>{{ item.following.displayName }}</span>
-                </a>
-                {% if item.is_friend %}
-                    <span class="friend-tag">Friend</span>
-                {% endif %}
-            </div>
+<div class="following-container">
+    <h2>{{ author.displayName }} is Following</h2>
+    
+    {% if following_list %}
+        <div class="following-list">
+            {% for follow in following_list %}
+                <div class="following-item">
+                    <div class="following-info">
+                        {% if follow.author2.profileImage %}
+                            <img src="data:image/png;base64,{{ follow.author2.profileImage }}" alt="Profile Image" class="following-profile-pic">
+                        {% else %}
+                            <img src="{% static 'avatar.png' %}" alt="Default Profile" class="following-profile-pic">
+                        {% endif %}
+                        
+                        <div class="following-details">
+                            <a href="{% url 'author_profile' follow.author2.id %}" class="following-name">
+                                {{ follow.author2.displayName }}
+                            </a>
+                            {% if follow.author2.github %}
+                                <a href="{{ follow.author2.github }}" class="github-link" target="_blank">
+                                    GitHub Profile
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
-    {% empty %}
-        <p>Not following anyone yet.</p>
-    {% endfor %}
+    {% else %}
+        <p class="no-following">Not following anyone yet</p>
+    {% endif %}
 </div>
 
 {% endblock %}

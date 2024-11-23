@@ -74,15 +74,148 @@
                 {% endif %}        
             </div>
             <section class="likeCommentShare">
-                <form action="{% url 'api_create_like' post.author.author_serial %}" method="POST">
-                    {% csrf_token %}
-                    <input type="hidden" name="post_id" value="{{ post.uuid }}"> <!-- Use post.uuid here -->
-                    <input type="hidden" name="type" value="like">
-                    <button type="submit" class="like-button">
-                        <img class="heart" src="{% static 'heart.png' %}" alt="Like">
-                    </button>
-                </form>
-                <h3>{{ post.like_set.count }} like(s)</h3>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const currentHost = window.location.host;
+                        const postAuthorHost = "{{ post.author.host }}".split('/').pop();
+                    
+                        const sameHostForm = document.querySelector('#sameHostForm');
+                        const differentHostForm = document.querySelector('#differentHostForm');
+                    
+                        if (sameHostForm && differentHostForm) {
+                            if (currentHost === postAuthorHost) {
+                                sameHostForm.style.display = 'block';
+                                differentHostForm.style.display = 'none';
+                            } else {
+                                sameHostForm.style.display = 'none';
+                                differentHostForm.style.display = 'block';
+                            }
+                        }
+                    
+                        // Helper function to get CSRF token
+                        function getToken(name) {
+                            let cookieValue = null;
+                            if (document.cookie && document.cookie !== '') {
+                                const cookies = document.cookie.split(';');
+                                for (let i = 0; i < cookies.length; i++) {
+                                    const cookie = cookies[i].trim();
+                                    if (cookie.startsWith(name + '=')) {
+                                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                        break;
+                                    }
+                                }
+                            }
+                            return cookieValue;
+                        }
+                    
+                        const csrfToken = getToken('csrftoken');
+                    
+                        // Function to handle submission for the same host form
+                        function handleSameHostFormSubmit(event) {
+                            console.log("LOGIC 1 REACHED - Same Host Form");
+                            event.preventDefault(); // Prevent default form submission
+                    
+                            const form = event.target; // Reference to the form that was submitted
+                            const formData = new FormData(form);
+                            const payload = {};
+                            
+                            formData.forEach((value, key) => {
+                                payload[key] = value;
+                            });
+                    
+                            // Create the like object
+                            fetch(form.action, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': csrfToken
+                                },
+                                body: JSON.stringify(payload)
+                            })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! Status: ${response.status}`);
+                                }
+                                return response.json();
+                            })
+                            .then(like => {
+                                console.log("Created Like Object:", like);
+                    
+                                // Construct the inbox request payload
+                                const inboxRequest = like;
+                    
+                                // Get the receiver ID (for same host form)
+                                const receiverId = form.querySelector('input[name="receiver_id"]')?.value || "{{ post.author.author_serial }}";
+                    
+                                const inboxUrl = `${window.location.origin}/inbox/api/authors/${receiverId}/inbox/`;
+                    
+                                // Send the like object to the author's inbox
+                                fetch(inboxUrl, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRFToken': csrfToken
+                                    },
+                                    body: JSON.stringify(inboxRequest)
+                                })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error(`HTTP error! Status: ${response.status}`);
+                                    }
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    console.log("Inbox Response Data:", data);
+                                    alert("Like sent to inbox successfully!");
+                                })
+                                .catch(error => console.error('Inbox Error:', error));
+                            })
+                            .catch(error => console.error('Like Creation Error:', error));
+                        }
+                    
+                        // Function to handle submission for the different host form
+                        function handleDifferentHostFormSubmit(event) {
+                            console.log("LOGIC 1 REACHED - Different Host Form");
+                        }   
+                        // Attach submit event listener to both forms separately
+                        if (sameHostForm) {
+                            sameHostForm.addEventListener('submit', handleSameHostFormSubmit);
+                        }
+                    
+                        if (differentHostForm) {
+                            differentHostForm.addEventListener('submit', handleDifferentHostFormSubmit);
+                        }
+                    });
+                </script>
+                
+                    
+                    <!-- Forms -->
+                    <form id="sameHostForm" action="{% url 'api_create_like' post.author.author_serial %}" method="POST" style="display: none;">
+                        {% csrf_token %}
+                        
+                        <input type="hidden" name="post_id" value="{{ post.uuid }}">
+                        <input type="hidden" name="type" value="like">
+                        <input type="hidden" name="comment_id" value="">
+                        <button type="submit" class="like-button">
+                            <img class="heart" src="{% static 'heart.png' %}" alt="Like">
+                        </button>
+                    </form>
+                    
+                    <form id="differentHostForm" action="{% url 'forward_like_request' %}" method="POST" style="display: none;">
+                        {% csrf_token %}
+                        <input type="hidden" name="receiver_id" value="{{ post.author.id }}">
+                        <input type="hidden" name="post_id" value="{{ post.uuid }}">
+                        <input type="hidden" name="type" value="like">
+                        <input type="hidden" name="comment_id" value="">
+                        <button type="submit" class="like-button">
+                            <img class="heart" src="{% static 'heart.png' %}" alt="Like">
+                        </button>
+                    </form>
+                    
+                
+                
+                
+                <h3>{{ post.likes_collection.count }} like(s)</h3>
                 <a type="submit" class="comment-button" href="#comment-input">
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
@@ -223,10 +356,155 @@
                     const contentDiv = document.createElement('div');
                     contentDiv.classList.add('commentContent');
                     contentDiv.textContent = comment.comment;
+                
+                    // Determine hosts for form handling
+                    const currentHost = window.location.host;
+                    const commentAuthorHost = comment.author.host.split('/').pop(); // Extract host part
 
-                    h5.appendChild(contentDiv);
+                    console.log("Current Host:", currentHost);
+                    console.log("Comment Author Host:", commentAuthorHost);
+
+                    // Create like form for same host
+                    const sameHostForm = document.createElement('form');
+                    sameHostForm.setAttribute('method', 'POST');
+                    sameHostForm.style.display = 'none'; // Initially hidden
+
+                    // Action URL for same host form
+                    const uuid = comment.author.id.split('/').pop(); // Extract UUID from author's ID
+                    sameHostForm.setAttribute('action', `/post/api/${uuid}/like/`);
+                    console.log("post author id")
+                    sameHostForm.innerHTML = `
+                        {% csrf_token %}
+                        <input type="hidden" name="type" value="like">
+                        <input type="hidden" name="comment_id" value="${comment.id}">
+                        <input type="hidden" name="post_id" value="">
+                        <button type="submit" class="like-button">
+                            <img class="heart" src="{% static 'heart.png' %}" alt="Like">
+                        </button>
+                    `;
+                    console.log("comment author id")
+                    console.log("comment post author id")
+                    // Create like form for different host
+                    const differentHostForm = document.createElement('form');
+                    differentHostForm.setAttribute('method', 'POST');
+                    differentHostForm.style.display = 'none'; // Initially hidden
+                    differentHostForm.setAttribute('action', '{% url "forward_like_request" %}');
+                    differentHostForm.innerHTML = `
+                        {% csrf_token %}
+                        <input type="hidden" name="comment_id" value="${comment.id}">
+                        <input type="hidden" name="receiver_id" value="${comment.author.id}">
+                        <input type="hidden" name="post_id" value="">
+                        <input type="hidden" name="type" value="like">
+                        <button type="submit" class="like-button">
+                            <img class="heart" src="{% static 'heart.png' %}" alt="Like">
+                        </button>
+                    `;
+
+                    // Check and display the appropriate form
+                    if (currentHost === commentAuthorHost) {
+                        sameHostForm.style.display = 'block';
+                    } else {
+                        differentHostForm.style.display = 'block';
+                    }
+                    // Attach event listener for same host form submission
+                    sameHostForm.addEventListener('submit', function (event) {
+                         // Helper function to get CSRF token
+                         function getToken(name) {
+                            let cookieValue = null;
+                            if (document.cookie && document.cookie !== '') {
+                                const cookies = document.cookie.split(';');
+                                for (let i = 0; i < cookies.length; i++) {
+                                    const cookie = cookies[i].trim();
+                                    if (cookie.startsWith(name + '=')) {
+                                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                        break;
+                                    }
+                                }
+                            }
+                            return cookieValue;
+                        }
+                    
+                        const csrfToken = getToken('csrftoken');
+                        console.log("LOGIC 1 REACHED - Same Host Form");
+                        event.preventDefault(); // Prevent default form submission
+
+                        const form = event.target; // Reference to the form that was submitted
+                        const formData = new FormData(form);
+                        const payload = {};
+
+                        // Convert FormData to JSON
+                        formData.forEach((value, key) => {
+                            payload[key] = value;
+                        });
+
+                        // Create the like object
+                        fetch(form.action, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': csrfToken // Replace with dynamic CSRF token if needed
+                            },
+                            body: JSON.stringify(payload)
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! Status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(like => {
+                            console.log("Created Like Object:", like);
+
+                            // Construct the inbox request payload (reuse the like object)
+                            const inboxRequest = like;
+                            // Get the receiver ID
+                            const receiverId = like.author;
+
+                            // Construct the inbox URL dynamically
+                            const inboxUrl = `${window.location.origin}/inbox/api/authors/${receiverId}/inbox/`;
+
+                            // Send the like object to the author's inbox
+                            return fetch(inboxUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': csrfToken // Replace with dynamic CSRF token if needed
+                                },
+                                body: JSON.stringify(inboxRequest)
+                            });
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! Status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log("Inbox Response Data:", data);
+                            alert("Like sent to inbox successfully!");
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert("An error occurred while processing the like.");
+                        });
+                    });
+
+                    // Construct URL for Viewing Likes
+                    const postUrl = comment.post;
+                    const postUuid = postUrl.split('/').pop(); // Extract post UUID from URL
+                    const decodedUuid = decodeURIComponent(uuid);
+                    const viewLikesLink = document.createElement('a');
+                    viewLikesLink.href = `/api/authors/${decodedUuid}/posts/${postUuid}/comments/${comment.uuid}/likes`; // Build the URL dynamically
+                    viewLikesLink.textContent = 'View Likes';
+                    viewLikesLink.classList.add('viewLikes');
+
+                    // Append elements to the comment div
                     commentDiv.appendChild(img);
                     commentDiv.appendChild(h5);
+                    commentDiv.appendChild(contentDiv);
+                    commentDiv.appendChild(sameHostForm);
+                    commentDiv.appendChild(differentHostForm);
+                    commentDiv.appendChild(viewLikesLink);
 
                     return commentDiv;
                 }

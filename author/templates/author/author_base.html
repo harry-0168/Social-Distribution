@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'author_profile' request.user.author_serial %}"> <!-- TO-DO replace with actual author id-->
+        <a href="{% url 'author_profile' request.user.id %}"> <!-- TO-DO replace with actual author id-->
             {% if author.profileImage %}
             <img class="profile-pic-header" src="data:image/png;base64,{{ author.profileImage }}">
             {% else %}
@@ -67,26 +67,27 @@
             {% endif %}
         </form>
         <div class="follow-info">
-            <!-- Clickable link for followers list -->
-            <a href="{% url 'followers_list' author.author_serial %}" class="followers">
+            <!-- Clickable link for followers list - Changed to use author.id -->
+            <a href="{% url 'followers_list' author.id %}" class="followers">
                 <strong>{{ followers_count }}</strong> Followers
             </a>
 
-           <span> | </span>
-        
-            <!-- Clickable link for following list -->
-            <a href="{% url 'following_list' author.author_serial %}" class="following">
+            <span> | </span>
+
+            <!-- Clickable link for following list - Changed to use author.id -->
+            <a href="{% url 'following_list' author.id %}" class="following">
                 <strong>{{ following_count }}</strong> Following
             </a>
         </div>
 
             <ul class="profile-menu">
-                <li><a href="{% url 'author_profile' author.author_serial %}">Home</a></li>
-                <li><a href="{% url 'author-about' author.author_serial %}">About</a></li>
+                <!-- Changed all links to use author.id instead of author.author_serial -->
+                <li><a href="{% url 'author_profile' author.id %}">Home</a></li>
+                <li><a href="{% url 'author-about' author.id %}">About</a></li>
                 <!-- <li><a href="#">Photo</a></li>
                 <li><a href="#">Video</a></li> -->
                 {% if request.user.author_serial == author.author_serial %}
-                    <li><a href="{% url 'user-settings' author.author_serial %}">Settings</a></li>
+                    <li><a href="{% url 'user-settings' author.id %}">Settings</a></li>
                     <!-- Only show logout when viewing own profile -->
                     <li>
                         <form action="{% url 'logout' %}" method="POST">

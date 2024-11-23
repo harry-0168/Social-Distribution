@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from rest_framework.response import Response
+from django.utils.dateformat import format
 from rest_framework import status
 import jwt
 from django.conf import settings
@@ -21,6 +22,7 @@ from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
 from author.serializers import AuthorSerializer
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
+from posts.serializers import LikeSerializer
 from rest_framework.permissions import IsAuthenticated
 import requests
 import base64
@@ -105,18 +107,20 @@ def inbox(request):
         return Response({"error": "Author not found"}, status=404)
     
 @api_view(['POST'])
-@csrf_exempt
 def inboxApi(request, object_author_serial):
-    print("in Inbox API")
+    print("stage1 logic")
     token = request.COOKIES.get('jwt')
     flag = 1   # flag to check if the request is from my nodes frontend
     payload, author, actor, object_author = None, None, None, None
     if not token:
+        print("stage3 logic")
         flag = 0
         auth = BasicAuthentication()
         user, auth_status = auth.authenticate(request)
         if  not user or not IsAuthenticated().has_permission(request, None):
+            
             return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
+        
     
     try:
         if flag == 1:
@@ -125,24 +129,18 @@ def inboxApi(request, object_author_serial):
 
         # Parse JSON string into a Python dictionary
         parsed_data = request.data
-        print("parsed_data: ", parsed_data)
+        print("parsed data")
+        print(parsed_data)
 
         # check the type of request object
         if parsed_data['type'] == 'follow':
             try:
                 if parsed_data['object']['host'] != parsed_data['actor']['host']:
                     
-                    # create object author and following object, then forward the request to the next host server
-                    objectAuthor = Author.objects.get(id=parsed_data['object']['id'])
+                    objectAuthor = get_object_or_404(Author, id=parsed_data['object']['id'])
                     print(parsed_data['actor']['id'])
-                    # actor_data = {
-                    #     "FQID": parsed_data['actor']['id'],
-                    #     "host": parsed_data['actor']['host'],
-                    #     "displayName": parsed_data['actor']['displayName'],
-                    #     "github": parsed_data['actor']['github'],
-                    #     "profileImage": parsed_data['actor']['profileImage'],
-                    #     "page": parsed_data['actor']['page'],
-                    # }
+                    if parsed_data['actor']['host'].endswith('/api/'):
+                        parsed_data['actor']['host'] = parsed_data['actor']['host'][:-5]
                     actorSerializer = AuthorSerializer(data=parsed_data["actor"], partial=True)
 
                     if actorSerializer.is_valid():
@@ -180,123 +178,87 @@ def inboxApi(request, object_author_serial):
             return Response({"message": "Comment sent"}, status=200)
         
         elif parsed_data['type'] == 'like':
-            author = get_object_or_404(Author, author_serial=object_author_serial)
+            print("stage2 logic")
+            # Check if 'author' is a string or a dictionary
+            if isinstance(parsed_data['author'], str):
+                # If 'author' is a string, query using author_serial
+                sender_author = Author.objects.filter(author_serial=parsed_data['author']).first()
+                if not sender_author:
+                    return Response({"error": "Author with the given serial not found"}, status=404)
+            else:
+                # If 'author' is a dictionary, query using the nested 'id'
+                sender_author = Author.objects.filter(id=parsed_data['author'].get('id')).first()
+                if not sender_author:
+                    return Response({"error": "Author with the given ID not found"}, status=404)
 
-            # Get the post_id from form data
-            post_id = request.POST.get('post_id')
-            comment_id = request.POST.get('comment_id')
+            # Continue processing with sender_author
 
-            token = request.COOKIES.get('jwt')
-            if not token:
-                return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+            object_author = Author.objects.get(author_serial=object_author_serial)
+            sender_host = sender_author.host
+            object_host = object_author.host
+            print("sender host",sender_host)
+            print("object host",object_host)
+            if sender_host != object_host:
+                # Extract object field and determine target
+                object_field = parsed_data['object']
+                is_comment = "comment" in object_field
 
-            try:
-                payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-                username = payload['id']  # Assuming 'id' is the username or display name
-                user = get_object_or_404(Author, displayName=username)
-            except jwt.ExpiredSignatureError:
-                return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+                try:
+                    if is_comment:
+                        # Handle Like for Comment
+                        comment_id = object_field
+                        comment = get_object_or_404(Comment, id=comment_id)
 
-            try:
-                if post_id:
-                    post = get_object_or_404(Post, uuid=post_id)
-                    print("level1")
-                    
+                        # Check if a like already exists for the comment
+                        if Like.objects.filter(username=sender_author.displayName, comment=comment).exists():
+                            return Response({"message": "Like already exists for comment"}, status=200)
 
-            
-
-                    # Check if a like already exists
-                    if Like.objects.filter(username=username, post=post).exists():
-                        print("level2")
-                        likes = Like.objects.filter(username=username, post=post)
-                        for like in likes:
-                            print(f"Like ID: {like.uuid}, Username: {like.username}, Author: {like.author}, Post ID: {like.post.id}")
-                        return redirect(request.META.get('HTTP_REFERER'))
-
-                    try:
-                        # Ensure post has a likes collection or create one
-                        if not post.likes_collection:
-                            likes_collection = Likes.objects.create()
-                            post.likes_collection = likes_collection
-                            post.save()
-
-                        # Create and save the new Like instance
-                        like = Like(username=username, post=post, author=user)
-                        like.save()
-
-                        # Add the like to the post's likes collection
-                        post.likes_collection.add_like(like)
-                        #Inbox(receiver=author, type='like', FQIDorId=parsed_data['object']['id'], received_at=timezone.now()).save()
-                        print("level3")
-
-                        # Serialize and return the response
-                        return redirect(request.META.get('HTTP_REFERER'))
-                    except Exception as e:
-                        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-                elif comment_id:
-                    comment = get_object_or_404(Comment, id=comment_id)
-                    print("level1")
-                    
-
-            
-
-                    # Check if a like already exists
-                    if Like.objects.filter(username=username, comment=comment).exists():
-                        print("level2")
-                        likes = Like.objects.filter(username=username, comment=comment)
-                        for like in likes:
-                            print(f"Like ID: {like.uuid}, Username: {like.username}, Author: {like.author}, Comment ID: {like.comment.id}")
-                        likes_collections = Likes.objects.all()
-                        print("All Likes Collections:")
-                        for collection in likes_collections:
-                            print(f"Likes Collection ID: {collection.id}")
-                            print(f"Page: {collection.page}")
-                            print(f"Page Number: {collection.page_number}")
-                            print(f"Size: {collection.size}")
-                            print(f"Total Likes: {collection.count}")
-                            
-                            # Print all likes in the collection (related Like objects)
-                            print("Likes in this collection:")
-                            for like in collection.src.all():
-                                print(f"  - {like.username} liked {'post' if like.post else 'comment'} ID {like.post.id if like.post else like.comment.id}")
-                            
-                            print("-" * 50)
-                        return redirect(request.META.get('HTTP_REFERER'))
-                            
-
-                    try:
-                        # Ensure post has a likes collection or create one
-                        if not comment.likes_collection:
+                        # Ensure the comment has a likes collection or create one
+                        if not hasattr(comment, 'likes_collection') or not comment.likes_collection:
                             likes_collection = Likes.objects.create()
                             comment.likes_collection = likes_collection
                             comment.save()
 
-                        # Create and save the new Like instance
-                        like = Like(username=username, comment=comment, author=user)
+                        # Create and save the Like instance for the comment
+                        like = Like(username=sender_author.username, comment=comment, author=sender_author)
+                        like.save()
+
+                        # Add the like to the comment's likes collection
+                        comment.likes_collection.add_like(like)
+                    
+
+                    else:
+                        # Handle Like for Post
+                        post_id = object_field
+                        post = get_object_or_404(Post, id=post_id)
+
+                        # Check if a like already exists for the post
+                        if Like.objects.filter(username=sender_author.displayName, post=post).exists():
+                            return Response({"message": "Like already exists for post"}, status=200)
+
+                        # Ensure the post has a likes collection or create one
+                        if not hasattr(post, 'likes_collection') or not post.likes_collection:
+                            likes_collection = Likes.objects.create()
+                            post.likes_collection = likes_collection
+                            post.save()
+
+                        # Create and save the Like instance for the post
+                        like = Like(username=sender_author.displayName, post=post, author=sender_author)
                         like.save()
 
                         # Add the like to the post's likes collection
-                        comment.likes_collection.add_like(like)
-                        print("level3")
-                        print(parsed_data)
-                        #Inbox(receiver=author, type='like', FQIDorId=parsed_data['object']['id'], received_at=timezone.now()).save()
-
-
-                        # Serialize and return the response
-                        return redirect(request.META.get('HTTP_REFERER'))
-                    except Exception as e:
-                        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+                        post.likes_collection.add_like(like)
+                        
+                        
+                except Exception as e:
+                    print(f"Error saving like: {e}")
+                    return Response({"error": "Failed to save like"}, status=500)
                 
-
-                else:
-                    return Response({"error": "Post ID or Comment ID not found"}, status=status.HTTP_400_BAD_REQUEST)
-
-
-            except Exception as e:
-                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            else:
+                print("hosts equal")
+            #Inbox(receiver=object_author, type='like', FQIDorId=parsed_data['id'], received_at=timezone.now()).save()
+            return Response({"message": "Like sent"}, status=200)
+        
         elif parsed_data['type'] == 'post':
             # Extract author data from the parsed_data
             author_data = parsed_data.get('author')
@@ -361,47 +323,166 @@ def inboxApi(request, object_author_serial):
     
 @api_view(['POST'])
 def forward_like_request(request):
-    ''' This view is used to forward like requests to the next host server if the object or author being liked is not on the current host server '''
-    request_data = request.data
-    liked_object = get_object_or_404(Like, id=request_data['like']['id'])
-    liked_object_receiver = get_object_or_404(Author, id=request_data['receiver']['id'])
-    liked_object_post = liked_object.post
-    liked_object_comment = liked_object.comment
-    
+    # Get the post_id from form data
+    post_id = request.data['post_id']
+    comment_id = request.data['comment_id']
+    print("receiver id ", request.data['receiver_id'])
+    object_author = get_object_or_404(Author, id=request.data['receiver_id'])
+    print("authorforforward")
+    print(object_author)
+    #sender = request.POST.get('sender')
 
-    # Check if liked object is hosted on the current server
-    if liked_object_receiver.host == request.get_host():
-        return Response({"error": "Liked object is on the current host server"}, status=400)
-    
-    # Find the node author for forwarding purposes
-    node_author = Author.objects.filter(host=liked_object_receiver.host, isNode=True).first()
-    if not node_author:
-        return Response({"error": "Node author not found"}, status=404)
-    
-    if liked_object_post:
-        payload = {
-            "type": "like",
-            "post_id": liked_object_post.uuid
-            }
-    elif liked_object_comment:
-        payload = {
-            "type": "like",
-            "post_id": liked_object_comment.uuid
-            }
-    else:
-        return Response({"error": "Invalid like request"}, status=400)
-    
+    token = request.COOKIES.get('jwt')
+    if not token:
+        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
-    # Use HTTP basic auth to authenticate with the target node
-    headers = {
-        "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
-        "Content-Type": "application/json",
-    }
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+        username = payload['id']  # Assuming 'id' is the username or display name
+        user = get_object_or_404(Author, displayName=username)
+    except jwt.ExpiredSignatureError:
+        return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+    try:
+        if post_id:
+            post = get_object_or_404(Post, uuid=post_id)
+            
+            # Check if a like already exists
+            if Like.objects.filter(username=username, post=post).exists():
+                likes = Like.objects.filter(username=username, post=post)
+                return redirect(request.META.get('HTTP_REFERER'))
 
-    response = requests.post(liked_object_receiver.id + '/inbox', json=payload, headers=headers)
-    print(response.status_code, response.text)
-    return Response({"message": "Like sent successfully"}, status=200)
+            try:
+                # Ensure post has a likes collection or create one
+                if not post.likes_collection:
+                    likes_collection = Likes.objects.create()
+                    post.likes_collection = likes_collection
+                    post.save()
 
+                # Create and save the new Like instance
+                like = Like(username=username, post=post, author=user)
+                like.save()
+                # Add the like to the post's likes collection
+                post.likes_collection.add_like(like)
+                like_serializer = LikeSerializer(like)
+                # forward the follow request to the object_author's host
+                # Convert to string
+                published_as_string = like.published.isoformat()
+
+                
+                payload = {
+                    "type":"like",
+                    "author":{
+                        "type":"author",
+                        "id":user.id,
+                        "host":user.host,
+                        "displayName":user.displayName,
+                        "page":user.page,
+                        "github": user.github,
+                        "profileImage": user.profileImage
+                    },
+                    "published": published_as_string,
+                    "id": like.id,
+                    "object": like.object
+                }
+                
+                node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
+                if not node_author:
+                    return Response({"error": "Node author not found"}, status=404)
+                print(node_author.displayName, node_author.first_name, object_author.id+'/inbox')
+                # using http basic auth to authenticate with the node server using the node_author's username and password
+                headers = {
+                        "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
+                        "Content-Type": "application/json",
+                        "host": node_author.host.split('//')[1],
+                    }
+                print(headers)
+                
+
+                response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
+                print(response.status_code, response.text)
+
+                #return Response({"message": "Like request forwarded"}, status=200)
+                return redirect(request.META.get('HTTP_REFERER'))
+
+                
+            except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+        elif comment_id:
+            comment = get_object_or_404(Comment, id=comment_id)
+
+            # Check if a like already exists
+            if Like.objects.filter(username=username, comment=comment).exists():
+                return redirect(request.META.get('HTTP_REFERER'))
+                    
+
+            try:
+                # Ensure post has a likes collection or create one
+                if not comment.likes_collection:
+                    likes_collection = Likes.objects.create()
+                    comment.likes_collection = likes_collection
+                    comment.save()
+
+                # Create and save the new Like instance
+                like = Like(username=username, comment=comment, author=user)
+                like.save()
+
+                # Add the like to the post's likes collection
+                comment.likes_collection.add_like(like)
+                print("level3")
+                like_serializer = LikeSerializer(like)
+
+                published_as_string = like.published.isoformat()
+
+                
+                payload = {
+                    "type":"like",
+                    "author":{
+                        "type":"author",
+                        "id":user.id,
+                        "host":user.host,
+                        "displayName":user.displayName,
+                        "page":user.page,
+                        "github": user.github,
+                        "profileImage": user.profileImage
+                    },
+                    "published": published_as_string,
+                    "id": like.id,
+                    "object": like.object
+                }
+                
+                node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
+                if not node_author:
+                    return Response({"error": "Node author not found"}, status=404)
+                print(node_author.displayName, node_author.first_name, object_author.id+'/inbox')
+                # using http basic auth to authenticate with the node server using the node_author's username and password
+                headers = {
+                        "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
+                        "Content-Type": "application/json",
+                        "host": node_author.host.split('//')[1],
+                    }
+                print(headers)
+                
+
+                response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
+                print(response.status_code, response.text)
+
+                #return Response({"message": "Like request forwarded"}, status=200)
+                return redirect(request.META.get('HTTP_REFERER'))
+
+
+            except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        
+
+        else:
+            return Response({"error": "Post ID or Comment ID not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 @api_view(['POST'])
 def forward_follow_request(request):
@@ -507,11 +588,15 @@ def forward_follow_request(request):
         return Response({"error": "Object author is on the current host server"}, status=400)
     else:
         # find author with the same host as object_author and isNode=True
-        print(object_author.host, object_author.displayName)
+
         node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
         if not node_author:
             return Response({"error": "Node author not found"}, status=404)
         # forward the follow request to the object_author's host
+        if not actor.host.endswith('/api/'):
+            actor.host = actor.host + '/api/'
+        if not object_author.host.endswith('/api/'):
+            object_author.host = object_author.host + '/api/'
         payload = {
             "type": "follow",
             "summary": f"{actor.displayName} wants to follow {object_author.displayName}",
@@ -534,14 +619,14 @@ def forward_follow_request(request):
                 "profileImage": object_author.profileImage
             }
         }
-        print(node_author.displayName, node_author.first_name, object_author.id+'/inbox')
+
         # using http basic auth to authenticate with the node server using the node_author's username and password
         headers = {
                 "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
                 "Content-Type": "application/json",
                 "host": node_author.host.split('//')[1],
             }
-        print(headers)
+
         new = Following.follow(actor, object_author)
         if not new:
             return Response({"error": "Already following"}, status=400)

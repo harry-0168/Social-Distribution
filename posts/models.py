@@ -45,7 +45,7 @@ class Like(models.Model):
         Ensure that only one of post or comment is set.
         """
         host = kwargs.get('request_host', 'localhost')
-        author_id = self.author.id  # Ensure that author id is correctly set
+        author_id = self.author.author_serial  # Ensure that author id is correctly set
         self.id = f"http://{host}/api/authors/{author_id}/liked/{self.uuid}"
         if self.post:
             self.object = str(self.post.id)
