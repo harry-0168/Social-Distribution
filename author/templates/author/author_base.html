@@ -45,7 +45,7 @@
         <h2 class="profile-name">{{ author.displayName }}</h2>
         
         <!-- Get all the information of the user and author -->
-        <form method="POST" action="{% url 'follow-author' author.id %}" class="follow-form"
+        <form method="POST" action="{% url 'follow-author' author.author_serial %}" class="follow-form"
                 data-author-author_serial="{{ author.author_serial }}"
                 data-author-id="{{ author.id }}"
                 data-author-host="{{ author.host }}"
@@ -68,25 +68,25 @@
         </form>
         <div class="follow-info">
             <!-- Clickable link for followers list -->
-            <a href="{% url 'followers_list' author.id %}" class="followers">
+            <a href="{% url 'followers_list' author.author_serial %}" class="followers">
                 <strong>{{ followers_count }}</strong> Followers
             </a>
 
            <span> | </span>
         
             <!-- Clickable link for following list -->
-            <a href="{% url 'following_list' author.id %}" class="following">
+            <a href="{% url 'following_list' author.author_serial %}" class="following">
                 <strong>{{ following_count }}</strong> Following
             </a>
         </div>
 
             <ul class="profile-menu">
-                <li><a href="{% url 'author_profile' author.id %}">Home</a></li>
-                <li><a href="{% url 'author-about' author.id %}">About</a></li>
+                <li><a href="{% url 'author_profile' author.author_serial %}">Home</a></li>
+                <li><a href="{% url 'author-about' author.author_serial %}">About</a></li>
                 <!-- <li><a href="#">Photo</a></li>
                 <li><a href="#">Video</a></li> -->
                 {% if request.user.author_serial == author.author_serial %}
-                    <li><a href="{% url 'user-settings' author.id %}">Settings</a></li>
+                    <li><a href="{% url 'user-settings' author.author_serial %}">Settings</a></li>
                     <!-- Only show logout when viewing own profile -->
                     <li>
                         <form action="{% url 'logout' %}" method="POST">
