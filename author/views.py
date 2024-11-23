@@ -637,7 +637,7 @@ def get_author_data(author):
         profile_image = None
 
     # Construct the author ID
-    author_id = f"{api_host}/authors/{author.id}"
+    author_id = f"{api_host}/authors/{author.author_serial}"
 
     # Build the author data dictionary
     author_data = {
