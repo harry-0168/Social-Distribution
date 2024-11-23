@@ -23,7 +23,7 @@ def search_results(request):
                 
             }
         print(node.host + 'authors', node.displayName, node.first_name)
-        response = requests.get( url = node.host + 'authors', headers=headers)
+        response = requests.get( url = node.host + '/authors', headers=headers)
         if response.status_code == 200:
             print(response.status_code)
             authors = response.json()['authors']
