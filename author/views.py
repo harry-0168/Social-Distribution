@@ -30,55 +30,60 @@ def profile_view(request, author_id):
     This view fetches the author by either FQID or author_serial
     '''
     try:
-        # Try to get author by FQID first
+        # Try to get author by FQID first (for remote authors)
         author = Author.objects.get(id=author_id)
     except Author.DoesNotExist:
-        # If not found by FQID, try author_serial (for backward compatibility)
         try:
+            # If not found by FQID, try author_serial (for local authors)
             author = Author.objects.get(author_serial=author_id)
+            
+            # If this is a local author, redirect to the UUID-based URL
+            if not author.host.startswith(request.build_absolute_uri('/').rstrip('/')):
+                return redirect('author_profile', author_serial=author.author_serial)
         except (Author.DoesNotExist, ValueError):
             raise Http404("Author not found")
 
-    # Initialize follow-related variables
+    # For remote authors, we want to keep the FQID in the URL
+    if author.host.startswith(request.build_absolute_uri('/').rstrip('/')):
+        # Local author - use UUID in URL
+        if str(author.author_serial) != author_id:
+            return redirect('author_profile', author_serial=author.author_serial)
+    else:
+        # Remote author - use FQID in URL
+        if author.id != author_id:
+            return redirect('author_profile', author_id=author.id)
+
+    # Rest of your existing profile_view code...
     is_following = False
     is_friends = False
     
-    # Get follow counts
     followers_count = Following.objects.filter(
         author2=author, 
-        status='accepted'  # Only count accepted follows
+        status='accepted'
     ).count()
     
     following_count = Following.objects.filter(
         author1=author, 
-        status='accepted'  # Only count accepted follows
+        status='accepted'
     ).count()
     
-    # Check relationships if user is authenticated
     if request.user.is_authenticated and request.user != author:
-        # Check if following (only if status is accepted)
         is_following = Following.objects.filter(
             author1=request.user, 
             author2=author,
-            status='accepted'  # Only consider accepted follows
+            status='accepted'
         ).exists()
         
-        # Check if they are friends
         is_friends = Following.are_friends(request.user, author)
     
-    # Determine post visibility
     visibility_exclusions = ['DELETED']
     if request.user == author:
-        # Author can see all their own posts except deleted ones
         pass
     elif not is_friends and not is_following:
-        # Public users can only see public posts
         visibility_exclusions.extend(['FRIENDS', 'UNLISTED'])
     elif not is_friends:
-        # Followers can see public and unlisted posts
         visibility_exclusions.append('FRIENDS')
 
-    # Fetch visible posts
     posts = Post.objects.filter(
         author=author
     ).exclude(
@@ -93,7 +98,8 @@ def profile_view(request, author_id):
         'is_following': is_following,
         'is_friends': is_friends,
         'logged_in_user': request.user,
-        'is_own_profile': request.user == author
+        'is_own_profile': request.user == author,
+        'is_remote': not author.host.startswith(request.build_absolute_uri('/').rstrip('/'))  # Add this flag
     }
     
     return render(request, 'author/author_feed.html', context)
