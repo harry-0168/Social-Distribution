@@ -43,19 +43,19 @@ class Author(AbstractUser):
         request = kwargs.pop('request', None)
     
         if not self.host and request:
-            # Use the request object to determine the scheme (http or https)
-            scheme = request.scheme
-            # if host heroku in it, use https
-            if 'heroku' in request.get_host():
-                scheme = "https"
+            scheme = "https" if 'heroku' in request.get_host() else request.scheme
             host = request.get_host()
             self.host = f"{scheme}://{host}"
         elif not self.host:
-            # Fallback if no request object is provided
             self.host = "http://localhost"
 
-        if not self.id:  # Set the id if not already set
-            self.id = f"{self.host}/api/authors/{self.author_serial}"
+        host = self.host.rstrip('/')
+        if not host.endswith('/api'):
+            host = f"{host}/api"
+            self.host = host
+
+        if not self.id:
+            self.id = f"{self.host}/authors/{self.author_serial}"
 
         if not self.profileImage:
             self.profileImage = Default_profile_image_BASE64
