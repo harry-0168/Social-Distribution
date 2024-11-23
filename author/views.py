@@ -520,26 +520,11 @@ def api_list_authors(request):
     # Slice the queryset
     paginated_authors = authors[start_index:end_index]
     
-    # Format authors according to spec
+    # Format authors using the helper function
     formatted_authors = []
     for author in paginated_authors:
-        author_id = f"{author.host}/api/authors/{author.author_serial}"  # Use author_serial instead of id
-        profile_image_url = (
-            f"{author.host}/api/authors/{author.author_serial}/image"
-            if author.profileImage
-            else None
-        )
-
-        formatted_authors.append({
-            "type":"author",
-            "id": author.id,
-            "host": author.host,
-            "displayName": author.displayName,
-            "github": author.github,
-            "profileImage": profile_image_url,
-
-            "page": author.page
-        })
+        author_data = get_author_data(author)
+        formatted_authors.append(author_data)
 
     # Return response in specified format
     response_data = {
@@ -548,6 +533,7 @@ def api_list_authors(request):
     }
 
     return Response(response_data, status=status.HTTP_200_OK)
+
     
     
 @api_view(['POST'])
