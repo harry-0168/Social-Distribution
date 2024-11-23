@@ -157,13 +157,13 @@ def forward_comment(request, post_uuid=None):
         payload = {
             "type": "comment",
             "summary": f"{actor.displayName} commented on your post",
-            # "actor": {
-            #     "type": "author",
-            #     "id": request_data['actor']['id'],
-            #     "host": request_data['actor']['host'],
-            #     "displayName": request_data['actor']['displayName'],
-            #     #"profileImage": request_data['actor']['profileImage']
-            # },
+            "actor": {
+                "type": "author",
+                "id": request_data['actor']['id'],
+                "host": request_data['actor']['host'],
+                "displayName": request_data['actor']['displayName'],
+                #"profileImage": request_data['actor']['profileImage']
+            },
             "object": {
                 "type": "comment",
                 "author": request_data['object']['author'],
@@ -173,12 +173,7 @@ def forward_comment(request, post_uuid=None):
                 #"published": request_data['object']['published'],
                 "id": request_data['object']['id'],
                 "uuid": request_data['object']['uuid'],
-                # "post": {
-                #     "type": "post",
-                #     "id": request_data['object']['post']['id'],
-                #     "author": request_data['object']['post']['author']
-                # },
-                #"likes_collection": request_data['object']['likes_collection']
+                "likes_collection": request_data['object']['likes_collection']
             },
         }
         print("payload: ", payload)
@@ -193,11 +188,9 @@ def forward_comment(request, post_uuid=None):
         print("username: ", node_author.displayName)
         print("password: ", node_author.first_name)
         
-        print("sending request...")
+        print("sending request...", (object_author.id + '/inbox'))
         # Construct the remote node's inbox URL using the node_author's host
-        inbox_url = f"{node_author.host}/authors/{object_author.id.split('/')[-1]}/inbox"
-        print("inbox_urls: ", inbox_url)
-        response = requests.post(inbox_url, json=payload, headers=headers)
+        response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
         print(response.status_code)
 
         return Response({"object_author_id": object_author.id, "response": response, "message": "comment forwarded to remote author"}, status=200)
