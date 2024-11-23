@@ -130,7 +130,7 @@ def get_comment(request, comment_id=None, author_serial=None, post_serial=None, 
 
 @api_view(['POST'])
 def forward_comment(request, post_uuid=None):
-    print("in")
+    print("in forward_comment")
     request_data = request.data
     print("request_data: ", request_data)
     print("\nobject_author_id: ",request_data['object']['author'])
@@ -147,8 +147,9 @@ def forward_comment(request, post_uuid=None):
         return Response({"error": "Object author is on the current host server"}, status = 400)
     else:
         # find the node that the object_author belongs to
-        print("\nobject_author.host: ", object_author.host)
-        node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
+        print("\nobject_author.host: ", (object_author.host + "/api"))
+        node_author = Author.objects.filter(host=(object_author.host + "/api"), isNode=True).first()
+        print("found node_author")
         if not node_author:
             return Response({"error": "Node Author not found"}, status = 404)
         # forward the comment to the object_author's host
