@@ -527,7 +527,7 @@ def api_list_authors(request):
     # Return response in specified format
     response_data = {
         "type": "authors",
-        "items": formatted_authors
+        "authors": formatted_authors
     }
 
     return Response(response_data, status=status.HTTP_200_OK)
