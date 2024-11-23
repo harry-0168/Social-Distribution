@@ -47,7 +47,7 @@
                 .then(response => response.json())
                 .then(data => {
                     const postContainer = document.getElementById('post-container');
-
+ 
                     data.src.forEach((post, index) => {
                         const isFollowing = followingList[index]; // Match follow status by index
                         const profileImageUrl = post.author.profileImage 
@@ -55,7 +55,7 @@
                             : defaultAvatarUrl;
 
                         const postElement = `
-                            <a href="/post/${post.uuid}/viewPost/" style="text-decoration: none; color: inherit;">
+                            <a href="/post/${post.id}/viewPost/" style="text-decoration: none; color: inherit;">
                                 <div class="post">
                                     <div class="post-header">
 

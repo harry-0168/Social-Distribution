@@ -549,8 +549,8 @@ def repost_link(request, id):
 
     return Response({"error": "Invalid request method"}, status=status.HTTP_400_BAD_REQUEST)
 
-def view_edit_post(request, id):
-    post = get_object_or_404(Post, uuid=id)
+def view_edit_post(request, fqid):
+    post = get_object_or_404(Post, id=fqid)
     author_id = get_author_from_cookie(request).data.get('id')
     return render(request, 'posts/editPost.html', {'post': post, 'author_id': author_id})
 
@@ -692,8 +692,8 @@ def get_post_FQID(request, FQID=None):
     else:
         return Response({'error': 'FQID must be provided'}, status=status.HTTP_400_BAD_REQUEST)
     
-def view_post(request, id):
-    post = get_object_or_404(Post, uuid=id)
+def view_post(request, fqid):
+    post = get_object_or_404(Post, id=fqid)
 
     # Check for post visibility
     if post.visibility == 'DELETED' and not request.user.is_staff:  # Only admins can see deleted posts
@@ -882,7 +882,7 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
         ).select_related('receiver')
         for inbox_entry in previous_recipients:
             recipients.add(inbox_entry.receiver)
-    print(serializer_data)
+
     # Send to each remote recipient's inbox
     nodes = Author.objects.filter(isNode=True)
     for recipient in recipients:
