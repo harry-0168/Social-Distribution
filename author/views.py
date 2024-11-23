@@ -487,8 +487,9 @@ def manage_follower(request, author_serial, foreign_author_id):
 @authentication_classes([BasicAuthentication, SessionAuthentication])
 def api_list_authors(request):
     """
-    GET: List all authors with pagination
-    Example query: GET ://service/api/authors?page=10&size=5
+    GET: List all authors
+    With pagination: GET ://service/api/authors?page=10&size=5
+    Without pagination: GET ://service/api/authors
     """
     # Check authentication
     if not request.user.is_authenticated:
@@ -498,42 +499,36 @@ def api_list_authors(request):
         )
 
     # Get pagination parameters from query string
-    page = request.query_params.get('page', 1)
-    size = request.query_params.get('size', 10)
+    page = request.query_params.get('page')
+    size = request.query_params.get('size')
     
-    try:
-        page = int(page)
-        size = int(size)
-    except ValueError:
-        return Response(
-            {"error": "Invalid page or size parameter"}, 
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    # Get all authors
-    authors = Author.objects.filter(isNode=False, is_superuser=False)
+    # Get all authors (excluding system accounts)
+    authors = Author.objects.filter(isNode=False, is_superuser=False).order_by('displayName')
     
-    # Calculate pagination
-    start_index = (page - 1) * size
-    end_index = start_index + size
-    
-    # Slice the queryset
-    paginated_authors = authors[start_index:end_index]
+    # If both page and size are specified, apply pagination
+    if page is not None and size is not None:
+        try:
+            page = int(page)
+            size = int(size)
+            # Calculate pagination
+            start_index = (page - 1) * size
+            end_index = start_index + size
+            # Slice the queryset
+            authors = authors[start_index:end_index]
+        except ValueError:
+            return Response(
+                {"error": "Invalid page or size parameter"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
     
     # Format authors using the helper function
-    formatted_authors = []
-    for author in paginated_authors:
-        author_data = get_author_data(author)
-        formatted_authors.append(author_data)
+    formatted_authors = [get_author_data(author) for author in authors]
 
     # Return response in specified format
     response_data = {
         "type": "authors",
-        "authors": formatted_authors
+        "items": formatted_authors
     }
-    
-    print("api: ")
-    print(response_data)
 
     return Response(response_data, status=status.HTTP_200_OK)
 
