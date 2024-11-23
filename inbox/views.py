@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from rest_framework.response import Response
+from django.utils.dateformat import format
 from rest_framework import status
 import jwt
 from django.conf import settings
@@ -364,6 +365,10 @@ def forward_like_request(request):
                 post.likes_collection.add_like(like)
                 like_serializer = LikeSerializer(like)
                 # forward the follow request to the object_author's host
+                # Convert to string
+                published_as_string = like.published.isoformat()
+
+                
                 payload = {
                     "type":"like",
                     "author":{
@@ -375,7 +380,7 @@ def forward_like_request(request):
                         "github": user.github,
                         "profileImage": user.profileImage
                     },
-                    "published":like.published,
+                    "published": published_as_string,
                     "id": like.id,
                     "object": like.object
                 }
@@ -396,7 +401,7 @@ def forward_like_request(request):
                 response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
                 print(response.status_code, response.text)
 
-                return Response({"message": "Follow request forwarded"}, status=200)
+                return Response({"message": "Like request forwarded"}, status=200)
 
                 
             except Exception as e:
@@ -427,6 +432,25 @@ def forward_like_request(request):
                 print("level3")
                 like_serializer = LikeSerializer(like)
 
+                published_as_string = like.published.isoformat()
+
+                
+                payload = {
+                    "type":"like",
+                    "author":{
+                        "type":"author",
+                        "id":user.id,
+                        "host":user.host,
+                        "displayName":user.displayName,
+                        "page":user.page,
+                        "github": user.github,
+                        "profileImage": user.profileImage
+                    },
+                    "published": published_as_string,
+                    "id": like.id,
+                    "object": like.object
+                }
+                
                 node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
                 if not node_author:
                     return Response({"error": "Node author not found"}, status=404)
@@ -443,7 +467,8 @@ def forward_like_request(request):
                 response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
                 print(response.status_code, response.text)
 
-                return Response({"message": "Follow request forwarded"}, status=200)
+                return Response({"message": "Like request forwarded"}, status=200)
+
 
             except Exception as e:
                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
