@@ -149,10 +149,11 @@ def forward_comment(request, post_uuid=None):
         # find the node that the object_author belongs to
         print("\nobject_author.host: ", (object_author.host + "/api"))
         node_author = Author.objects.filter(host=(object_author.host + "/api"), isNode=True).first()
-        print("found node_author")
+        print("found node_author: ", node_author)
         if not node_author:
             return Response({"error": "Node Author not found"}, status = 404)
         # forward the comment to the object_author's host
+        print("in payload")
         payload = {
             "type": "comment",
             "summary": f"{actor.displayName} commented on your post",
