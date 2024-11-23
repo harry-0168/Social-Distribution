@@ -14,8 +14,8 @@ class PostAdmin(admin.ModelAdmin):
     def delete_queryset(self, request, queryset):
         queryset.update(visibility='DELETED')
         
-class CommentAdmin(admin.ModelAdmin):
-    list_display = ('type', 'author', 'username', 'comment', 'contentType', 'published', 'id', 'uuid', 'post', 'likes_collection')  # Add fields you want to display
+# class CommentAdmin(admin.ModelAdmin):
+#     list_display = ('type', 'author', 'username', 'comment', 'contentType', 'published', 'id', 'uuid', 'post', 'likes_collection')  # Add fields you want to display
         
 admin.site.register(Post, PostAdmin)
-admin.site.register(Comment, CommentAdmin)
+admin.site.register(Comment)
