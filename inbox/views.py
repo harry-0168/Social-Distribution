@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from rest_framework.response import Response
+from django.utils.dateformat import format
 from rest_framework import status
 import jwt
 from django.conf import settings
@@ -364,6 +365,10 @@ def forward_like_request(request):
                 post.likes_collection.add_like(like)
                 like_serializer = LikeSerializer(like)
                 # forward the follow request to the object_author's host
+                # Convert to string
+                published_as_string = like.published.isoformat()
+
+                
                 payload = {
                     "type":"like",
                     "author":{
@@ -375,7 +380,7 @@ def forward_like_request(request):
                         "github": user.github,
                         "profileImage": user.profileImage
                     },
-                    "published":like.published,
+                    "published": published_as_string,
                     "id": like.id,
                     "object": like.object
                 }
