@@ -628,13 +628,14 @@ def get_author_data(author):
     api_host = f"{host}/api"
     
     # Handle profile image properly
-    if author.profileImage:
-        if hasattr(author.profileImage, 'url'):
-            profile_image = author.profileImage.url
-        else:
-            profile_image = f"{api_host}/authors/{author.id}/image"
-    else:
-        profile_image = None
+    # if author.profileImage:
+    #     if hasattr(author.profileImage, 'url'):
+    #         profile_image = author.profileImage.url
+    #     else:
+    #         profile_image = f"{api_host}/authors/{author.id}/image"
+    # else:
+    #     profile_image = None
+    profile_image = author.profileImage
 
     # Construct the author ID
     author_id = f"{api_host}/authors/{author.author_serial}"
