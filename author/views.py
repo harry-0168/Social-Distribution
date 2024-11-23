@@ -22,6 +22,7 @@ from posts.serializers import LikeSerializer
 import json
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
+from django.urls import reverse
 
 
 def profile_view(request, author_id):
@@ -117,16 +118,82 @@ def profile_view(request, author_id):
     return render(request, 'author/author_feed.html', context)
 
 
-def author_about(request, author_serial):
+def author_about(request, author_id):
     '''
     View to display the about page of an author
-    This view fetches the author by author_serial and renders the author's about page.
+    This view fetches the author by either FQID or author_serial
     '''
-    author = Author.objects.get(author_serial=author_serial)  
-    followers_count = Following.objects.filter(author2=author, status='accepted').count()  # Count of followers
-    # Get the Following count (authors this author is Following)
-    following_count = Following.objects.filter(author1=author, status='accepted').count()  # Count of people this author is following
-    return render(request, 'author/author_about.html', {'author': author, 'followers_count': followers_count, 'following_count': following_count})
+    try:
+        # Try to get author by FQID first
+        author = Author.objects.filter(id=author_id).first()
+        
+        if not author and 'http' in author_id:
+            # For remote authors, try to find by the full FQID
+            try:
+                author = Author.objects.get(id=author_id)
+            except Author.DoesNotExist:
+                try:
+                    uuid_part = author_id.split('/')[-1]  # Get the last part of the URL
+                    author = Author.objects.get(author_serial=uuid_part)
+                except (Author.DoesNotExist, ValueError, IndexError):
+                    raise Http404("Remote author not found")
+        elif not author:
+            # For local authors, try by author_serial
+            try:
+                clean_id = author_id.split('/')[0]  # Remove any trailing paths
+                author = Author.objects.get(author_serial=clean_id)
+                # Construct FQID for local author
+                author_fqid = f"{request.build_absolute_uri('/').rstrip('/')}/api/authors/{author.author_serial}"
+                # Redirect to FQID URL
+                return redirect('author-about', author_id=author_fqid)
+            except (Author.DoesNotExist, ValueError):
+                raise Http404("Local author not found")
+
+    except Exception as e:
+        raise Http404(f"Author not found: {str(e)}")
+
+    # Check if this is a remote author
+    is_remote = not author.host.startswith(request.build_absolute_uri('/').rstrip('/'))
+
+    # For consistency, always use FQID in URLs
+    if author.id != author_id:
+        return redirect('author-about', author_id=author.id)
+
+    # Get follower and following counts
+    followers_count = Following.objects.filter(
+        author2=author, 
+        status='accepted'
+    ).count()
+    
+    following_count = Following.objects.filter(
+        author1=author, 
+        status='accepted'
+    ).count()
+
+    # Check if the logged-in user is following this author
+    is_following = False
+    is_friends = False
+    if request.user.is_authenticated and request.user != author:
+        is_following = Following.objects.filter(
+            author1=request.user, 
+            author2=author,
+            status='accepted'
+        ).exists()
+        
+        is_friends = Following.are_friends(request.user, author)
+
+    context = {
+        'author': author,
+        'followers_count': followers_count,
+        'following_count': following_count,
+        'is_following': is_following,
+        'is_friends': is_friends,
+        'logged_in_user': request.user,
+        'is_own_profile': request.user == author,
+        'is_remote': is_remote
+    }
+    
+    return render(request, 'author/author_about.html', context)
 
 @api_view(['GET'])
 def api_get_like(request, like_fqid):
@@ -687,22 +754,46 @@ def logout(request):
     return render(request, 'author/login.html')
 
 
-def user_settings(request, author_serial):
+def user_settings(request, author_id):
     try:
-        # Get author by serial
-        author = get_object_or_404(Author, author_serial=author_serial)
+        # Clean the author_id by removing any trailing paths
+        clean_author_id = author_id.split('/')[0] if '/' in author_id else author_id
         
-        # Construct FQID
-        author_fqid = f"{request.build_absolute_uri('/').rstrip('/')}/api/authors/{author.author_serial}"
+        # Try to get author by FQID first
+        author = Author.objects.filter(id=author_id).first()
         
+        if not author and 'http' in author_id:
+            # For remote authors, try to find by the full FQID
+            try:
+                author = Author.objects.get(id=author_id)
+            except Author.DoesNotExist:
+                try:
+                    uuid_part = author_id.split('/')[-1]  # Get the last part of the URL
+                    author = Author.objects.get(author_serial=uuid_part)
+                except (Author.DoesNotExist, ValueError, IndexError):
+                    raise Http404("Remote author not found")
+        elif not author:
+            # For local authors, try by author_serial
+            try:
+                author = Author.objects.get(author_serial=clean_author_id)
+                # Construct FQID for local author
+                author_fqid = f"{request.build_absolute_uri('/').rstrip('/')}/api/authors/{author.author_serial}"
+                # Redirect to FQID URL if not already using it
+                if author_fqid != author_id:
+                    return redirect('user-settings', author_id=author_fqid)
+            except (Author.DoesNotExist, ValueError):
+                raise Http404("Local author not found")
+
+        # Check if user has permission to access settings
+        if request.user != author:
+            raise Http404("You don't have permission to access these settings")
+
         if request.method == 'POST':
             form = UserSettingsForm(request.POST, request.FILES, instance=author)
             if form.is_valid():
                 form.save()
                 messages.success(request, 'Profile changes saved successfully!')
-                
-                # Use FQID in redirect
-                return redirect('author_profile', author_id=author_fqid)
+                return redirect('author_profile', author_id=author.id)  # Use FQID for redirect
         else:
             form = UserSettingsForm(instance=author)
 
@@ -712,10 +803,14 @@ def user_settings(request, author_serial):
             'followers_count': Following.objects.filter(author2=author, status='accepted').count(),
             'following_count': Following.objects.filter(author1=author, status='accepted').count(),
             'redirect_url': request.build_absolute_uri(
-                reverse('author_profile', kwargs={'author_id': author_fqid})
+                reverse('author_profile', kwargs={'author_id': author.id})  # Use FQID for URL
             )
         }
         
         return render(request, 'author/user_settings.html', context)
     except Exception as e:
+        # Log the full error for debugging
+        import traceback
+        print(f"Error in user settings: {str(e)}")
+        print(traceback.format_exc())
         raise Http404(f"Error in user settings: {str(e)}")
