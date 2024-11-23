@@ -182,16 +182,18 @@ def forward_comment(request, post_uuid=None):
         headers = {
                 "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
                 "Content-Type": "application/json",
-                "host": node_author.host.split('//')[1],
+                "host": node_author.host.split('//')[1].replace('/api', ''),
             }
         print("headers: ",headers)
         print("username: ", node_author.displayName)
         print("password: ", node_author.first_name)
         
         print("sending request...", (object_author.id + '/inbox'))
+        requestURL = (object_author.id + '/inbox')
         # Construct the remote node's inbox URL using the node_author's host
-        response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
-        print(response.status_code)
+        response = requests.post(requestURL, json=payload, headers=headers)
+        print("response returned with: ",response.status_code)
+        print("requestedURL was:",requestURL)
 
         return Response({"object_author_id": object_author.id, "response": response, "message": "comment forwarded to remote author"}, status=200)
 
