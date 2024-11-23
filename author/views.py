@@ -24,14 +24,21 @@ from rest_framework.authentication import BasicAuthentication, SessionAuthentica
 from rest_framework.permissions import IsAuthenticated
 
 
-def profile_view(request, author_serial):
+def profile_view(request, author_id):
     '''
     View to display the public profile of an author
-    This view fetches the author by author_serial and renders the author's profile page.
+    This view fetches the author by either FQID or author_serial
     '''
-    # Fetch the author by author_serial
-    author = get_object_or_404(Author, author_serial=author_serial)
-    
+    try:
+        # Try to get author by FQID first
+        author = Author.objects.get(id=author_id)
+    except Author.DoesNotExist:
+        # If not found by FQID, try author_serial (for backward compatibility)
+        try:
+            author = Author.objects.get(author_serial=author_id)
+        except (Author.DoesNotExist, ValueError):
+            raise Http404("Author not found")
+
     # Initialize follow-related variables
     is_following = False
     is_friends = False
