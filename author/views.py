@@ -30,16 +30,14 @@ def profile_view(request, author_id):
     This view fetches the author by either FQID or author_serial
     '''
     try:
-        # Try to get author by FQID first (for remote authors)
+        # Try to get author by FQID first
         author = Author.objects.filter(id=author_id).first()
         
         if not author and 'http' in author_id:
             # For remote authors, try to find by the full FQID
             try:
-                # The author_id is already the full FQID
                 author = Author.objects.get(id=author_id)
             except Author.DoesNotExist:
-                # Try to find by extracting the UUID from the FQID
                 try:
                     uuid_part = author_id.split('/')[-1]  # Get the last part of the URL
                     author = Author.objects.get(author_serial=uuid_part)
@@ -50,6 +48,10 @@ def profile_view(request, author_id):
             try:
                 clean_id = author_id.split('/')[0]  # Remove any trailing paths
                 author = Author.objects.get(author_serial=clean_id)
+                # Construct FQID for local author
+                author_fqid = f"{request.build_absolute_uri('/').rstrip('/')}/api/authors/{author.author_serial}"
+                # Redirect to FQID URL
+                return redirect('author_profile', author_id=author_fqid)
             except (Author.DoesNotExist, ValueError):
                 raise Http404("Local author not found")
 
@@ -59,11 +61,9 @@ def profile_view(request, author_id):
     # Check if this is a remote author
     is_remote = not author.host.startswith(request.build_absolute_uri('/').rstrip('/'))
 
-    # Redirect if needed to ensure consistent URLs
-    if is_remote and author.id != author_id:
+    # For consistency, always use FQID in URLs
+    if author.id != author_id:
         return redirect('author_profile', author_id=author.id)
-    elif not is_remote and str(author.author_serial) != str(author_id.split('/')[0]):
-        return redirect('author_profile', author_id=author.author_serial)
 
     # Rest of your existing profile_view code...
     is_following = False
@@ -688,49 +688,34 @@ def logout(request):
 
 
 def user_settings(request, author_serial):
-    author = get_object_or_404(Author, author_serial=author_serial)
-    followers_count = Following.objects.filter(author2=author, status='accepted').count()  # Count of followers
-    # Get the Following count (authors this author is Following)
-    following_count = Following.objects.filter(author1=author, status='accepted').count()  # Count of people this author is following
-    if request.method == 'POST':
-        form = UserSettingsForm(request.POST, request.FILES, instance=author)
-        new_display_name = form.data.get('displayName')
-        if new_display_name and new_display_name != author.displayName:
-            if Author.objects.filter(displayName=new_display_name).exclude(author_serial=author.author_serial).exists():
-                messages.error(request, 'This display name is already taken. Please choose another.')
-                return render(request, 'author/user_settings.html', {
-                    'form': form,
-                    'author': author,
-                    'redirect_url': request.build_absolute_uri(
-                        redirect('author_profile', author_serial=author.author_serial).url
-                    )
-                })
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Profile changes saved successfully!')
-            payload = {
-                'id': author.displayName,
-                'author_id': str(author.author_serial),
-                'exp': datetime.now() + timedelta(days=1),  # Token expiration
-                'iat': datetime.now()
-            }
-            print("JWT Payload:", payload)
+    try:
+        # Get author by serial
+        author = get_object_or_404(Author, author_serial=author_serial)
+        
+        # Construct FQID
+        author_fqid = f"{request.build_absolute_uri('/').rstrip('/')}/api/authors/{author.author_serial}"
+        
+        if request.method == 'POST':
+            form = UserSettingsForm(request.POST, request.FILES, instance=author)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Profile changes saved successfully!')
+                
+                # Use FQID in redirect
+                return redirect('author_profile', author_id=author_fqid)
+        else:
+            form = UserSettingsForm(instance=author)
 
-            newToken = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
-
-            #Redirect and set the new JWT token in a cookie
-            response = render(request, 'author/user_settings.html', {
-                'form': form,
-                'author': author,
-                'redirect_url': request.build_absolute_uri(
-                    redirect('author_profile', author_serial=author.author_serial).url
-                )
-            })
-            response.set_cookie(key=settings.JWT_AUTH_COOKIE, value=newToken, httponly=True)
-            return response
-
-
-    else:
-        form = UserSettingsForm(instance=author)
-
-    return render(request, 'author/user_settings.html', {'form': form, 'author': author, 'followers_count': followers_count, 'following_count': following_count})
+        context = {
+            'form': form,
+            'author': author,
+            'followers_count': Following.objects.filter(author2=author, status='accepted').count(),
+            'following_count': Following.objects.filter(author1=author, status='accepted').count(),
+            'redirect_url': request.build_absolute_uri(
+                reverse('author_profile', kwargs={'author_id': author_fqid})
+            )
+        }
+        
+        return render(request, 'author/user_settings.html', context)
+    except Exception as e:
+        raise Http404(f"Error in user settings: {str(e)}")
