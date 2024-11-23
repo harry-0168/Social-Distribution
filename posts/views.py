@@ -148,7 +148,7 @@ def forward_comment(request, post_uuid=None):
     else:
         # find the node that the object_author belongs to
         print("\nobject_author.host: ", (object_author.host))
-        node_author = Author.objects.filter(host=(object_author.host + "/api"), isNode=True).first()
+        node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
         print("found node_author: ", node_author)
         if not node_author:
             return Response({"error": "Node Author not found"}, status = 404)
