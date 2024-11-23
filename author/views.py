@@ -631,31 +631,38 @@ def get_author_data(author):
     """
     Helper function to format author data according to the API specification
     """
+    # Normalize host first
+    host = author.host.rstrip('/')
+    if host.endswith('/api'):
+        host = host[:-4]
+    elif host.endswith('/api/'):
+        host = host[:-5]
+    
+    # Add /api/ to normalized host
+    api_host = f"{host}/api"
+    
     # Handle profile image properly
-    profile_image = (
-        f"{author.host}/api/authors/{author.author_serial}/image"
-        if author.profileImage
-        else None
-    )
-    profile_image = author.profileImage.url if hasattr(author.profileImage, 'url') else author.profileImage
+    if author.profileImage:
+        if hasattr(author.profileImage, 'url'):
+            profile_image = author.profileImage.url
+        else:
+            profile_image = f"{api_host}/authors/{author.id}/image"
+    else:
+        profile_image = None
 
-    # Ensure host ends with /api/
-    host = author.host
-    if not host.endswith('/api/'):
-        host = f"{host.rstrip('/')}/api/"
-
-    # Construct the clean FQID without duplication
-    author_id = f"{host}authors/{author.author_serial}"
+    # Construct the author ID
+    author_id = f"{api_host}/authors/{author.id}"
 
     # Build the author data dictionary
     author_data = {
         "type": "author",
-        "id": author_id,
-        "host": host,  # Now includes /api/
+        "id": author_id,  # This should be the full author ID, not just the host
+        "host": f"{host}/api/",  # Include trailing slash for consistency
         "displayName": author.displayName,
         "github": author.github,
         "profileImage": profile_image,
-        "page": author.page
+        "page": author.page,
+        "url": author_id  # Adding url field as it's often required
     }
 
     return author_data
