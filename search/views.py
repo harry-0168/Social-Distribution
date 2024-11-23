@@ -29,6 +29,8 @@ def search_results(request):
         if response.status_code == 200:
             print(response.status_code)
             authors = response.json()['authors']
+            print("==================")
+            print(authors)
 
             for author in authors:
                 # check if the author already exists in the database
@@ -44,6 +46,9 @@ def search_results(request):
                     author['password'] = 'password'  # set a dummy password
    
                     serializer = AuthorSerializer(data=author)
+                    
+                    print("=============================")
+                    print(author)
                     if serializer.is_valid():
                         serializer.save()
                     else:
