@@ -508,14 +508,19 @@ def get_author_data(author):
     # Handle profile image properly
     profile_image = author.profileImage.url if hasattr(author.profileImage, 'url') else author.profileImage
 
+    # Ensure host ends with /api/
+    host = author.host
+    if not host.endswith('/api/'):
+        host = f"{host.rstrip('/')}/api/"
+
     # Construct the clean FQID without duplication
-    author_id = f"{author.host}/api/authors/{author.author_serial}"
+    author_id = f"{host}authors/{author.author_serial}"
 
     # Build the author data dictionary
     author_data = {
         "type": "author",
         "id": author_id,
-        "host": author.host,  # This should be just the base URL, e.g. "http://127.0.0.1:8000"
+        "host": host,  # Now includes /api/
         "displayName": author.displayName,
         "github": author.github,
         "profileImage": profile_image,
