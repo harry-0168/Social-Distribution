@@ -318,84 +318,109 @@ def unfollow_author(request, object_author_serial):
 
     return redirect('home_page')
 
-def following_list(request, author_serial):
-    author = get_object_or_404(Author, author_serial=author_serial)
-    following = Following.objects.filter(author1=author, status='accepted')
-    followers = Following.objects.filter(author2=author, status='accepted')
-    
-    following_with_status = []
-    for follow in following:
-        followed_user = follow.author2
-        is_following = Following.objects.filter(
-            author1=request.user,
-            author2=followed_user,
+def following_list(request, author_id):
+    '''
+    View to display the list of authors that this author is following
+    '''
+    try:
+        # Try to get author by FQID first
+        author = Author.objects.filter(id=author_id).first()
+        
+        if not author and 'http' in author_id:
+            # For remote authors, try to find by the full FQID
+            try:
+                author = Author.objects.get(id=author_id)
+            except Author.DoesNotExist:
+                try:
+                    uuid_part = author_id.split('/')[-1]  # Get the last part of the URL
+                    author = Author.objects.get(author_serial=uuid_part)
+                except (Author.DoesNotExist, ValueError, IndexError):
+                    raise Http404("Remote author not found")
+        elif not author:
+            # For local authors, try by author_serial
+            try:
+                clean_id = author_id.split('/')[0]  # Remove any trailing paths
+                author = Author.objects.get(author_serial=clean_id)
+                # Construct FQID for local author
+                author_fqid = f"{request.build_absolute_uri('/').rstrip('/')}/api/authors/{author.author_serial}"
+                # Redirect to FQID URL
+                return redirect('following_list', author_id=author_fqid)
+            except (Author.DoesNotExist, ValueError):
+                raise Http404("Local author not found")
+
+        # Get the list of authors being followed
+        following_list = Following.objects.filter(
+            author1=author,
             status='accepted'
-        ).exists()
+        )
+
+        context = {
+            'author': author,
+            'following_list': following_list,
+            'followers_count': Following.objects.filter(author2=author, status='accepted').count(),
+            'following_count': following_list.count(),
+            'is_own_profile': request.user == author
+        }
         
-        # Use the are_friends method
-        is_friend = Following.are_friends(author, followed_user)
+        return render(request, 'author/following_list.html', context)
+    except Exception as e:
+        # Log the full error for debugging
+        import traceback
+        print(f"Error in following list: {str(e)}")
+        print(traceback.format_exc())
+        raise Http404(f"Error finding following: {str(e)}")
+
+def followers_list(request, author_id):
+    '''
+    View to display the list of followers for an author
+    '''
+    try:
+        # Try to get author by FQID first
+        author = Author.objects.filter(id=author_id).first()
         
-        following_with_status.append({
-            'following': followed_user,
-            'is_following': is_following,
-            'is_friend': is_friend
-        })
+        if not author and 'http' in author_id:
+            # For remote authors, try to find by the full FQID
+            try:
+                author = Author.objects.get(id=author_id)
+            except Author.DoesNotExist:
+                try:
+                    uuid_part = author_id.split('/')[-1]  # Get the last part of the URL
+                    author = Author.objects.get(author_serial=uuid_part)
+                except (Author.DoesNotExist, ValueError, IndexError):
+                    raise Http404("Remote author not found")
+        elif not author:
+            # For local authors, try by author_serial
+            try:
+                clean_id = author_id.split('/')[0]  # Remove any trailing paths
+                author = Author.objects.get(author_serial=clean_id)
+                # Construct FQID for local author
+                author_fqid = f"{request.build_absolute_uri('/').rstrip('/')}/api/authors/{author.author_serial}"
+                # Redirect to FQID URL
+                return redirect('followers_list', author_id=author_fqid)
+            except (Author.DoesNotExist, ValueError):
+                raise Http404("Local author not found")
 
-    # Add the main author's follow status
-    main_author_is_following = Following.objects.filter(
-        author1=request.user,
-        author2=author,
-        status='accepted'
-    ).exists()
-
-    context = {
-        'author': author,
-        'following': following_with_status,
-        'following_count': following.count(),
-        'followers_count': followers.count(),
-        'is_following': main_author_is_following  # Add this for the main profile button
-    }
-    return render(request, 'author/following_list.html', context)
-
-@api_view(['GET'])
-def followers_list(request, author_serial):
-    author = get_object_or_404(Author, author_serial=author_serial)
-    followers = Following.objects.filter(author2=author, status='accepted')
-    following = Following.objects.filter(author1=author, status='accepted')
-    
-    followers_with_status = []
-    for follow in followers:
-        follower = follow.author1
-        is_following = Following.objects.filter(
-            author1=request.user,
-            author2=follower,
+        # Get the list of followers
+        followers_list = Following.objects.filter(
+            author2=author,
             status='accepted'
-        ).exists()
-        
-        # Use the are_friends method
-        is_friend = Following.are_friends(follower, author)
-        
-        followers_with_status.append({
-            'follower': follower,
-            'is_following': is_following,
-            'is_friend': is_friend
-        })
+        )
 
-    # Add the main author's follow status
-    main_author_is_following = Following.objects.filter(
-        author1=request.user,
-        author2=author,
-        status='accepted'
-    ).exists()
-
-    context = {
-        'author': author,
-        'followers': followers_with_status,
-        'followers_count': followers.count(),
-        'following_count': following.count(),
-        'is_following': main_author_is_following  # Add this for the main profile button
-    }
-    return render(request, 'author/followers_list.html', context)
+        context = {
+            'author': author,
+            'followers_list': followers_list,
+            'followers_count': followers_list.count(),
+            'following_count': Following.objects.filter(author1=author, status='accepted').count(),
+            'is_own_profile': request.user == author
+        }
+        
+        return render(request, 'author/followers_list.html', context)
+    except Exception as e:
+        # Log the full error for debugging
+        import traceback
+        print(f"Error in followers list: {str(e)}")
+        print(traceback.format_exc())
+        raise Http404(f"Error finding followers: {str(e)}")
 
 
 @api_view(['GET','DELETE','PUT'])
