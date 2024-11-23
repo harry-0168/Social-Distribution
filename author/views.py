@@ -405,7 +405,7 @@ def api_list_authors(request):
     for author in paginated_authors:
         if not author.host.endswith('/api/'):
             author.host = author.host + '/api/'
-        author.profileImage = "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/e0ff55c6-2a41-4a59-8d69-5e80d3cc1799/ded54wk-2f2a33db-a0b0-4a4e-83f0-2e01932e205d.png/v1/fill/w_835,h_957,q_70,strp/crimson_dreams__new_profile_pic__by_thegooserr_ded54wk-pre.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9MTY4MiIsInBhdGgiOiJcL2ZcL2UwZmY1NWM2LTJhNDEtNGE1OS04ZDY5LTVlODBkM2NjMTc5OVwvZGVkNTR3ay0yZjJhMzNkYi1hMGIwLTRhNGUtODNmMC0yZTAxOTMyZTIwNWQucG5nIiwid2lkdGgiOiI8PTE0NjgifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6aW1hZ2Uub3BlcmF0aW9ucyJdfQ.NwZ3KXojqpMy-49QrMXAi4GFqsKiAtnuPURa8BRWNOk"
+        author.profileImage = "https://www.123.net/wp-content/uploads/2-Hosted-Solutions-1064x608.jpg"
         formatted_authors.append({
             "type":"author",
             "id": author.id,
