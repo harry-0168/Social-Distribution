@@ -36,22 +36,17 @@ def profile_view(request, author_id):
         try:
             # If not found by FQID, try author_serial (for local authors)
             author = Author.objects.get(author_serial=author_id)
-            
-            # If this is a local author, redirect to the UUID-based URL
-            if not author.host.startswith(request.build_absolute_uri('/').rstrip('/')):
-                return redirect('author_profile', author_serial=author.author_serial)
         except (Author.DoesNotExist, ValueError):
             raise Http404("Author not found")
 
-    # For remote authors, we want to keep the FQID in the URL
-    if author.host.startswith(request.build_absolute_uri('/').rstrip('/')):
-        # Local author - use UUID in URL
-        if str(author.author_serial) != author_id:
-            return redirect('author_profile', author_serial=author.author_serial)
-    else:
-        # Remote author - use FQID in URL
-        if author.id != author_id:
-            return redirect('author_profile', author_id=author.id)
+    # Check if this is a remote author
+    is_remote = not author.host.startswith(request.build_absolute_uri('/').rstrip('/'))
+
+    # Redirect if needed to ensure consistent URLs
+    if is_remote and author.id != author_id:
+        return redirect('author_profile', author_id=author.id)
+    elif not is_remote and str(author.author_serial) != str(author_id):
+        return redirect('author_profile', author_id=author.author_serial)
 
     # Rest of your existing profile_view code...
     is_following = False

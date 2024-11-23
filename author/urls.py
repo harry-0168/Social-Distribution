@@ -15,8 +15,7 @@ urlpatterns = [
     path('login/', loginPage, name='loginPage'),
     
     # Public profile page for an author
-    path('<uuid:author_serial>/', profile_view, name='author_profile_uuid'),
-    path('<path:author_id>/', profile_view, name='author_profile'),
+    path('<path:author_id>/', profile_view, name='author_profile'), 
     
     # About page for an author
     path('<uuid:author_serial>/about/', author_about, name='author-about'),
