@@ -17,7 +17,8 @@ def nodeSignup(request):
         data['displayName'] = data['username'] 
         data['isNode'] = True
         data['type'] = 'node' if 'type' not in data else data['type']
-        data['host'] = 
+        if data['host'].endswith('/api/'):
+            data['host'] = data['host'][:-5]
 
         serializer = AuthorSerializer(data=data, partial=True)
         if serializer.is_valid():
