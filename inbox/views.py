@@ -362,7 +362,7 @@ def forward_like_request(request):
     try:
         if post_id:
             post = get_object_or_404(Post, uuid=post_id)
-            
+            print('test1')
             # Check if a like already exists
             if Like.objects.filter(username=username, post=post).exists():
                 likes = Like.objects.filter(username=username, post=post)
