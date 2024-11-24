@@ -143,7 +143,7 @@ def forward_comment(request, post_uuid=None):
 
     # check if the object_author is on a remote node
     print("current host: ", request.get_host())
-    if object_author.host == ("http://" + request.get_host()):
+    if object_author.host == f"{request.scheme}://{request.get_host()}":
         return Response({"error": "Object author is on the current host server"}, status = 400)
     else:
         # find the node that the object_author belongs to
@@ -195,7 +195,14 @@ def forward_comment(request, post_uuid=None):
         print("response returned with: ",response.status_code)
         print("requestedURL was:",requestURL)
 
-        return Response({"object_author_id": object_author.id, "response": response, "message": "comment forwarded to remote author"}, status=200)
+        return Response({
+            "object_author_id": object_author.id,
+            "response": {
+                "status_code": response.status_code,
+                "text": response.text,
+            },
+            "message": "comment forwarded to remote author",
+        }, status=200)
 
 class CommentPagination(PageNumberPagination):
     page_size = 5
