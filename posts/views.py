@@ -980,7 +980,8 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
                             FQIDorId=post.id,
                             received_at=timezone.now()
                         )
-                    
+                    print("recipient.author_serial: ", recipient.author_serial)
+                    print("recipient id: ", recipient.id)
                     # Send to remote node using recipient's author_serial
                     response = requests.post(
                         f"{recipient.host}/api/authors/{recipient.author_serial}/inbox",
