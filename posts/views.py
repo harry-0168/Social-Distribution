@@ -495,7 +495,7 @@ def get_posts_create_post(request, author_serial):
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             author = get_object_or_404(Author, displayName=payload['id'])
             if hasattr(author, 'host'):
-                author.host = author.host.rstrip('/') + '/api'
+                author.host = author.host.rstrip('/') + '/api/'
             author.save()
         except jwt.ExpiredSignatureError:
             return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
