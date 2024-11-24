@@ -449,7 +449,7 @@ def manage_follower(request, author_serial, foreign_author_id):
                 "displayName": foreign_author.displayName,
                 "page": f"{foreign_author.host}/authors/{foreign_author.author_serial}",
                 "github": foreign_author.github,
-                "profileImage": f"{foreign_author.host}/api/authors/{foreign_author.author_serial}/image" if foreign_author.profileImage else None
+                "profileImage": foreign_author.profileImage
             }
             return Response(follower_data, status=status.HTTP_200_OK)
         
@@ -474,7 +474,7 @@ def manage_follower(request, author_serial, foreign_author_id):
                 "displayName": foreign_author.displayName,
                 "page": f"{foreign_author.host}/authors/{foreign_author.author_serial}",
                 "github": foreign_author.github,
-                "profileImage": f"{foreign_author.host}/api/authors/{foreign_author.author_serial}/image" if foreign_author.profileImage else None,
+                "profileImage": foreign_author.profileImage,
                 "message": f"New follower created for author {author.displayName}"
             }
             return Response(follower_data, status=status.HTTP_201_CREATED)
@@ -625,14 +625,7 @@ def get_author_data(author):
     # Add /api/ to normalized host
     api_host = f"{host}/api"
     
-    # Handle profile image properly
-    if author.profileImage:
-        if hasattr(author.profileImage, 'url'):
-            profile_image = author.profileImage.url
-        else:
-            profile_image = f"{api_host}/authors/{author.author_serial}/image"
-    else:
-        profile_image = None
+    profile_image = author.profileImage
 
     # Construct the author ID
     author_id = f"{api_host}/authors/{author.author_serial}"
