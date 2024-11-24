@@ -987,10 +987,10 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
                         f"{recipient.host}/api/authors/{recipient_uuid}/inbox",
                         json=serializer_data,
                         headers={
+                            "Authorization": f"Basic {base64.b64encode(f'{node.displayName}:{node.first_name}'.encode()).decode()}",
                             'Content-Type': 'application/json',
                             'host': node.host.split('//')[1]
                         },
-                        auth=HTTPBasicAuth(node.displayName, node.first_name),
                         timeout=10
                     )
                     response.raise_for_status()
