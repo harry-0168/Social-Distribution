@@ -14,7 +14,7 @@
         <a href="{% url 'author_profile' request.user.author_serial %}"> <!-- Use the logged-in user's author ID -->
             {% if request.user.profileImage %}
                 <img style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-right: 10px; margin-left: 90px;" 
-                    src="data:image/png;base64,{{ request.user.profileImage }}" 
+                    src="{{ request.user.profileImage }}" 
                     alt="Profile Picture">
             {% else %}
                 <img style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;margin-left: 90px;" src="{% static 'avatar.png' %}" alt="Default Profile Picture">
@@ -44,7 +44,7 @@
                     <a href="{% url 'author_profile' user.author_serial %}" class="result-box">
                         <div class="profile-image-container">
                             {% if user.profileImage %}
-                                <img src="data:image/png;base64,{{ user.profileImage }}" alt="{{ user.displayName }}" class="profile-image">
+                                <img src="{{ user.profileImage }}" alt="{{ user.displayName }}" class="profile-image">
                             {% else %}
                                 <img src="{% static 'avatar.png' %}" alt="Default Profile" class="profile-image">
                             {% endif %}

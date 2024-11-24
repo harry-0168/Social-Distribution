@@ -859,3 +859,15 @@ def serve_profile_image(request, author_serial):
         return HttpResponse(image_data, content_type=f"image/{image_type}")
     else:
         return HttpResponse(status=404) 
+
+
+from django.core.files.storage import default_storage
+from django.views.decorators.csrf import csrf_exempt
+@csrf_exempt
+def upload_profile_image(request):
+    if request.method == 'POST' and request.FILES.get('file'):
+        image = request.FILES['file']
+        path = default_storage.save(f"profile_images/{image.name}", image)
+        image_url = f"{request.scheme}://{request.get_host()}/media/{path}"
+        return JsonResponse({'url': image_url})
+    return JsonResponse({'error': 'Invalid request'}, status=400)

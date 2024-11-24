@@ -49,22 +49,37 @@
 
 <script>
     document.getElementById('profileForm').addEventListener('submit', async function(event) {
-        event.preventDefault(); // Prevent traditional form submission
+        event.preventDefault();
 
-        // Collect form data
+        //Collect form data
         const displayName = document.getElementById('displayName').value;
         const github = document.getElementById('github').value;
         const page = document.getElementById('page').value;
 
-        // Convert the profile image to base64 if provided
         const profileImageFile = document.getElementById('profileImage').files[0];
-        let profileImageBase64 = null;
+        let profileImageUrl = null;
+
         if (profileImageFile) {
-            profileImageBase64 = await new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result.split(',')[1]); // Get base64 string without prefix
-                reader.readAsDataURL(profileImageFile);
-            });
+            const formData = new FormData();
+            formData.append('file', profileImageFile);
+
+            try {
+                //Upload the image to server 
+                const uploadResponse = await fetch('/api/upload-profile-image/', {  
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error('Image upload failed');
+                }
+
+                const uploadData = await uploadResponse.json();
+                profileImageUrl = uploadData.url; 
+            } catch (error) {
+                alert('Failed to upload profile image: ' + error.message);
+                return;
+            }
         }
 
         // Prepare JSON payload
@@ -72,7 +87,7 @@
             displayName,
             github,
             page,
-            profileImage: profileImageBase64  // Include base64 image string if available
+            profileImage: profileImageUrl 
         };
 
         // Send PUT request to the API as JSON
@@ -98,4 +113,5 @@
         }
     });
 </script>
+
 {% endblock %}
