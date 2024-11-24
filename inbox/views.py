@@ -184,7 +184,7 @@ def inboxApi(request, object_author_serial):
             print("post.id: ", post.id)
             print("post.title: ", post.title)
 
-            comment = Comment(author=object_author, username= parsed_data['object']['username'], comment= parsed_data['object']['comment'], id=parsed_data['object']['id'] , uuid=parsed_data['object']['uuid'], post=post)
+            comment = Comment(author=object_author, username=parsed_data['object']['username'], comment=parsed_data['object']['comment'], published=parsed_data['object']['published'], id=parsed_data['object']['id'] , uuid=parsed_data['object']['uuid'], post=post)
             print("\nComment: ", comment)
             comment.save()
             print("comment saved")
