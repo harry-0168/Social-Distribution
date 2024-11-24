@@ -494,6 +494,9 @@ def get_posts_create_post(request, author_serial):
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             author = get_object_or_404(Author, displayName=payload['id'])
+            if hasattr(author, 'host') and not author.host.endswith('/api/'):
+                author.host = author.host.rstrip('/') + '/api/'
+            author.save()
         except jwt.ExpiredSignatureError:
             return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
         except Author.DoesNotExist:
@@ -980,16 +983,17 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
                             FQIDorId=post.id,
                             received_at=timezone.now()
                         )
-                    
+                    recipient_uuid = recipient.id.split('/')[-1]
+                    print("recipient id: ", recipient_uuid)
                     # Send to remote node using recipient's author_serial
                     response = requests.post(
-                        f"{recipient.host}/api/authors/{recipient.author_serial}/inbox",
+                        f"{recipient.host}/api/authors/{recipient_uuid}/inbox",
                         json=serializer_data,
                         headers={
+                            "Authorization": f"Basic {base64.b64encode(f'{node.displayName}:{node.first_name}'.encode()).decode()}",
                             'Content-Type': 'application/json',
                             'host': node.host.split('//')[1]
                         },
-                        auth=HTTPBasicAuth(node.displayName, node.first_name),
                         timeout=10
                     )
                     response.raise_for_status()

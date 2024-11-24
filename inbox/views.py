@@ -362,7 +362,7 @@ def forward_like_request(request):
     try:
         if post_id:
             post = get_object_or_404(Post, uuid=post_id)
-            
+            print('test1')
             # Check if a like already exists
             if Like.objects.filter(username=username, post=post).exists():
                 likes = Like.objects.filter(username=username, post=post)
@@ -473,6 +473,8 @@ def forward_like_request(request):
                 if not node_author:
                     return Response({"error": "Node author not found"}, status=404)
                 print(node_author.displayName, node_author.first_name, object_author.id+'/inbox')
+                if hasattr(object_author, 'host') and not object_author.host.endswith('/api/'):
+                    object_author.host = object_author.host.rstrip('/') + '/api/'
                 # using http basic auth to authenticate with the node server using the node_author's username and password
                 headers = {
                         "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
