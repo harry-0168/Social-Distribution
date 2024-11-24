@@ -129,7 +129,7 @@ def get_comment(request, comment_id=None, author_serial=None, post_serial=None, 
     return Response(comment_serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
-def forward_comment(request, post_uuid=None):
+def forward_comment(request, post_FQID=None):
     print("in forward_comment")
     request_data = request.data
     print("request_data: ", request_data)
