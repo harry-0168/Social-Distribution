@@ -345,6 +345,8 @@ def forward_like_request(request):
     comment_id = request.data['comment_id']
     print("receiver id ", request.data['receiver_id'])
     object_author = get_object_or_404(Author, id=request.data['receiver_id'])
+    if hasattr(object_author, 'host') and not object_author.host.endswith('/api/'):
+                object_author.host = object_author.host.rstrip('/') + '/api/'
     print("authorforforward")
     print(object_author)
     #sender = request.POST.get('sender')
@@ -473,8 +475,6 @@ def forward_like_request(request):
                 if not node_author:
                     return Response({"error": "Node author not found"}, status=404)
                 print(node_author.displayName, node_author.first_name, object_author.id+'/inbox')
-                if hasattr(object_author, 'host') and not object_author.host.endswith('/api/'):
-                    object_author.host = object_author.host.rstrip('/') + '/api/'
                 # using http basic auth to authenticate with the node server using the node_author's username and password
                 headers = {
                         "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
