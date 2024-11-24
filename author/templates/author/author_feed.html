@@ -12,7 +12,7 @@
                 <div class="post-header">
                     <div class="profile-info">
                         {% if author.profileImage %}
-                            <img class="profile-pic-small" src="data:image/png;base64,{{ author.profileImage }}">
+                            <img class="profile-pic-small" src="{{ author.profileImage }}">
                         {% else %}
                             <img class="profile-pic-small" src="{% static 'avatar.png' %}">
                         {% endif %}
