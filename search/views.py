@@ -21,13 +21,13 @@ def search_results(request):
         # make get request to the node's url with basic auth
         headers = {
                 "Authorization": f"Basic {base64.b64encode(f'{node.displayName}:{node.first_name}'.encode()).decode()}",
-                "Content-Type": "application/json"
-                
+                "Content-Type": "application/json",
+                "X-original-host":  "https://social-distribution-crimson-464113e0f29c.herokuapp.com/api/"
             }
-        print(node.host + 'authors', node.displayName, node.first_name)
+        print(node.host + '/api/authors?size=200', node.displayName, node.first_name)
         response = requests.get( url = node.host + '/api/authors?size=200', headers=headers)
+        print(response.status_code)
         if response.status_code == 200:
-            print(response.status_code)
             authors = response.json()['authors']
 
             for author in authors:
