@@ -173,8 +173,25 @@ def inboxApi(request, object_author_serial):
                 return Response({"error": "Actor not found"}, status=404)
             
         elif parsed_data['type'] == 'comment':
+            print("organizing comment in inbox")
+            # forward the comment to the remote post_author's inbox
             object_author = Author.objects.get(id=parsed_data['object']['author'])
             Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['object']['id'], received_at=timezone.now()).save()
+
+            # Get the post instance using the post URL
+            post_id = parsed_data['object']['post']
+            post = get_object_or_404(Post, id=post_id)  # Retrieve the Post instance
+            print("post.id: ", post.id)
+            print("post.title: ", post.title)
+
+            comment = Comment(author=object_author, username=parsed_data['object']['username'], comment=parsed_data['object']['comment'], published=parsed_data['object']['published'], id=parsed_data['object']['id'] , uuid=parsed_data['object']['uuid'], post=post)
+            print("\nComment: ", comment)
+            comment.save()
+            print("comment saved")
+
+            post.comments.add(comment)
+            print("comment added to respective post")
+
             return Response({"message": "Comment sent"}, status=200)
         
         elif parsed_data['type'] == 'like':
