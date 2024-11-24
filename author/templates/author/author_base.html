@@ -11,7 +11,7 @@
     <div class="header">
         <a href="{% url 'author_profile' request.user.id %}"> <!-- TO-DO replace with actual author id-->
             {% if author.profileImage %}
-            <img class="profile-pic-header" src="data:image/png;base64,{{ author.profileImage }}">
+            <img class="profile-pic-header" src="{{ author.profileImage }}">
             {% else %}
             <img class="profile-pic-header" src="{% static 'avatar.png' %}">
             {% endif %}
@@ -38,7 +38,7 @@
  
         <div class="profile-area">
             {% if author.profileImage %}
-                <img class="profile-pic" src="data:image/png;base64,{{ author.profileImage }}">
+                <img class="profile-pic" src="{{ author.profileImage }}">
             {% else %}
                 <img class="profile-pic" src="{% static 'avatar.png' %}">
             {% endif %}          
