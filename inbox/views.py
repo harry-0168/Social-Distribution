@@ -411,6 +411,7 @@ def forward_like_request(request):
                         "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
                         "Content-Type": "application/json",
                         "host": node_author.host.split('//')[1],
+                        "X-original-host":  "https://social-distribution-crimson-464113e0f29c.herokuapp.com/api/"
                     }
                 print(headers)
                 
@@ -480,6 +481,7 @@ def forward_like_request(request):
                         "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
                         "Content-Type": "application/json",
                         "host": node_author.host.split('//')[1],
+                        "X-original-host":  "https://social-distribution-crimson-464113e0f29c.herokuapp.com/api/"
                     }
                 print(headers)
                 
@@ -589,6 +591,7 @@ def forward_follow_request(request):
                 "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
                 "Content-Type": "application/json",
                 "host": node_author.host.split('//')[1],
+                "X-original-host":  "https://social-distribution-crimson-464113e0f29c.herokuapp.com/api/"
             }
         print(node_author.host.split('//')[1])
         new = Following.follow(actor, object_author)

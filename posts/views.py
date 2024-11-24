@@ -992,7 +992,8 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
                         headers={
                             "Authorization": f"Basic {base64.b64encode(f'{node.displayName}:{node.first_name}'.encode()).decode()}",
                             'Content-Type': 'application/json',
-                            'host': node.host.split('//')[1]
+                            'host': node.host.split('//')[1],
+                            'X-original-host':  "https://social-distribution-crimson-464113e0f29c.herokuapp.com/api/"
                         },
                         timeout=10
                     )
