@@ -27,7 +27,7 @@
     <div class="header">
         <a href="{% url 'author_profile' request.user.author_serial %}"> <!-- Use the logged-in user's author ID -->
             {% if request.user.profileImage %}
-                <img src="data:image/png;base64,{{ request.user.profileImage }}" 
+                <img src="{{ request.user.profileImage }}" 
                  style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
             {% else %}
                 <img src="{% static 'avatar.png' %}" 
@@ -57,7 +57,7 @@
                         {% for like in post.likes.all %}
                             <div class="like">
                                 {% if like.author.profileImage %}
-                                    <img src="data:image/png;base64,{{ like.author.profileImage }}" 
+                                    <img src="{{ like.author.profileImage }}" 
                                      class="profile-pic-small">
                                 {% else %}
                                     <img src="{% static 'avatar.png' %}" 
@@ -77,7 +77,7 @@
         <section class="gridItemRight">
             <div class="userInfo">
                 {% if post.author.profileImage %}
-                    <img src="data:image/png;base64,{{ post.author.profileImage }}" 
+                    <img src="{{ post.author.profileImage }}" 
                     class="profile-pic-small">
                 {% else %}
                     <img src="{% static 'avatar.png' %}" 

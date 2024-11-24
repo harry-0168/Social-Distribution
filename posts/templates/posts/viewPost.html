@@ -14,7 +14,7 @@
     <div class="header">
         <a href="{% url 'author_profile' request.user.author_serial %}"> <!-- Use the logged-in user's author ID -->
             {% if request.user.profileImage %}
-                <img src="data:image/png;base64,{{ request.user.profileImage }}" 
+                <img src="{{ request.user.profileImage }}" 
                  style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
             {% else %}
                 <img src="{% static 'avatar.png' %}" 
@@ -38,7 +38,7 @@
         <section class="gridItemUser">
             <div class="userInfo">
                 {% if post.author.profileImage %}
-                    <img src="data:image/png;base64,{{ post.author.profileImage }}" 
+                    <img src="{{ post.author.profileImage }}" 
                     style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
                 {% else %}
                     <img src="{% static 'avatar.png' %}" 
@@ -343,11 +343,11 @@
                     const img = document.createElement('img');
                     img.classList.add('profile-pic-small');
                     if (comment.author.profileImage) {
-                        const base64Image = comment.author.profileImage;
-                        img.src = `data:image/png;base64,${base64Image}`;
+                        img.src = comment.author.profileImage;  // Use the URL directly
                     } else {
-                        img.src = '/static/avatar.png';
+                        img.src = '/static/avatar.png';  // Fallback to default avatar
                     }
+
 
                     const h5 = document.createElement('h5');
                     h5.classList.add('commentUsername');
@@ -577,10 +577,8 @@
                                 const newComment = document.createElement('div');
                                 newComment.classList.add('comment');
                                 newComment.innerHTML = `
-                                    <img src="${comment.author.profileImage ? 
-                                                (comment.author.profileImage.startsWith('data:image/png;base64,') ? comment.author.profileImage : 'data:image/png;base64,' + comment.author.profileImage) 
-                                                : '/static/avatar.png'}" 
-                                        class="profile-pic-small">
+                                    <img src="${comment.author.profileImage || '/static/avatar.png'}" class="profile-pic-small" alt="Profile Picture">
+
                                     <h5 class="commentUsername">${comment.username}
                                         <div class="commentContent">${comment.comment}</div>
                                     </h5>
@@ -631,11 +629,11 @@
                                 let forwardUrl;
 
                                 // Send the comment object to the author's inbox
-                                if (currentHost === post_host || post_host === "http://127.0.0.1:8000"){  // object_author is on the current host server
+                                if (currentHost === post_host || (post_host === "http://localhost/api" && currentHost === "http://127.0.0.1:8000" )){  // object_author is on the current host server
                                     forwardUrl = `${currentHost}/inbox/api/authors/${"{{ post.author.author_serial }}"}/inbox/`;
                                     console.log("forwarding comment to local URL inbox: ", forwardUrl);
                                 } else {    // comment needs to be forwarded to remote node
-                                    forwardUrl = `${currentHost}/api/post/${"{{ post.uuid }}"}/viewPost/forward`;
+                                    forwardUrl = `${currentHost}/api/post/${"{{ post.id }}"}/viewPost/forward`;
                                     console.log("forwarding comment to remote URL inbox: ", forwardUrl);
                                 }
                                 console.log("URL to fetch: ", forwardUrl)
