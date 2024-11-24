@@ -180,8 +180,8 @@ def inboxApi(request, object_author_serial):
             
             post = parsed_data['object']['post']
             print("post: ", post)
-            print("post id: ", post.id)
-            print("post title: ", post.title)
+            # print("post id: ", post.id)
+            # print("post title: ", post.title)
 
             comment = Comment(author=object_author, username= parsed_data['object']['username'], id=parsed_data['object']['id'] , uuid=parsed_data['object']['uuid'], likes_collection=parsed_data['object']['likes'], )
             print("\nComment: ", comment)
