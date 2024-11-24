@@ -597,28 +597,17 @@
                                 const inboxRequest = {
                                     "type": "comment",
                                     "summary": `${comment.username} commented on your post`,
-                                    "actor": {
-                                        "type": "author",
-                                        "id": comment.author.id,
-                                        "host": comment.author.host,
-                                        "displayName": comment.author.displayName,
-                                        "profileImage": comment.author.profileImage
-                                    },
                                     "object": {
                                         "type": "comment",
-                                        "author": "{{author.id}}",
-                                        "username": "{{author.displayName}}",
+                                        "author": comment.author.id,
+                                        "username": comment.author.displayName,
                                         "comment": comment.comment,
                                         "contentType": "text/markdown",
                                         "published": comment.published,
                                         "id": comment.id,
                                         "uuid": comment.uuid,
-                                        "post": {
-                                            "type": "post",
-                                            "id": comment.post.uuid,
-                                            "author": "{{ post.author.author_serial }}"
-                                        },
-                                        "likes_collection": comment.likes_collection
+                                        "post": comment.post.id,
+                                        "likes": comment.likes_collection
                                     },
                                 };
                                 console.log("inbox Request:", inboxRequest);
