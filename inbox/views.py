@@ -179,8 +179,7 @@ def inboxApi(request, object_author_serial):
             Inbox(receiver=object_author, type='comment', FQIDorId=parsed_data['object']['id'], received_at=timezone.now()).save()
 
             # Get the post instance using the post URL
-            post_url = parsed_data['object']['post']
-            post_id = post_url.split('/')[-1]  # Extract the post ID from the URL
+            post_id = parsed_data['object']['post']
             post = get_object_or_404(Post, id=post_id)  # Retrieve the Post instance
             print("post.id: ", post.id)
             print("post.title: ", post.title)
