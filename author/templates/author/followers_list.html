@@ -11,7 +11,7 @@
                 <div class="follower-item">
                     <div class="follower-info">
                         {% if follow.author1.profileImage %}
-                            <img src="data:image/png;base64,{{ follow.author1.profileImage }}" alt="Profile Image" class="follower-profile-pic">
+                            <img src="{{ follow.author1.profileImage }}" alt="Profile Image" class="profile-image">
                         {% else %}
                             <img src="{% static 'avatar.png' %}" alt="Default Profile" class="follower-profile-pic">
                         {% endif %}

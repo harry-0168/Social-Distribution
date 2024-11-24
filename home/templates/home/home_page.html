@@ -14,10 +14,11 @@
     <div class="header">
         <a href="{% url 'author_profile' request.user.id %}">
             {% if request.user.profileImage %}
-                <img class="profile-pic" src="data:image/png;base64,{{ request.user.profileImage }}">
+                <img class="profile-pic" src="{{ request.user.profileImage }}" alt="Profile Picture">
             {% else %}
-                <img class="profile-pic" src="{% static 'avatar.png' %}">
+                <img class="profile-pic" src="{% static 'avatar.png' %}" alt="Default Profile Picture">
             {% endif %}
+        
         </a>
         <form method="GET" action="{% url 'search_results' %}" class="search-form">
             <input type="text" name="q" placeholder="Search by display name..." class="search-bar">
@@ -45,7 +46,7 @@
             
             posts.forEach(post => {
                 const profileImageHtml = post.author.profileImage 
-                    ? `<img src="data:image/png;base64,${post.author.profileImage}" class="profile-pic-small">`
+                    ? `<img src="${post.author.profileImage}" class="profile-pic-small">`
                     : `<img src="${defaultAvatarUrl}" class="profile-pic-small">`;
                 
                 const postElement = `
