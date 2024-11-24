@@ -129,7 +129,7 @@ def get_comment(request, comment_id=None, author_serial=None, post_serial=None, 
     return Response(comment_serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
-def forward_comment(request, post_uuid=None):
+def forward_comment(request, post_FQID=None):
     print("in forward_comment")
     request_data = request.data
     print("request_data: ", request_data)
@@ -142,8 +142,8 @@ def forward_comment(request, post_uuid=None):
     print("actor: ", actor)
 
     # check if the object_author is on a remote node
-    print("current host: ", request.get_host())
-    if object_author.host == ("http://" + request.get_host()):
+    print("current host: ", f"{request.scheme}://{request.get_host()}")
+    if object_author.host == f"{request.scheme}://{request.get_host()}":
         return Response({"error": "Object author is on the current host server"}, status = 400)
     else:
         # find the node that the object_author belongs to
@@ -195,7 +195,14 @@ def forward_comment(request, post_uuid=None):
         print("response returned with: ",response.status_code)
         print("requestedURL was:",requestURL)
 
-        return Response({"object_author_id": object_author.id, "response": response, "message": "comment forwarded to remote author"}, status=200)
+        return Response({
+            "object_author_id": object_author.id,
+            "response": {
+                "status_code": response.status_code,
+                "text": response.text,
+            },
+            "message": "comment forwarded to remote author",
+        }, status=200)
 
 class CommentPagination(PageNumberPagination):
     page_size = 5
