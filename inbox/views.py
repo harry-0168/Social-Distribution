@@ -138,6 +138,7 @@ def inboxApi(request, object_author_serial):
                 if parsed_data['object']['host'] != parsed_data['actor']['host']:
                     
                     objectAuthor = get_object_or_404(Author, id=parsed_data['object']['id'])
+                    print("object author 11", objectAuthor)
                     print(parsed_data['actor']['id'])
                     if parsed_data['actor']['host'].endswith('/api/'):
                         parsed_data['actor']['host'] = parsed_data['actor']['host'][:-5]
