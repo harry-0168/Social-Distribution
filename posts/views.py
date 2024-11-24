@@ -142,7 +142,7 @@ def forward_comment(request, post_FQID=None):
     print("actor: ", actor)
 
     # check if the object_author is on a remote node
-    print("current host: ", request.get_host())
+    print("current host: ", f"{request.scheme}://{request.get_host()}")
     if object_author.host == f"{request.scheme}://{request.get_host()}":
         return Response({"error": "Object author is on the current host server"}, status = 400)
     else:
