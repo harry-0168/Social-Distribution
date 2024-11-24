@@ -29,7 +29,7 @@ urlpatterns = [
     path('authors/<uuid:author_serial>/posts/<uuid:post_id>/comments', get_posts_comments, name='SERIAL_get_posts_comments'),
     path('posts/<path:post_FQID>/comments', get_posts_comments, name='FQID_get_posts_comments'),
     path('authors/<uuid:author_serial>/posts/<uuid:post_serial>/comment/<path:remote_comment_FQID>', get_comment, name='get_comment_remote_FQID'),
-    path('post/<uuid:post_uuid>/viewPost/forward', forward_comment, name="forward_comment"),
+    path('post/<path:post_FQID>/viewPost/forward', forward_comment, name="forward_comment"),
 
     # Commented API
     path('authors/<uuid:author_serial>/commented', get_author_comments, name='SERIAL_get_author_comments'),
