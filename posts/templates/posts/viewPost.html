@@ -616,13 +616,15 @@
                                 console.log ("current host: ", currentHost);
 
                                 let forwardUrl;
-
-                                // Send the comment object to the author's inbox
-                                if (currentHost === post_host || (post_host === "http://localhost/api" && currentHost === "http://127.0.0.1:8000" )){  // object_author is on the current host server
+                                if (currentHost === post_host || (post_host === "http://localhost/api" && currentHost === "http://127.0.0.1:8000" )) {
+                                    // Local post handling
                                     forwardUrl = `${currentHost}/inbox/api/authors/${"{{ post.author.author_serial }}"}/inbox/`;
                                     console.log("forwarding comment to local URL inbox: ", forwardUrl);
-                                } else {    // comment needs to be forwarded to remote node
-                                    forwardUrl = `${currentHost}/api/post/${"{{ post.id }}"}/viewPost/forward`;
+                                } else {
+                                    // Remote post handling
+                                    // Extract the relevant parts from post.id by removing duplicate /api/
+                                    const cleanPostId = "{{ post.id }}".replace('/api//api/', '/api/');
+                                    forwardUrl = `${currentHost}/api/post/${cleanPostId}/viewPost/forward`;
                                     console.log("forwarding comment to remote URL inbox: ", forwardUrl);
                                 }
                                 console.log("URL to fetch: ", forwardUrl)
