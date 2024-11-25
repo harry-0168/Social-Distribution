@@ -528,7 +528,7 @@ def get_posts_create_post(request, author_serial):
         )
         post.save()
         if "/api/" in post.id:
-            post.id = post.id.replace("/api/", "")
+            post.id = post.id.replace("/api/", "", 1)  # Remove only the first occurrence of '/api/'
             post.save()
         print("author111: ", author)
         print("author_id111: ", post.author.id)
