@@ -200,64 +200,75 @@ def get_comment(request, comment_id=None, author_serial=None, post_serial=None, 
 
 @api_view(['POST'])
 def forward_comment(request, post_FQID=None):
-    print("in forward_comment================================================")
+    print("in forward_comment=====================1111===========================")
     token = request.COOKIES.get('jwt')
     if not token:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
     try:
+        print("1. Got token")
         # Decode JWT and get user
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         username = payload['id']
         user = get_object_or_404(Author, displayName=username)
+        print("2. Got user:", user.displayName)
 
         request_data = request.data
-        print("request_data:", request_data)
+        print("3. request_data:", request_data)
 
         # Get post author from post_FQID
+        print("4. post_FQID:", post_FQID)
         post_author_id = post_FQID.split('/posts/')[0]
+        print("5. post_author_id:", post_author_id)
+        
         object_author = get_object_or_404(Author, id=post_author_id)
-        print("object_author:", object_author)
+        print("6. object_author:", object_author)
         
         # Find node author
         node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
-        print("node_author:", node_author)
+        print("7. node_author:", node_author)
         if not node_author:
             return Response({"error": "Node Author not found"}, status=404)
 
+        print("8. Creating payload")
         # Create payload matching inbox expectations
-        payload = {
-            "type": "comment",
-            "summary": f"{user.displayName} commented on your post",
-            "object": {
+        try:
+            payload = {
                 "type": "comment",
-                "author": user.id,  # Just the ID string as expected by inbox
-                "username": user.displayName,  # Required by Comment model
-                "comment": request_data['object']['comment'],
-                "contentType": "text/markdown",
-                "published": request_data['object']['published'],
-                "id": request_data['object']['id'],
-                "uuid": request_data['object']['uuid'],
-                "post": post_FQID,
-                "likes": None
+                "summary": f"{user.displayName} commented on your post",
+                "object": {
+                    "type": "comment",
+                    "author": user.id,
+                    "username": user.displayName,
+                    "comment": request_data['object']['comment'],
+                    "contentType": "text/markdown",
+                    "published": request_data['object']['published'],
+                    "id": request_data['object']['id'],
+                    "uuid": request_data['object']['uuid'],
+                    "post": post_FQID,
+                    "likes": None
+                }
             }
-        }
-        print("payload:", payload)
+            print("9. payload:", payload)
+        except Exception as e:
+            print("Error creating payload:", str(e))
+            raise
 
+        print("10. Creating headers")
         # Prepare headers
         headers = {
             "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
             "Content-Type": "application/json",
             "host": node_author.host.split('//')[1].replace('/api', ''),
         }
-        print("headers:", headers)
+        print("11. headers:", headers)
 
         # Send request
         inbox_url = object_author.id + '/inbox'
-        print("sending to:", inbox_url)
+        print("12. sending to:", inbox_url)
         response = requests.post(inbox_url, json=payload, headers=headers)
-        print("response returned with:", response.status_code)
-        print("response content:", response.text)
+        print("13. response returned with:", response.status_code)
+        print("14. response content:", response.text)
 
         if response.status_code >= 400:
             return Response({
@@ -274,6 +285,8 @@ def forward_comment(request, post_FQID=None):
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
     except Exception as e:
         print("Error in forward_comment:", str(e))
+        print("Error type:", type(e).__name__)
+        print("Error args:", e.args)
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class CommentPagination(PageNumberPagination):
