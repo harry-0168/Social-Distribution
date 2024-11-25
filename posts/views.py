@@ -526,10 +526,15 @@ def get_posts_create_post(request, author_serial):
             visibility=visibility,
             author=author,  # Use the author from the token
         )
-        # post.save()
+        post.save()
         if "/api/" in post.id:
-            post.id = post.id.replace("/api/", "", 1)  # Remove only the first occurrence of '/api/'
-            post.save()
+            # Get the existing post and delete it
+            old_id = post.id
+            new_id = old_id.replace("/api/", "", 1)
+            # Update the ID in the database directly
+            Post.objects.filter(id=old_id).update(id=new_id)
+            # Refresh the post object to get the updated ID
+            post.refresh_from_db()
         print("author111: ", author)
         print("author_id111: ", post.author.id)
 
