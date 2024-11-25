@@ -901,7 +901,6 @@ def api_view_Likes_comments(request, author_serial, post_id, comment_id):
 
     print("original post_id: ", post_id)
     post_id = Post.objects.filter(
-        author__author_serial=author_serial,
         comments__id=comment_id  # Use the related name for the reverse relationship
     ).values_list('id', flat=True).first()
     print("queried post_id: ", post_id)
