@@ -60,7 +60,7 @@ def inbox(request):
                 'uuid',
                 'username',
                 'post__title',       # For likes on posts
-                'comment__comment',  # For likes on comments (assuming 'content' is the field for comment text)
+                # 'comment__comment',  # For likes on comments (assuming 'content' is the field for comment text)
                 'published',
                 'author__displayName',
                 'author__profileImage'
