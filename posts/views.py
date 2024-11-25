@@ -200,7 +200,7 @@ def get_comment(request, comment_id=None, author_serial=None, post_serial=None, 
 
 @api_view(['POST'])
 def forward_comment(request, post_FQID=None):
-    print("in forward_comment=====================1111===========================")
+    print("in forward_comment==================22222==============================")
     token = request.COOKIES.get('jwt')
     if not token:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -216,21 +216,10 @@ def forward_comment(request, post_FQID=None):
         request_data = request.data
         print("3. request_data:", request_data)
 
-        # Get post author from post_FQID
-        print("4. post_FQID:", post_FQID)
-        post_author_id = post_FQID.split('/posts/')[0]
-        print("5. post_author_id:", post_author_id)
+        # Extract post UUID from post_FQID
+        post_uuid = post_FQID.split('/posts/')[1]
+        print("post_uuid:", post_uuid)
         
-        object_author = get_object_or_404(Author, id=post_author_id)
-        print("6. object_author:", object_author)
-        
-        # Find node author
-        node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
-        print("7. node_author:", node_author)
-        if not node_author:
-            return Response({"error": "Node Author not found"}, status=404)
-
-        print("8. Creating payload")
         # Create payload matching inbox expectations
         try:
             payload = {
@@ -245,7 +234,7 @@ def forward_comment(request, post_FQID=None):
                     "published": request_data['object']['published'],
                     "id": request_data['object']['id'],
                     "uuid": request_data['object']['uuid'],
-                    "post": post_FQID,
+                    "post": post_uuid,  # Just send the UUID instead of full URL
                     "likes": None
                 }
             }
