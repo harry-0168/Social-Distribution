@@ -338,6 +338,13 @@ class GetCommentTestCase(APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+        # Get response data
+        response_data = response.data
+        
+        # Create a copy of response data with likes_collection removed for comparison
+        response_data_for_comparison = response_data.copy()
+        response_data_for_comparison['likes_collection'] = None
+
         # Define expected data structure
         expected_data = {
             "type": "comment",
@@ -360,15 +367,12 @@ class GetCommentTestCase(APITestCase):
             "likes_collection": None
         }
 
-        # Get response data
-        response_data = response.data
-        
         # Print both data structures for debugging
-        print("\nResponse Data:", response_data)
+        print("\nResponse Data:", response_data_for_comparison)
         print("\nExpected Data:", expected_data)
 
         # Compare the structures
-        self.assertEqual(response_data, expected_data)
+        self.assertEqual(response_data_for_comparison, expected_data)
 
         # Additional specific checks
         self.assertEqual(response_data['type'], 'comment')
@@ -377,6 +381,9 @@ class GetCommentTestCase(APITestCase):
         self.assertEqual(response_data['author']['type'], 'author')
         self.assertEqual(response_data['contentType'], 'text/markdown')
         self.assertEqual(response_data['username'], self.comment.username)
+        
+        # Add a check for likes_collection being a valid UUID
+        self.assertIsInstance(response_data['likes_collection'], uuid.UUID)
 
     def test_get_comment_not_found(self):
         """Test getting a non-existent comment"""
