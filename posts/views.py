@@ -198,7 +198,8 @@ def forward_comment(request, post_FQID=None):
         requestURL = (post_author.id + '/inbox')
         # Construct the remote node's inbox URL using the node_author's host
         response = requests.post(requestURL, json=payload, headers=headers)
-        print("response returned with: ",response.status_code)
+        print("response was: ", response)
+        print("response returned with code: ",response.status_code)
         print("requestedURL was:",requestURL)
 
         return Response({
