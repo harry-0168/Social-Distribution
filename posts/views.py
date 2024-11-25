@@ -233,15 +233,24 @@ def forward_comment(request, post_FQID=None):
             "summary": f"{user.displayName} commented on your post",
             "object": {
                 "type": "comment",
-                "author": request_data['object']['author'].replace('/api//api/', '/api/'),  # Fix double api
+                "author": request_data['object']['author'],
                 "username": request_data['object']['username'],
                 "comment": request_data['object']['comment'],
                 "contentType": "text/markdown",
                 "published": request_data['object']['published'],
                 "id": request_data['object']['id'],
                 "uuid": request_data['object']['uuid'],
-                "post": request_data['object']['post'].replace('/api//api/', '/api/'),  # Fix double api
+                "post": request_data['object']['post'],
                 "likes": request_data['object']['likes']
+            },
+            "actor": {
+                "type": "author",
+                "id": user.id,
+                "host": user.host,
+                "displayName": user.displayName,
+                "github": user.github,
+                "profileImage": user.profileImage,
+                "page": user.page
             }
         }
 
@@ -249,14 +258,11 @@ def forward_comment(request, post_FQID=None):
         headers = {
             "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
             "Content-Type": "application/json",
-            "host": node_author.host.split('//')[1].replace('/api/', ''),  # Remove api from host
+            "host": node_author.host.split('//')[1],
         }
 
-        # Fix inbox URL
-        inbox_url = object_author.id.replace('/api//api/', '/api/') + '/inbox'
-
         # Send request
-        response = requests.post(inbox_url, json=payload, headers=headers)
+        response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
 
         return Response({
             "object_author_id": object_author.id,
