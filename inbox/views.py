@@ -285,6 +285,7 @@ def inboxApi(request, object_author_serial):
 
             try:
                 # Try to get or create the author
+                print("author_data: ", author_data)
                 author, _ = Author.objects.get_or_create(
                     id=author_data.get('id'),
                     defaults={
@@ -306,6 +307,7 @@ def inboxApi(request, object_author_serial):
                 serializer = PostSerializer(existing_post, data=parsed_data, partial=True)
             else:
                 # Create new post
+                print("parsed_data: ", parsed_data)
                 serializer = PostSerializer(data=parsed_data)
 
             if serializer.is_valid():
