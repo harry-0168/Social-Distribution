@@ -612,7 +612,15 @@
                                     "id": comment.id,
                                     "uuid": comment.uuid,
                                     "post": post_id,
-                                    "likes": comment.likes_collection,
+                                    "likes": {
+                                        "type": "likes",
+                                        "page": post_id,
+                                        "id": comment.likes,
+                                        "page_number": 1,
+                                        "size": 50,
+                                        "count": 0,
+                                        "src": [],
+                                    },
                                     "post_author":{
                                         "id": post_author_id
                                     }
