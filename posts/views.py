@@ -262,7 +262,7 @@ def forward_comment(request, post_FQID=None):
 
         # Send request
         inbox_url = object_author.id + '/inbox'
-        print("12. sending to:", inbox_url)
+        print("======12. sending to:", inbox_url)
         response = requests.post(inbox_url, json=payload, headers=headers)
         print("13. response returned with:", response.status_code)
         print("14. response content:", response.text)

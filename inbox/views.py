@@ -413,6 +413,7 @@ def forward_like_request(request):
                         "host": node_author.host.split('//')[1],
                     }
                 print(headers)
+                print("======like sending to:", object_author.id + '/inbox')
                 
 
                 response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
