@@ -975,14 +975,14 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
                             receiver=recipient,
                             type='post'
                         ).update(received_at=timezone.now())
-                    else:
-                        # For new posts, create new inbox entry
-                        Inbox.objects.create(
-                            receiver=recipient,
-                            type='post',
-                            FQIDorId=post.id,
-                            received_at=timezone.now()
-                        )
+                    # else:
+                    #     # For new posts, create new inbox entry
+                    #     Inbox.objects.create(
+                    #         receiver=recipient,
+                    #         type='post',
+                    #         FQIDorId=post.id,
+                    #         received_at=timezone.now()
+                    #     )
                     recipient_uuid = recipient.id.split('/')[-1]
                     print("recipient id: ", recipient_uuid)
                     # Send to remote node using recipient's author_serial
