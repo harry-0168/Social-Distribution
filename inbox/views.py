@@ -298,10 +298,12 @@ def inboxApi(request, object_author_serial):
             author_data = parsed_data.get('author')
             if not author_data:
                 return Response({"error": "Author data missing from post"}, status=status.HTTP_400_BAD_REQUEST)
-
+    
             try:
                 # Try to get or create the author
                 print("author_data: ", author_data)
+                if author_data['host'].endswith('/api/'):
+                        author_data['host'] = author_data['host'][:-5]
                 author, _ = Author.objects.get_or_create(
                     id=author_data.get('id'),
                     defaults={
