@@ -527,7 +527,9 @@ def get_posts_create_post(request, author_serial):
             author=author,  # Use the author from the token
         )
         post.save()
-        
+        if "/api/" in post.id:
+            post.id = post.id.replace("/api/", "")
+            post.save()
         print("author111: ", author)
         print("author_id111: ", post.author.id)
 
