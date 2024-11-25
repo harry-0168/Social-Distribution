@@ -172,7 +172,7 @@ def forward_comment(request, post_FQID=None):
             "published": request_data['published'],
             "id": request_data['id'],
             "uuid": request_data['uuid'],
-            "post": request['post'],
+            "post": request_data['post'],
             "likes": request_data['likes']
         }
         print("payload: ", payload)
