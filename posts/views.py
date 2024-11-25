@@ -898,7 +898,16 @@ def api_view_Likes(request, post_id):
 def api_view_Likes_comments(request, author_serial, post_id, comment_id):
     print("Reached comment likes")
     comment = get_object_or_404(Comment, id=comment_id)
-    post = get_object_or_404(Post, uuid=post_id)
+
+    post_id = Post.objects.filter(
+        author__author_serial=author_serial, 
+        comment__id=comment_id
+    ).values_list('id', flat=True).first()
+
+    if not post_id:
+        return Response({"error": "No matching post found for the given author and comment."}, status=404)
+
+    post = get_object_or_404(Post, id=post_id)
     author = comment.author
 
     
