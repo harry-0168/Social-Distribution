@@ -349,8 +349,9 @@
                 function loadRemoteComments() {
                     const currentHost = window.location.origin;
                     const post_host = "{{post.author.host}}"
+                    const postFQID = "{{post.id}}";
 
-                    const url = `${post_host}/api/post/${"{{ post.id }}"}/comments`;
+                    const url = `${post_host}/api/post/${postFQID}/comments`;
                     console.log("retrieving remote comments from: ", url)
                     fetch(url)
                         .then(response => response.json())
