@@ -158,7 +158,10 @@ class Comment(models.Model):
                 self.id = f"http://{self._host}/api/comments/{self.uuid}"
             else:
                 self.id = f"http://localhost/api/comments/{self.uuid}"  # Default to 'localhost'
-        
+                
+        if not self.likes_collection:
+            likes = Likes.objects.create()
+            self.likes_collection = likes
         super().save(*args, **kwargs)
 
 
