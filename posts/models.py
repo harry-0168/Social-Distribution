@@ -110,7 +110,7 @@ class Post(models.Model):
         # Ensure FQID is set on creation only
         if not self.id:
             author_serial = self.author.author_serial # Ensure that author id is correctly set
-            self.id = f"{self.author.host}/authors/{author_serial}/posts/{self.uuid}"
+            self.id = f"{self.author.host}authors/{author_serial}/posts/{self.uuid}"
         if not self.page:
             author_serial = self.author.author_serial  # Ensure that author id is correctly set
             self.page = f"{self.author.host}/authors/{author_serial}/posts/{self.uuid}"
@@ -145,8 +145,8 @@ class Comment(models.Model):
     comment =  models.TextField()
     contentType = models.CharField(max_length=32, default="text/markdown")
     published = models.DateTimeField("date created", default=timezone.now) 
-    id = models.CharField(max_length=1000, unique=True, null=True)  # FQID
-    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)   # SERIAL
+    id = models.CharField(primary_key=True, max_length=1000, unique=True)  # FQID
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False)   # SERIAL
     post = models.ForeignKey(Post, related_name='comments', on_delete=models.CASCADE) # all comments belong to a post
     likes_collection = models.OneToOneField(Likes, related_name='comment', on_delete=models.CASCADE, null=True, blank=True)
     likes = GenericRelation('Like')
