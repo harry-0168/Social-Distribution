@@ -7,8 +7,9 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         # specifies which fields to serialize
-        fields = ['type', 'author', 'username', 'comment', 'contentType', 'published', 'id', 'uuid', 'post', 'likes_collection']
+        fields = ['type', 'author', 'username', 'comment', 'contentType', 'published', 'id', 'uuid', 'post']
 class LikeSerializer(serializers.ModelSerializer):
+    author = AuthorSerializer(read_only=True)
     class Meta:
         model = Like
         # specifies which fields to serialize
@@ -17,9 +18,10 @@ class LikeSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     author = AuthorSerializer(read_only=True) # So the response actually return the author object instead of just id
     comments = serializers.SerializerMethodField()
+    likes = serializers.SerializerMethodField()
     class Meta:
         model = Post
-        fields = ['id','uuid','type','page', 'title', 'description', 'contentType', 'content', 'visibility', 'author', 'published', 'comments']
+        fields = ['id','uuid','type','page', 'title', 'description', 'contentType', 'content', 'visibility', 'author', 'published', 'comments', 'likes']
     
     def get_comments(self, obj):
         comments_queryset = obj.comments.all().order_by('-published')[:5] 
@@ -31,6 +33,18 @@ class PostSerializer(serializers.ModelSerializer):
             "size": 5,
             "count": obj.comments.count(),
             "src": CommentSerializer(comments_queryset, many=True).data,
+        }
+
+    def get_likes(self, obj):
+        likes_queryset = obj.likes.all().order_by('-published')[:5] 
+        return {
+            "type": "likes",
+            "page": f"{obj.id}",
+            "id": f"{obj.id}/likes",
+            "page_number": 1,
+            "size": 5,
+            "count": obj.likes.count(),
+            "src": LikeSerializer(likes_queryset, many=True).data,
         }
 
     def validate_title(self, value):

@@ -319,16 +319,17 @@
             <script>
                 document.addEventListener('DOMContentLoaded', () => {
 
-                    const currentHost = window.location.origin;
-                    const post_host = "{{post.author.host}}"
+                    // const currentHost = window.location.origin;
+                    // const post_host = ""
 
-                    if (currentHost === post_host || (post_host === "http://localhost/api" && currentHost === "http://127.0.0.1:8000" )){  // object_author is on the current host server
-                        loadComments();
-                        console.log("load comments for the local post");
-                    } else {    // comment needs to be forwarded to remote node
-                        loadRemoteComments();
-                        console.log("loading comments for the remote post");
-                    }
+                    // if (currentHost === post_host || (post_host === "http://localhost/api" && currentHost === "http://127.0.0.1:8000" )){  // object_author is on the current host server
+                    //     loadComments();
+                    //     console.log("load comments for the local post");
+                    // } else {    // comment needs to be forwarded to remote node
+                    //     loadRemoteComments();
+                    //     console.log("loading comments for the remote post");
+                    // }
+                    loadComments();
                 });
 
                 function loadComments() {
