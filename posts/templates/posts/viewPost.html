@@ -318,7 +318,17 @@
             </div>
             <script>
                 document.addEventListener('DOMContentLoaded', () => {
-                    loadComments();
+
+                    const currentHost = window.location.origin;
+                    const post_host = "{{post.author.host}}"
+
+                    if (currentHost === post_host || (post_host === "http://localhost/api" && currentHost === "http://127.0.0.1:8000" )){  // object_author is on the current host server
+                        loadComments();
+                        console.log("load comments for the local post");
+                    } else {    // comment needs to be forwarded to remote node
+                        loadRemoteComments();
+                        console.log("loading comments for the remote post");
+                    }
                 });
 
                 function loadComments() {
@@ -334,6 +344,35 @@
                             });
                         })
                         .catch(error => console.error('Error loading comments:', error));
+                }
+
+                function loadRemoteComments() {
+                    const currentHost = window.location.origin;
+                    const post_host = "{{post.author.host}}"
+                    const postFQID = "{{post.id}}";
+
+                    const url = `${post_host}/api/posts/${postFQID}/comments`;
+                    console.log("retrieving remote comments from: ", url)
+                    fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Data received: ", data);
+                        
+                        // Check if the response has 'items' and it's an array
+                        if (data && Array.isArray(data.items)) {
+                            const commentsContainer = document.querySelector('.carousel-container');
+                            commentsContainer.innerHTML = ''; // Clear existing comments
+
+                            // Loop through the comments array and create the comment elements
+                            data.items.forEach(comment => {
+                                const commentElement = createCommentElement(comment);
+                                commentsContainer.appendChild(commentElement);
+                            });
+                        } else {
+                            console.error("Invalid data structure or no comments found.");
+                        }
+                    })
+                    .catch(error => console.error('Error loading comments:', error));
                 }
 
                 function createCommentElement(comment) {
@@ -494,7 +533,7 @@
                     const postUuid = postUrl.split('/').pop(); // Extract post UUID from URL
                     const decodedUuid = decodeURIComponent(uuid);
                     const viewLikesLink = document.createElement('a');
-                    viewLikesLink.href = `/api/authors/${decodedUuid}/posts/${postUuid}/comments/${comment.uuid}/likes`; // Build the URL dynamically
+                    viewLikesLink.href = `/api/authors/${decodedUuid}/posts/${postUuid}/comments/${comment.id}/likes`; // Build the URL dynamically
                     viewLikesLink.textContent = 'View Likes';
                     viewLikesLink.classList.add('viewLikes');
 
@@ -612,7 +651,15 @@
                                     "id": comment.id,
                                     "uuid": comment.uuid,
                                     "post": post_id,
-                                    "likes": comment.likes_collection,
+                                    "likes": {
+                                        "type": "likes",
+                                        "page": post_id,
+                                        "id": `${currentHost}/api/authors/${"{{ post.author.author_serial }}"}/posts/${"{{ post.uuid }}"}/comments/${comment.uuid}/likes`,
+                                        "page_number": 1,
+                                        "size": 50,
+                                        "count": 0,
+                                        "src": [],
+                                    },
                                     "post_author":{
                                         "id": post_author_id
                                     }

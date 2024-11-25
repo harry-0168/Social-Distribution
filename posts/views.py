@@ -173,7 +173,14 @@ def forward_comment(request, post_FQID=None):
             "id": request_data['id'],
             "uuid": request_data['uuid'],
             "post": request_data['post'],
-            "likes": request_data['likes']
+            "likes": {
+                "type": "likes",
+                "page": request_data['likes']['page'],
+                "id":   request_data['likes']['id'],
+                "size": 50,
+                "count": 0,
+                "src": []   
+            }
         }
         print("payload: ", payload)
         print(node_author.displayName, node_author.first_name, post_author.id+'/inbox')
@@ -191,7 +198,8 @@ def forward_comment(request, post_FQID=None):
         requestURL = (post_author.id + '/inbox')
         # Construct the remote node's inbox URL using the node_author's host
         response = requests.post(requestURL, json=payload, headers=headers)
-        print("response returned with: ",response.status_code)
+        print("response was: ", response)
+        print("response returned with code: ",response.status_code)
         print("requestedURL was:",requestURL)
 
         return Response({
@@ -532,6 +540,13 @@ def get_posts_create_post(request, author_serial):
             author=author,  # Use the author from the token
         )
         post.save()
+        if "/api//" in post.id:
+            # Get the existing post and delete it
+            old_id = post.id
+            new_id = old_id.replace("/api//", "/", 1)
+            # Update the ID in the database directly
+            Post.objects.filter(id=old_id).update(id=new_id)
+            post = Post.objects.get(id=new_id)
         print("author111: ", author)
         print("author_id111: ", post.author.id)
 
@@ -883,8 +898,18 @@ def api_view_Likes(request, post_id):
 @api_view(['GET'])
 def api_view_Likes_comments(request, author_serial, post_id, comment_id):
     print("Reached comment likes")
-    comment = get_object_or_404(Comment, uuid=comment_id)
-    post = get_object_or_404(Post, uuid=post_id)
+    comment = get_object_or_404(Comment, id=comment_id)
+
+    print("original post_id: ", post_id)
+    post_id = Post.objects.filter(
+        comments__id=comment_id  # Use the related name for the reverse relationship
+    ).values_list('id', flat=True).first()
+    print("queried post_id: ", post_id)
+
+    if not post_id:
+        return Response({"error": "No matching post found for the given author and comment."}, status=404)
+
+    post = get_object_or_404(Post, id=post_id)
     author = comment.author
 
     

@@ -31,7 +31,6 @@ ALLOWED_HOSTS = ['127.0.0.1','social1-c4a7f0052028.herokuapp.com', 'social-distr
                 'social-distribution-haoze-6849a7ab5179.herokuapp.com', 'social-distribution-dhruvil-7ee59df447bd.herokuapp.com',
                  'crimson-404-9c6e916b7080.herokuapp.com', 'cmput-404-project-crimson-ca3201dcadad.herokuapp.com', 'localhost','*']
 
-
 # Application definition
 
 INSTALLED_APPS = [
