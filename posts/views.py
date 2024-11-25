@@ -200,21 +200,30 @@ def get_comment(request, comment_id=None, author_serial=None, post_serial=None, 
 
 @api_view(['POST'])
 def forward_comment(request, post_FQID=None):
-    print("in forward_comment==================22222==============================")
+    print("in forward_comment===================333=============================")
     token = request.COOKIES.get('jwt')
     if not token:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
     try:
-        print("1. Got token")
         # Decode JWT and get user
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         username = payload['id']
         user = get_object_or_404(Author, displayName=username)
-        print("2. Got user:", user.displayName)
 
         request_data = request.data
         print("3. request_data:", request_data)
+
+        # Get post author from post_FQID
+        post_author_id = post_FQID.split('/posts/')[0]
+        object_author = get_object_or_404(Author, id=post_author_id)
+        print("6. object_author:", object_author)
+        
+        # Find node author using object_author's host
+        node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
+        print("7. node_author:", node_author)
+        if not node_author:
+            return Response({"error": "Node Author not found"}, status=404)
 
         # Extract post UUID from post_FQID
         post_uuid = post_FQID.split('/posts/')[1]
@@ -234,7 +243,7 @@ def forward_comment(request, post_FQID=None):
                     "published": request_data['object']['published'],
                     "id": request_data['object']['id'],
                     "uuid": request_data['object']['uuid'],
-                    "post": post_uuid,  # Just send the UUID instead of full URL
+                    "post": post_FQID,
                     "likes": None
                 }
             }
@@ -243,7 +252,6 @@ def forward_comment(request, post_FQID=None):
             print("Error creating payload:", str(e))
             raise
 
-        print("10. Creating headers")
         # Prepare headers
         headers = {
             "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
