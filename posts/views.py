@@ -232,17 +232,24 @@ def forward_comment(request, post_FQID=None):
         payload = {
             "type": "comment",
             "summary": f"{user.displayName} commented on your post",
-            "object": request_data['object'],
-            "actor": {
-                "type": "author",
-                "id": user.id,
-                "host": user.host,
-                "displayName": user.displayName,
-                "github": user.github,
-                "profileImage": user.profileImage,
-                "page": user.page
+            "object": {
+                "type": "comment",
+                "author": {
+                    "type": "author",
+                    "id": user.id,
+                    "host": user.host,
+                    "displayName": user.displayName,
+                    "github": user.github,
+                    "profileImage": user.profileImage
+                },
+                "comment": request_data['object']['comment'],
+                "contentType": "text/markdown",
+                "published": request_data['object']['published'],
+                "id": request_data['object']['id'],
+                "post": post_FQID
             }
         }
+        print("payload: ", payload)
 
         # Prepare headers
         headers = {
@@ -253,8 +260,17 @@ def forward_comment(request, post_FQID=None):
         print("headers: ", headers)
 
         # Send request to post author's inbox
-        response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
-        print("response returned with: ", response.status_code)
+        inbox_url = object_author.id + '/inbox'
+        print("sending request to:", inbox_url)
+        response = requests.post(inbox_url, json=payload, headers=headers)
+        print("response returned with:", response.status_code)
+        print("response content:", response.text)
+
+        if response.status_code >= 400:
+            return Response({
+                "error": f"Remote server returned {response.status_code}",
+                "details": response.text
+            }, status=response.status_code)
 
         return Response({
             "object_author_id": object_author.id,
