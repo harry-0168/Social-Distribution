@@ -67,7 +67,8 @@ def create_comment(request, post_uuid):
     
     comment = Comment(username=username, comment=content, post=post, author=user, type='comment')
     host = request.get_host()
-    comment.save(request_host=host)
+    comment._host = host  # Set the host as an attribute on the instance
+    comment.save()
 
     # Serialize the created comment
     comment_serializer = CommentSerializer(comment)
