@@ -354,17 +354,25 @@
                     const url = `${post_host}/api/posts/${postFQID}/comments`;
                     console.log("retrieving remote comments from: ", url)
                     fetch(url)
-                        .then(response => response.json())
-                        .then(data => {
-                            console.log("Data received: ", data);
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Data received: ", data);
+                        
+                        // Check if the response has 'items' and it's an array
+                        if (data && Array.isArray(data.items)) {
                             const commentsContainer = document.querySelector('.carousel-container');
                             commentsContainer.innerHTML = ''; // Clear existing comments
-                            data.src.forEach(comment => {
+
+                            // Loop through the comments array and create the comment elements
+                            data.items.forEach(comment => {
                                 const commentElement = createCommentElement(comment);
                                 commentsContainer.appendChild(commentElement);
                             });
-                        })
-                        .catch(error => console.error('Error loading comments:', error));
+                        } else {
+                            console.error("Invalid data structure or no comments found.");
+                        }
+                    })
+                    .catch(error => console.error('Error loading comments:', error));
                 }
 
                 function createCommentElement(comment) {
