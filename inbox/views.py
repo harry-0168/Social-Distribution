@@ -185,12 +185,18 @@ def inboxApi(request, object_author_serial):
             author_id = parsed_data['author']['id']
             author = get_object_or_404(Author, id=author_id)
 
+            # Check if the comment already exists based on UUID
+            comment_uuid = parsed_data['uuid']
+            if Comment.objects.filter(uuid=comment_uuid).exists():
+                return Response({"message": "Comment already exists"}, status=status.HTTP_200_OK)
+
             # forward the comment to the remote post_author's inbox
             post_author = Author.objects.get(id=post_author_id)
             Inbox(receiver=post_author, type='comment', FQIDorId=parsed_data['id'], received_at=timezone.now()).save()
 
             comment = Comment(author=author, username=parsed_data['author']['displayName'], comment=parsed_data['comment'], published=parsed_data['published'], id=parsed_data['id'] , uuid=parsed_data['uuid'], post=post)
             print("\nComment: ", comment)
+
             comment.save()
             print("comment saved")
 
