@@ -526,7 +526,7 @@ def get_posts_create_post(request, author_serial):
             visibility=visibility,
             author=author,  # Use the author from the token
         )
-        post.save()
+        # post.save()
         if "/api/" in post.id:
             post.id = post.id.replace("/api/", "", 1)  # Remove only the first occurrence of '/api/'
             post.save()
