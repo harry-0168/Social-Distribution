@@ -304,7 +304,7 @@
             </script>
             
             <section class="viewLikesComments">
-                <a href="{% url 'api_likes_comments' author_serial=post.author.author_serial post_id=post.uuid comment_id=comment.id %}" class="viewLikes">view likes</a>
+                <a href="{% url 'api_likes' author_serial=post.author.author_serial post_id=post.uuid %}" class="viewLikes">view likes</a>
                 <a class="viewComments">view comments</a>
             </section>
         </section>
