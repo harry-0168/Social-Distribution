@@ -590,7 +590,9 @@
                                 const commentAmountElement = document.getElementById('commentAmount');
                                 const currentCount = parseInt(commentAmountElement.innerText) || 0;
                                 commentAmountElement.innerText = (currentCount + 1) + ' comment(s)';
-
+                                
+                                post = "{{ post }}"
+                                    
                                 // Now construct the inbox request payload
                                 const inboxRequest = {
                                     "type": "comment",
