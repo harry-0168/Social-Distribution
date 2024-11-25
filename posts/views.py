@@ -173,7 +173,14 @@ def forward_comment(request, post_FQID=None):
             "id": request_data['id'],
             "uuid": request_data['uuid'],
             "post": request_data['post'],
-            "likes": request_data['likes']
+            "likes": {
+                "type": "likes",
+                "page": request_data['likes']['page'],
+                "id":   request_data['likes']['id'],
+                "size": 50,
+                "count": 0,
+                "src": []   
+            }
         }
         print("payload: ", payload)
         print(node_author.displayName, node_author.first_name, post_author.id+'/inbox')
