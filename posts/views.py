@@ -201,7 +201,6 @@ def get_comment(request, comment_id=None, author_serial=None, post_serial=None, 
 @api_view(['POST'])
 def forward_comment(request, post_FQID=None):
     print("in forward_comment")
-    # Get token and authenticate
     token = request.COOKIES.get('jwt')
     if not token:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -215,74 +214,68 @@ def forward_comment(request, post_FQID=None):
         request_data = request.data
         print("request_data: ", request_data)
 
-        # Get object author (post author) from request data
-        print("\nobject_author_id: ", request_data['object']['author'])
-        object_author = get_object_or_404(Author, id=request_data['object']['author'])
-        print("object_author: ", object_author)
+        # Get post author from post_FQID instead of comment author
+        post_url_parts = post_FQID.split('/authors/')
+        if len(post_url_parts) > 1:
+            post_host = post_url_parts[0]
+            print("post_host: ", post_host)
+            
+            # Find node author based on post host
+            node_author = Author.objects.filter(host__contains=post_host, isNode=True).first()
+            print("found node_author: ", node_author)
+            if not node_author:
+                return Response({"error": "Node Author not found"}, status=404)
 
-        # Check if author is on current host
-        current_host = f"{request.scheme}://{request.get_host()}"
-        print("current host: ", current_host)
-        if object_author.host == current_host:
-            return Response({"error": "Object author is on the current host server"}, status=400)
-
-        # Find node author
-        print("\nobject_author.host: ", object_author.host)
-        node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
-        print("found node_author: ", node_author)
-        if not node_author:
-            return Response({"error": "Node Author not found"}, status=404)
-
-        # Create payload
-        print("in payload")
-        payload = {
-            "type": "comment",
-            "summary": f"{user.displayName} commented on your post",
-            "object": request_data['object'],  # Use the entire object from request
-            "actor": {
-                "type": "author",
-                "id": user.id,
-                "host": user.host,
-                "displayName": user.displayName,
-                "github": user.github,
-                "profileImage": user.profileImage,
-                "page": user.page
+            # Create payload
+            print("in payload")
+            payload = {
+                "type": "comment",
+                "summary": f"{user.displayName} commented on your post",
+                "object": request_data['object'],
+                "actor": {
+                    "type": "author",
+                    "id": user.id,
+                    "host": user.host,
+                    "displayName": user.displayName,
+                    "github": user.github,
+                    "profileImage": user.profileImage,
+                    "page": user.page
+                }
             }
-        }
-        print("payload: ", payload)
+            print("payload: ", payload)
 
-        # Prepare headers
-        headers = {
-            "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
-            "Content-Type": "application/json",
-            "host": node_author.host.split('//')[1].replace('/api', ''),  # Remove /api from host
-        }
-        print("headers: ", headers)
-        print("username: ", node_author.displayName)
-        print("password: ", node_author.first_name)
+            # Prepare headers
+            headers = {
+                "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
+                "Content-Type": "application/json",
+                "host": node_author.host.split('//')[1].replace('/api', ''),
+            }
+            print("headers: ", headers)
 
-        # Construct inbox URL
-        inbox_url = object_author.id + '/inbox'
-        print("sending request...", inbox_url)
+            # Construct inbox URL using post author's ID
+            post_author_path = post_FQID.split('/posts/')[0]
+            inbox_url = f"{post_author_path}/inbox"
+            print("sending request...", inbox_url)
 
-        # Send request
-        response = requests.post(inbox_url, json=payload, headers=headers)
-        print("response returned with: ", response.status_code)
-        print("requestedURL was:", inbox_url)
+            # Send request
+            response = requests.post(inbox_url, json=payload, headers=headers)
+            print("response returned with: ", response.status_code)
+            print("requestedURL was:", inbox_url)
 
-        return Response({
-            "object_author_id": object_author.id,
-            "response": {
-                "status_code": response.status_code,
-                "text": response.text,
-            },
-            "message": "comment forwarded to remote author",
-        }, status=200)
+            return Response({
+                "response": {
+                    "status_code": response.status_code,
+                    "text": response.text,
+                },
+                "message": "comment forwarded to remote author",
+            }, status=200)
+        else:
+            return Response({"error": "Invalid post URL format"}, status=400)
 
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
     except Exception as e:
-        print("Error in forward_comment:", str(e))  # Add error logging
+        print("Error in forward_comment:", str(e))
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class CommentPagination(PageNumberPagination):
