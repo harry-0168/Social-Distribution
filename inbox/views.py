@@ -178,6 +178,7 @@ def inboxApi(request, object_author_serial):
 
             # Get the post instance using the post URL
             post_id = parsed_data['post']
+            print("post_id: ", post_id)
             post = get_object_or_404(Post, id=post_id)  # Retrieve the Post instance
             post_author_id = post.author.id
             print("post.id: ", post.id)
