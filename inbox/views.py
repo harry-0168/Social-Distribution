@@ -308,7 +308,7 @@ def inboxApi(request, object_author_serial):
             else:
                 # Create new post
                 print("parsed_data: ", parsed_data)
-                serializer = PostSerializer(data=parsed_data)
+                serializer = PostSerializer(data=parsed_data,partial=True)
 
             if serializer.is_valid():
                 try:
