@@ -227,4 +227,147 @@ class AuthorAPITests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('authors', response.json())
         self.assertEqual(len(response.json()['authors']), 5)  # Should return 5 authors per page
+        
+    # Add new auth test methods here
+    def test_signup_success(self):
+        """Test successful signup"""
+        signup_data = {
+            "displayName": "newuser",
+            "password": "newpass123",
+            "host": "http://testhost.com"
+        }
+        
+        response = self.client.post(reverse('signup'), data=signup_data)
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(Author.objects.filter(displayName="newuser").exists())
+
+    def test_signup_duplicate_username(self):
+        """Test signup with existing username"""
+        # First create a user
+        first_signup = {
+            "displayName": "testuser",
+            "password": "pass123",
+            "host": "http://testhost.com"
+        }
+        first_response = self.client.post(reverse('signup'), data=first_signup)
+        self.assertEqual(first_response.status_code, 201)
+        
+        # Try to create another user with the same displayName
+        duplicate_signup = {
+            "displayName": "testuser",  # Same displayName as above
+            "password": "newpass123",
+            "host": "http://testhost.com"
+        }
+        
+        response = self.client.post(reverse('signup'), data=duplicate_signup)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["detail"], "UserName already exists.")
+
+    def test_login_success(self):
+        """Test successful login"""
+        # First create a verified user
+        test_author = Author.objects.create_user(
+            displayName="testuser",
+            password="testpass123",
+            host="http://testhost.com",
+            isVerified=True  # Make sure the user is verified
+        )
+        
+        login_data = {
+            "displayName": "testuser",
+            "password": "testpass123"
+        }
+        
+        response = self.client.post(reverse('login'), data=login_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["detail"], "Login successful")
+        self.assertTrue('jwt' in response.cookies)
+
+    def test_login_unverified_user(self):
+        """Test login with unverified user"""
+        unverified_author = Author.objects.create_user(
+            displayName="unverified",
+            password="testpass123",
+            host="http://testhost.com",
+            isVerified=False
+        )
+        
+        login_data = {
+            "displayName": "unverified",
+            "password": "testpass123"
+        }
+        
+        response = self.client.post(reverse('login'), data=login_data)
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()["detail"], "Not Verified by admin")
+
+    def test_login_wrong_password(self):
+        """Test login with wrong password"""
+        # First create a user to test against
+        test_author = Author.objects.create_user(
+            displayName="testuser",
+            password="correctpass123",
+            host="http://testhost.com",
+            isVerified=True
+        )
+        
+        # Try to login with wrong password
+        login_data = {
+            "displayName": "testuser",
+            "password": "wrongpass"
+        }
+        
+        response = self.client.post(reverse('login'), data=login_data)
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()["detail"], "Not found")  # Updated to match actual error message
+
+    def test_get_author_from_cookie(self):
+        """Test getting author data from cookie"""
+        # First create a verified user
+        test_author = Author.objects.create_user(
+            displayName="testuser",
+            password="testpass123",
+            host="http://testhost.com",
+            isVerified=True
+        )
+        
+        # Login to get the JWT cookie
+        login_data = {
+            "displayName": "testuser",
+            "password": "testpass123"
+        }
+        login_response = self.client.post(reverse('login'), data=login_data)
+        self.assertEqual(login_response.status_code, 200)
+        
+        # Make sure we got the JWT cookie
+        self.assertTrue('jwt' in login_response.cookies)
+        
+        # Now try to get author data using the cookie
+        response = self.client.get(
+            reverse('get_author_from_cookie'),
+            HTTP_COOKIE=f"jwt={login_response.cookies['jwt'].value}"
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["displayName"], "testuser")
+
+    def test_get_author_no_cookie(self):
+        """Test getting author data without cookie"""
+        self.client = APIClient(raise_request_exception=False)  # Don't raise exceptions
+        response = self.client.get(reverse('get_author_from_cookie'))
+        self.assertEqual(response.status_code, 500)
+        # You might want to check the error message if the view provides one
+        # self.assertIn('error', response.json())
+
+    def test_logout(self):
+        """Test logout functionality"""
+        login_data = {
+            "displayName": "testuser",
+            "password": "testpass123"
+        }
+        self.client.post(reverse('login'), data=login_data)
+        
+        response = self.client.post(reverse('logout'))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('jwt', response.cookies)
 

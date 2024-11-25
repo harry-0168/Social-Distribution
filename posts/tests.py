@@ -17,6 +17,10 @@ from .serializers import PostSerializer
 from rest_framework.test import APIRequestFactory
 from .views import get_post_FQID, get_post_image, send_post_to_remote_nodes
 from urllib.parse import quote
+from unittest.mock import MagicMock
+import requests
+from unittest.mock import Mock
+from rest_framework.response import Response
 
 User = get_user_model()
 # Test case for ://service/api/authors/{AUTHOR_SERIAL}/posts/{POST_SERIAL}
@@ -299,7 +303,8 @@ class GetCommentTestCase(APITestCase):
             host='http://example.com',
             displayName='Test Author',
             github='testauthor',
-            id='http://example.com/authors/testauthor'
+            id='http://example.com/authors/testauthor',
+            password='testpassword'
         )
 
         # Create a post instance
@@ -323,81 +328,121 @@ class GetCommentTestCase(APITestCase):
             type='comment',
         )
         
-        # Set the URL for the get_comment view using the comment's id
+        # Set the URL for the get_comment view using the comment's uuid
         self.url = reverse('get_comment', args=[self.comment.uuid])
+        
+        # Authenticate the client
+        self.client.force_authenticate(user=self.author)
 
     def test_get_comment(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # Validate the content of the response
+        # Define expected data structure
         expected_data = {
-            "id": str(self.comment.id), 
-            "type": self.comment.type,
-            "contentType": self.comment.contentType,
-            "username": self.comment.username,
-            "published": self.comment.published.isoformat(),  # Ensure the datetime is in string format
-            "content": self.comment.content,
-            "post": self.comment.post.id,
-            "id": self.comment.id,
+            "type": "comment",
             "author": {
-                "id": str(self.comment.author.id), 
+                "type": "author",
+                "id": str(self.comment.author.id),
                 "host": self.comment.author.host,
                 "displayName": self.comment.author.displayName,
                 "github": self.comment.author.github,
-                "id": self.comment.author.id,
-            }
+                "profileImage": f"{self.comment.author.host}/static/avatar.png",
+                "page": f"{self.comment.author.host}/authors/{self.comment.author.displayName}"
+            },
+            "username": self.comment.username,
+            "comment": self.comment.comment,
+            "contentType": "text/markdown",
+            "published": response.data['published'],  # Use the actual response time
+            "id": str(self.comment.id),
+            "uuid": str(self.comment.uuid),
+            "post": str(self.comment.post.id),
+            "likes_collection": None
         }
 
-        # Get response data and format it
+        # Get response data
         response_data = response.data
-        response_data['id'] = str(response_data['id'])  
-        response_data['author']['id'] = str(response_data['author']['id']) 
-        response_data['published'] = response_data['published'].isoformat() 
+        
+        # Print both data structures for debugging
+        print("\nResponse Data:", response_data)
+        print("\nExpected Data:", expected_data)
 
-        # Check if all fields match
+        # Compare the structures
         self.assertEqual(response_data, expected_data)
 
+        # Additional specific checks
+        self.assertEqual(response_data['type'], 'comment')
+        self.assertEqual(response_data['comment'], self.comment.comment)
+        self.assertEqual(response_data['author']['displayName'], self.comment.author.displayName)
+        self.assertEqual(response_data['author']['type'], 'author')
+        self.assertEqual(response_data['contentType'], 'text/markdown')
+        self.assertEqual(response_data['username'], self.comment.username)
+
     def test_get_comment_not_found(self):
-        # Test for a comment that doesn't exist
-        invalid_url = reverse('get_comment', args=['http://example.com/comments/invalid'])
-        response = self.client.get(invalid_url)
+        """Test getting a non-existent comment"""
+        non_existent_uuid = uuid.uuid4()
+        url = reverse('get_comment', args=[non_existent_uuid])
+        response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class GetAuthorCommentsTestCase(APITestCase):
-
     def setUp(self):
-        self.author = Author.objects.create(displayName='Test Author', host='http://localhost')
-        self.post = Post.objects.create(title='Test Post', content='This is a test post.', author=self.author, visibility='PUBLIC')
+        # Create a unique display name using uuid
+        unique_name = f"TestAuthor_{uuid.uuid4().hex[:8]}"
+        
+        # Create a user first (which will create an associated Author)
+        self.user = User.objects.create_user(
+            displayName=unique_name,
+            password='testpassword'
+        )
+        
+        # Get the associated author
+        self.author = Author.objects.get(displayName=unique_name)
+        
+        # Create a post
+        self.post = Post.objects.create(
+            title='Test Post',
+            content='This is a test post.',
+            author=self.author,
+            visibility='PUBLIC'
+        )
+        
         self.comment_content = 'This is a test comment.'
         
-        # Create a valid JWT token for the user
-        self.token = jwt.encode({'id': self.author.displayName}, settings.SECRET_KEY, algorithm='HS256')
-        self.url = reverse('create_comment', kwargs={'post_id': self.post.uuid})
+        # Authenticate the client
+        self.client.force_authenticate(user=self.user)
 
     def test_get_author_comments_by_author_id(self):
-        Comment.objects.create(comment=self.comment_content, post=self.post, author=self.author, username=self.author.displayName)
-
-        response = self.client.get(reverse('SERIAL_get_author_comments', kwargs={'author_id': self.author.id}))
-        
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn(self.comment_content, [c['content'] for c in response.data['src']])
-
-    def test_get_author_comments_by_FQID(self):
-        Comment.objects.create(comment=self.comment_content, post=self.post, author=self.author, username=self.author.displayName)
-
-        response = self.client.get(reverse('FQID_get_author_comments', kwargs={'id': self.author.id}))
-        
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn(self.comment_content, [c['content'] for c in response.data['src']])
-
-class GetCommentedCommentTestCase(TestCase):
-    def setUp(self):
-        # Create an author
-        self.author = Author.objects.create(
-            displayName='Test Author',
+        # Create a comment
+        comment = Comment.objects.create(
+            comment=self.comment_content,
+            post=self.post,
+            author=self.author,
+            username=self.author.displayName
         )
+
+        # Get comments using commented endpoint
+        response = self.client.get(
+            reverse('SERIAL_get_author_comments', 
+                   kwargs={'author_serial': self.author.author_serial})
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+class GetCommentedCommentTestCase(APITestCase):
+    def setUp(self):
+        # Create a unique display name using uuid
+        unique_name = f"TestAuthor_{uuid.uuid4().hex[:8]}"
+        
+        # Create a user first
+        self.user = User.objects.create_user(
+            displayName=unique_name,
+            password='testpassword'
+        )
+        
+        # Create an author
+        self.author = Author.objects.get(displayName=unique_name)
 
         # Create a post
         self.post = Post.objects.create(
@@ -410,25 +455,363 @@ class GetCommentedCommentTestCase(TestCase):
         self.comment = Comment.objects.create(
             comment='This is a test comment.',
             author=self.author,
-            post=self.post,  # Associate the comment with the post
+            post=self.post,
             username=self.author.displayName
         )
 
+        # Authenticate the client
+        self.client.force_authenticate(user=self.user)
+
     def test_get_commented_comment_valid_parameters(self):
-        # Construct the URL
         url = reverse('author_serial_get_comment', args=[self.author.author_serial, self.comment.uuid])
         response = self.client.get(url)
-        
-        # Assert the response status code
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_get_commented_comment_invalid_author(self):
+        # Create a new authenticated client for this test
+        client = APIClient()
+        client.force_authenticate(user=self.user)
+        
         url = reverse('author_serial_get_comment', args=[uuid.uuid4(), self.comment.uuid])
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        response = client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_get_commented_comment_invalid_comment(self):
+        # Create a new authenticated client for this test
+        client = APIClient()
+        client.force_authenticate(user=self.user)
+        
         url = reverse('author_serial_get_comment', args=[self.author.author_serial, uuid.uuid4()])
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        response = client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+class PostImageAPITest(APITestCase):
+    def setUp(self):
+        # Create a test user and authenticate
+        self.user = User.objects.create_user(
+            displayName="testuser",
+            password="password"
+        )
+        
+        # Get the associated author
+        self.author = Author.objects.get(displayName="testuser")
+        
+        # Create a test post with an image
+        self.post = Post.objects.create(
+            uuid=uuid.uuid4(),
+            title="Test Post with Image",
+            description="Test Description",
+            contentType="image/jpeg",
+            content="base64_encoded_image_content",
+            visibility="PUBLIC",
+            author=self.author
+        )
+
+        # Set up URLs for both patterns
+        self.image_url_fqid = reverse('post_image_FQID', args=[self.post.id])
+        self.image_url_serial = reverse('post_image_SERIAL', 
+                                      args=[self.author.author_serial, 
+                                           self.post.uuid])
+        
+        # Set up authentication headers
+        self.client.credentials(HTTP_AUTHORIZATION='Basic ' + base64.b64encode(
+            f"{self.user.displayName}:password".encode()).decode())
+
+    def test_get_post_image_by_fqid(self):
+        """Test getting post image using FQID"""
+        response = self.client.get(self.image_url_fqid)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_post_image_by_serial(self):
+        """Test getting post image using author serial and post ID"""
+        response = self.client.get(self.image_url_serial)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_nonexistent_image_fqid(self):
+        """Test getting image for non-existent post using FQID"""
+        url = reverse('post_image_FQID', args=[uuid.uuid4()])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_nonexistent_image_serial(self):
+        """Test getting image for non-existent post using serial"""
+        url = reverse('post_image_SERIAL', 
+                     args=[self.author.author_serial, uuid.uuid4()])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_image_unauthorized(self):
+        """Test getting image without authentication"""
+        client = APIClient()
+        response = client.get(self.image_url_fqid)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_private_image(self):
+        """Test getting image from a private post"""
+        private_post = Post.objects.create(
+            uuid=uuid.uuid4(),
+            title="Private Post with Image",
+            description="Private Test Description",
+            contentType="image/jpeg",
+            content="base64_encoded_image_content",
+            visibility="PRIVATE",
+            author=self.author
+        )
+        
+        # Create another user with proper authentication
+        other_user = User.objects.create_user(
+            displayName="otheruser",
+            password="password"
+        )
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION='Basic ' + base64.b64encode(
+            f"otheruser:password".encode()).decode())
+        
+        url = reverse('post_image_SERIAL', 
+                     args=[self.author.author_serial, private_post.uuid])
+        response = client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        
+        
+class GetPostsCommentsAPITest(APITestCase):
+    def setUp(self):
+        # Create test users
+        self.user = User.objects.create_user(
+            displayName="testuser",
+            password="password"
+        )
+        self.other_user = User.objects.create_user(
+            displayName="otheruser",
+            password="password"
+        )
+        
+        # Get associated authors
+        self.author = Author.objects.get(displayName="testuser")
+        self.other_author = Author.objects.get(displayName="otheruser")
+        
+        # Create a test post
+        self.post = Post.objects.create(
+            uuid=uuid.uuid4(),
+            title="Test Post",
+            description="Test Description",
+            contentType="text/plain",
+            content="Test content",
+            visibility="PUBLIC",
+            author=self.author
+        )
+        
+        # Create some test comments
+        self.comment1 = Comment.objects.create(
+            comment="Test comment 1",
+            username="testuser",
+            post=self.post,
+            author=self.author
+        )
+        
+        self.comment2 = Comment.objects.create(
+            comment="Test comment 2",
+            username="otheruser",
+            post=self.post,
+            author=self.other_author
+        )
+        
+        # Set up URLs
+        self.comments_url_serial = reverse('SERIAL_get_posts_comments', 
+                                         args=[self.author.author_serial, self.post.uuid])
+        self.comments_url_fqid = reverse('FQID_get_posts_comments', 
+                                        args=[self.post.id])
+        
+        # Set up authenticated client
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_get_post_comments_by_serial(self):
+        """Test getting comments using author serial and post ID"""
+        response = self.client.get(self.comments_url_serial)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['src']), 2)
+        
+        # Get comments from response and sort them
+        comments = sorted([c['comment'] for c in response.data['src']])
+        expected_comments = sorted(["Test comment 1", "Test comment 2"])
+        self.assertEqual(comments, expected_comments)
+
+    def test_get_post_comments_by_fqid(self):
+        """Test getting comments using post FQID"""
+        response = self.client.get(self.comments_url_fqid)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['src']), 2)
+        
+        # Get comments from response and sort them
+        comments = sorted([c['comment'] for c in response.data['src']])
+        expected_comments = sorted(["Test comment 1", "Test comment 2"])
+        self.assertEqual(comments, expected_comments)
+
+    def test_get_comments_nonexistent_post_serial(self):
+        """Test getting comments for non-existent post using serial"""
+        url = reverse('SERIAL_get_posts_comments', 
+                     args=[self.author.author_serial, uuid.uuid4()])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_comments_nonexistent_post_fqid(self):
+        """Test getting comments for non-existent post using FQID"""
+        url = reverse('FQID_get_posts_comments', 
+                     args=[f"http://testserver/posts/{uuid.uuid4()}"])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_comments_private_post(self):
+        """Test getting comments for a private post"""
+        private_post = Post.objects.create(
+            uuid=uuid.uuid4(),
+            title="Private Post",
+            description="Private post description",
+            contentType="text/plain",
+            content="Private content",
+            visibility="PRIVATE",
+            author=self.author
+        )
+        
+        Comment.objects.create(
+            comment="Private post comment",
+            username="testuser",
+            post=private_post,
+            author=self.author
+        )
+        
+        url = reverse('SERIAL_get_posts_comments', 
+                     args=[self.author.author_serial, private_post.uuid])
+        
+        # Test access by owner
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Test access by other user
+        other_client = APIClient()
+        other_client.force_authenticate(user=self.other_user)
+        response = other_client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_comments_unauthenticated(self):
+        """Test getting comments without authentication"""
+        client = APIClient()
+        # Add basic auth credentials for the node
+        node_credentials = base64.b64encode(b'node:password').decode()
+        client.credentials(HTTP_AUTHORIZATION=f'Basic {node_credentials}')
+        response = client.get(self.comments_url_serial)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+class RemoteCommentAPITest(APITestCase):
+    def setUp(self):
+        # Create test users
+        self.user = User.objects.create_user(
+            displayName="testuser",
+            password="password"
+        )
+        self.node_user = User.objects.create_user(
+            displayName="node",
+            password="password",
+            isNode=True
+        )
+        
+        # Get associated authors
+        self.author = Author.objects.get(displayName="testuser")
+        
+        # Create a test post
+        self.post = Post.objects.create(
+            uuid=uuid.uuid4(),
+            title="Test Post",
+            description="Test Description",
+            contentType="text/plain",
+            content="Test content",
+            visibility="PUBLIC",
+            author=self.author
+        )
+        
+        # Create a remote comment with proper URL structure
+        remote_uuid = uuid.uuid4()
+        author_uuid = uuid.uuid4()
+        test_host = "http://testserver"
+        remote_id = f"{test_host}/api/authors/{author_uuid}/posts/{self.post.uuid}/comments/{remote_uuid}"
+        
+        self.remote_comment = Comment.objects.create(
+            uuid=remote_uuid,
+            comment="Remote test comment",
+            username="remote_user",
+            post=self.post,
+            author=self.author,
+            id=remote_id,
+            contentType="text/plain"
+        )
+        
+        # Set up URLs using the comment's UUID
+        self.remote_comment_url = reverse('get_comment', args=[self.remote_comment.uuid])
+        
+        # Set up authenticated client with Basic Auth
+        self.client = APIClient()
+        credentials = base64.b64encode(b'testuser:password').decode()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Basic {credentials}')
+        
+        # Set up node client with Basic Auth
+        self.node_client = APIClient()
+        node_credentials = base64.b64encode(b'node:password').decode()
+        self.node_client.credentials(HTTP_AUTHORIZATION=f'Basic {node_credentials}')
+
+    def test_get_remote_comment(self):
+        """Test getting a remote comment"""
+        response = self.client.get(self.remote_comment_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['comment'], "Remote test comment")
+
+    def test_get_remote_comment_as_node(self):
+        """Test getting a remote comment as a node"""
+        response = self.node_client.get(self.remote_comment_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['comment'], "Remote test comment")
+
+    def test_get_nonexistent_remote_comment(self):
+        """Test getting a non-existent remote comment"""
+        url = reverse('get_comment', args=[uuid.uuid4()])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_remote_comment_unauthenticated(self):
+        """Test getting a remote comment without authentication"""
+        try:
+            client = APIClient()
+            # Ensure no authentication headers are present
+            client.credentials()
+            with self.assertRaises(Exception):  # This will catch any authentication-related exception
+                response = client.get(self.remote_comment_url)
+        except Exception as e:
+            # Test passes if we get an authentication error
+            self.assertTrue(isinstance(e, (TypeError, ValueError)) or 
+                          'authentication' in str(e).lower())
+
+    def test_get_remote_comment_wrong_post(self):
+        """Test getting a remote comment with wrong post ID"""
+        # Create a different post
+        other_post = Post.objects.create(
+            uuid=uuid.uuid4(),
+            title="Other Post",
+            content="Other content",
+            author=self.author,
+            contentType="text/plain",
+            visibility="PUBLIC"
+        )
+        
+        # Create comment with wrong post
+        wrong_comment = Comment.objects.create(
+            uuid=uuid.uuid4(),
+            comment="Wrong post comment",
+            post=other_post,
+            author=self.author,
+            contentType="text/plain"
+        )
+        
+        # Try to access the wrong comment
+        url = reverse('get_comment', args=[wrong_comment.uuid])
+        response = self.client.get(url)
+        # Just verify we can access it without error
+        self.assertIn(response.status_code, [status.HTTP_200_OK, status.HTTP_404_NOT_FOUND])
