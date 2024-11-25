@@ -184,9 +184,9 @@ def inboxApi(request, object_author_serial):
 
             # forward the comment to the remote post_author's inbox
             post_author = Author.objects.get(id=post_author_id)
-            Inbox(receiver=post_author, type='comment', FQIDorId=parsed_data['object']['id'], received_at=timezone.now()).save()
+            Inbox(receiver=post_author, type='comment', FQIDorId=parsed_data['id'], received_at=timezone.now()).save()
 
-            comment = Comment(author=post_author, username=parsed_data['object']['username'], comment=parsed_data['object']['comment'], published=parsed_data['object']['published'], id=parsed_data['object']['id'] , uuid=parsed_data['object']['uuid'], post=post)
+            comment = Comment(author=post_author, username=parsed_data['username'], comment=parsed_data['comment'], published=parsed_data['published'], id=parsed_data['id'] , uuid=parsed_data['uuid'], post=post)
             print("\nComment: ", comment)
             comment.save()
             print("comment saved")
