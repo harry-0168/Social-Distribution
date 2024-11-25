@@ -959,7 +959,8 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
     nodes = Author.objects.filter(isNode=True)
     for recipient in recipients:
         for node in nodes:
-            
+            if post.author.host.endswith('/api/'):
+                post.author.host = post.author.host.split('/api/')[0]
             print("recipient.host: ", recipient.host)
             print("node.host: ", node.host)
             print("post.author.host: ", post.author.host)
