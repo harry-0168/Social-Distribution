@@ -110,7 +110,7 @@ class Post(models.Model):
         # Ensure FQID is set on creation only
         if not self.id:
             author_serial = self.author.author_serial # Ensure that author id is correctly set
-            self.id = f"{self.author.host}/api/authors/{author_serial}/posts/{self.uuid}"
+            self.id = f"{self.author.host}/authors/{author_serial}/posts/{self.uuid}"
         if not self.page:
             author_serial = self.author.author_serial  # Ensure that author id is correctly set
             self.page = f"{self.author.host}/authors/{author_serial}/posts/{self.uuid}"
@@ -152,10 +152,12 @@ class Comment(models.Model):
     likes = GenericRelation('Like')
 
     def save(self, *args, **kwargs):
-        ''' Override the save method to set the id field before saving '''
+        """Override the save method to set the id field before saving."""
         if not self.id:  # Only set if id is not already set
-            host = kwargs.get('request_host', 'localhost')
-            self.id = f"http://{host}/api/comments/{self.uuid}"
+            if hasattr(self, '_host'):
+                self.id = f"http://{self._host}/api/comments/{self.uuid}"
+            else:
+                self.id = f"http://localhost/api/comments/{self.uuid}"  # Default to 'localhost'
         
         super().save(*args, **kwargs)
 
