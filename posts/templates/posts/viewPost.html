@@ -189,7 +189,24 @@
                 </script>
                 
                     
+                    <!-- Forms -->
+                    <form id="sameHostForm" action="{% url 'api_create_like' post.author.author_serial %}" method="POST" style="display: none;">
+                        {% csrf_token %}
+                        
+                        <input type="hidden" name="post_id" value="{{ post.uuid }}">
+                        <input type="hidden" name="type" value="like">
+                        <input type="hidden" name="comment_id" value="">
+                        
+                    </form>
+                    
+                    <form id="differentHostForm" action="{% url 'forward_like_request' %}" method="POST" style="display: none;">
+                        {% csrf_token %}
+                        <input type="hidden" name="receiver_id" value="{{ post.author.id }}">
+                        <input type="hidden" name="post_id" value="{{ post.uuid }}">
+                        <input type="hidden" name="type" value="like">
+                        <input type="hidden" name="comment_id" value="">
 
+                    </form>
                     
                 
                 
@@ -508,21 +525,21 @@
                         });
                     });
 
-                    // // Construct URL for Viewing Likes
-                    // const postUrl = comment.post;
-                    // const postUuid = postUrl.split('/').pop(); // Extract post UUID from URL
-                    // const decodedUuid = decodeURIComponent(uuid);
+                    // Construct URL for Viewing Likes
+                    const postUrl = comment.post;
+                    const postUuid = postUrl.split('/').pop(); // Extract post UUID from URL
+                    const decodedUuid = decodeURIComponent(uuid);
                     // const viewLikesLink = document.createElement('a');
                     // viewLikesLink.href = `/api/authors/${decodedUuid}/posts/${postUuid}/comments/${comment.id}/likes`; // Build the URL dynamically
                     // viewLikesLink.textContent = 'View Likes';
                     // viewLikesLink.classList.add('viewLikes');
 
-                    // // Append elements to the comment div
-                    // commentDiv.appendChild(img);
-                    // commentDiv.appendChild(h5);
-                    // commentDiv.appendChild(contentDiv);
-                    // commentDiv.appendChild(sameHostForm);
-                    // commentDiv.appendChild(differentHostForm);
+                    // Append elements to the comment div
+                    commentDiv.appendChild(img);
+                    commentDiv.appendChild(h5);
+                    commentDiv.appendChild(contentDiv);
+                    commentDiv.appendChild(sameHostForm);
+                    commentDiv.appendChild(differentHostForm);
                     // commentDiv.appendChild(viewLikesLink);
 
                     return commentDiv;
