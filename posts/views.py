@@ -225,8 +225,12 @@ def forward_comment(request, post_FQID=None):
         if not node_author:
             return Response({"error": "Node Author not found"}, status=404)
 
+
         # Extract just the post ID without the full URL
-        post_uuid = post_FQID.split('/posts/')[1].split('/viewPost')[0]
+        post = get_object_or_404(Post, uuid=post_FQID)
+        post_id = post.id
+        print("8. post_id:", post_id)
+        
         
         # Create payload matching inbox handler expectations
         payload = {
@@ -241,7 +245,7 @@ def forward_comment(request, post_FQID=None):
                 "published": request_data['object']['published'],
                 "id": request_data['object']['id'],
                 "uuid": request_data['object']['uuid'],
-                "post": f"{object_author.host}authors/{object_author.id}/posts/{post_uuid}",
+                "post": post_id,
                 "likes": None
             }
         }
