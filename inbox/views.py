@@ -198,7 +198,8 @@ def inboxApi(request, object_author_serial):
             print("\nComment: ", comment)
 
             host = request.get_host()
-            comment.save(request_host=host)
+            comment._host = host  # Set the host as an attribute on the instance
+            comment.save()
             print("comment saved")
 
             post.comments.add(comment)
