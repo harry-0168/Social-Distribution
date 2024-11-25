@@ -152,10 +152,12 @@ class Comment(models.Model):
     likes = GenericRelation('Like')
 
     def save(self, *args, **kwargs):
-        ''' Override the save method to set the id field before saving '''
+        """Override the save method to set the id field before saving."""
         if not self.id:  # Only set if id is not already set
-            host = kwargs.get('request_host', 'localhost')
-            self.id = f"http://{host}/api/comments/{self.uuid}"
+            if hasattr(self, '_host'):
+                self.id = f"http://{self._host}/api/comments/{self.uuid}"
+            else:
+                self.id = f"http://localhost/api/comments/{self.uuid}"  # Default to 'localhost'
         
         super().save(*args, **kwargs)
 
