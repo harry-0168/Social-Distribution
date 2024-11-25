@@ -899,10 +899,12 @@ def api_view_Likes_comments(request, author_serial, post_id, comment_id):
     print("Reached comment likes")
     comment = get_object_or_404(Comment, id=comment_id)
 
-    Post.objects.filter(
+    print("original post_id: ", post_id)
+    post_id = Post.objects.filter(
         author__author_serial=author_serial,
         comments__id=comment_id  # Use the related name for the reverse relationship
     ).values_list('id', flat=True).first()
+    print("queried post_id: ", post_id)
 
     if not post_id:
         return Response({"error": "No matching post found for the given author and comment."}, status=404)
