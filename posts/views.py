@@ -532,7 +532,13 @@ def get_posts_create_post(request, author_serial):
             author=author,  # Use the author from the token
         )
         post.save()
-        
+        if "/api/" in post.id:
+            # Get the existing post and delete it
+            old_id = post.id
+            new_id = old_id.replace("/api/", "", 1)
+            # Update the ID in the database directly
+            Post.objects.filter(id=old_id).update(id=new_id)
+            post = Post.objects.get(id=new_id)
         print("author111: ", author)
         print("author_id111: ", post.author.id)
 
@@ -964,7 +970,8 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
     nodes = Author.objects.filter(isNode=True)
     for recipient in recipients:
         for node in nodes:
-            
+            if post.author.host.endswith('/api/'):
+                post.author.host = post.author.host.split('/api/')[0]
             print("recipient.host: ", recipient.host)
             print("node.host: ", node.host)
             print("post.author.host: ", post.author.host)
@@ -979,14 +986,14 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
                             receiver=recipient,
                             type='post'
                         ).update(received_at=timezone.now())
-                    else:
-                        # For new posts, create new inbox entry
-                        Inbox.objects.create(
-                            receiver=recipient,
-                            type='post',
-                            FQIDorId=post.id,
-                            received_at=timezone.now()
-                        )
+                    # else:
+                    #     # For new posts, create new inbox entry
+                    #     Inbox.objects.create(
+                    #         receiver=recipient,
+                    #         type='post',
+                    #         FQIDorId=post.id,
+                    #         received_at=timezone.now()
+                    #     )
                     recipient_uuid = recipient.id.split('/')[-1]
                     print("recipient id: ", recipient_uuid)
                     # Send to remote node using recipient's author_serial
@@ -996,7 +1003,8 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
                         headers={
                             "Authorization": f"Basic {base64.b64encode(f'{node.displayName}:{node.first_name}'.encode()).decode()}",
                             'Content-Type': 'application/json',
-                            'host': node.host.split('//')[1]
+                            'host': node.host.split('//')[1],
+                            'X-original-host':  "https://social-distribution-crimson-464113e0f29c.herokuapp.com/api/"
                         },
                         timeout=10
                     )

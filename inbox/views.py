@@ -138,6 +138,7 @@ def inboxApi(request, object_author_serial):
                 if parsed_data['object']['host'] != parsed_data['actor']['host']:
                     
                     objectAuthor = get_object_or_404(Author, id=parsed_data['object']['id'])
+                    print("object author 11", objectAuthor)
                     print(parsed_data['actor']['id'])
                     if parsed_data['actor']['host'].endswith('/api/'):
                         parsed_data['actor']['host'] = parsed_data['actor']['host'][:-5]
@@ -297,6 +298,7 @@ def inboxApi(request, object_author_serial):
 
             try:
                 # Try to get or create the author
+                print("author_data: ", author_data)
                 author, _ = Author.objects.get_or_create(
                     id=author_data.get('id'),
                     defaults={
@@ -318,7 +320,8 @@ def inboxApi(request, object_author_serial):
                 serializer = PostSerializer(existing_post, data=parsed_data, partial=True)
             else:
                 # Create new post
-                serializer = PostSerializer(data=parsed_data)
+                print("parsed_data: ", parsed_data)
+                serializer = PostSerializer(data=parsed_data,partial=True)
 
             if serializer.is_valid():
                 try:
@@ -416,7 +419,9 @@ def forward_like_request(request):
                     "id": like.id,
                     "object": like.object
                 }
-                
+                if object_author.host.endswith('/api/'):
+                    object_author.host = object_author.host.split('/api/')[0]
+                print("object_author.host: ", object_author.host)
                 node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
                 if not node_author:
                     return Response({"error": "Node author not found"}, status=404)
@@ -426,6 +431,7 @@ def forward_like_request(request):
                         "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
                         "Content-Type": "application/json",
                         "host": node_author.host.split('//')[1],
+                        "X-original-host":  "https://social-distribution-crimson-464113e0f29c.herokuapp.com/api/"
                     }
                 print(headers)
                 
@@ -493,6 +499,7 @@ def forward_like_request(request):
                         "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
                         "Content-Type": "application/json",
                         "host": node_author.host.split('//')[1],
+                        "X-original-host":  "https://social-distribution-crimson-464113e0f29c.herokuapp.com/api/"
                     }
                 print(headers)
                 
@@ -602,6 +609,7 @@ def forward_follow_request(request):
                 "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
                 "Content-Type": "application/json",
                 "host": node_author.host.split('//')[1],
+                "X-original-host":  "https://social-distribution-crimson-464113e0f29c.herokuapp.com/api/"
             }
         print(node_author.host.split('//')[1])
         new = Following.follow(actor, object_author)
