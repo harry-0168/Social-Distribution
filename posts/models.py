@@ -113,7 +113,7 @@ class Post(models.Model):
             self.id = f"{self.author.host}/api/authors/{author_serial}/posts/{self.uuid}"
         if not self.page:
             author_serial = self.author.author_serial  # Ensure that author id is correctly set
-            self.page = f"{self.author.host}/authors/{author_serial}/posts/{self.uuid}"
+            self.page = f"{self.author.host}authors/{author_serial}/posts/{self.uuid}"
         
         super().save(*args, **kwargs)
     
