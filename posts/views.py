@@ -533,8 +533,7 @@ def get_posts_create_post(request, author_serial):
             new_id = old_id.replace("/api/", "", 1)
             # Update the ID in the database directly
             Post.objects.filter(id=old_id).update(id=new_id)
-            # Refresh the post object to get the updated ID
-            post.refresh_from_db()
+            post = Post.objects.get(id=new_id)
         print("author111: ", author)
         print("author_id111: ", post.author.id)
 
