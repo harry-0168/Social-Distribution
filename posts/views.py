@@ -211,56 +211,51 @@ def forward_comment(request, post_FQID=None):
         username = payload['id']
         user = get_object_or_404(Author, displayName=username)
 
+        request_data = request.data
+        print("request_data:", request_data)
+
         # Get post author from post_FQID
         post_author_id = post_FQID.split('/posts/')[0]
         object_author = get_object_or_404(Author, id=post_author_id)
-        
-        print("object_author: ", object_author)
+        print("object_author:", object_author)
         
         # Find node author
         node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
-        print("node_author: ", node_author)
+        print("node_author:", node_author)
         if not node_author:
             return Response({"error": "Node Author not found"}, status=404)
 
-        # Ensure hosts end with /api/
-        if not user.host.endswith('/api/'):
-            user.host = user.host.rstrip('/') + '/api/'
-        if not object_author.host.endswith('/api/'):
-            object_author.host = object_author.host.rstrip('/') + '/api/'
-
-        # Create payload similar to forward_like_request
+        # Create payload matching inbox expectations
         payload = {
             "type": "comment",
             "summary": f"{user.displayName} commented on your post",
             "object": {
                 "type": "comment",
-                "author": {
-                    "type": "author",
-                    "id": user.id,
-                    "url": user.id,
-                    "host": user.host,
-                    "displayName": user.displayName,
-                    "github": user.github if user.github else "",
-                    "profileImage": user.profileImage
-                },
-                "comment": request.data['object']['comment'],
+                "author": user.id,  # Just the ID string as expected by inbox
+                "username": user.displayName,  # Required by Comment model
+                "comment": request_data['object']['comment'],
                 "contentType": "text/markdown",
-                "published": request.data['object']['published'],
-                "id": request.data['object']['id'],
-                "post": post_FQID
+                "published": request_data['object']['published'],
+                "id": request_data['object']['id'],
+                "uuid": request_data['object']['uuid'],
+                "post": post_FQID,
+                "likes": None
             }
         }
+        print("payload:", payload)
 
-        # Prepare headers like in forward_like_request
+        # Prepare headers
         headers = {
             "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
             "Content-Type": "application/json",
             "host": node_author.host.split('//')[1].replace('/api', ''),
         }
+        print("headers:", headers)
 
         # Send request
-        response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
+        inbox_url = object_author.id + '/inbox'
+        print("sending to:", inbox_url)
+        response = requests.post(inbox_url, json=payload, headers=headers)
         print("response returned with:", response.status_code)
         print("response content:", response.text)
 
