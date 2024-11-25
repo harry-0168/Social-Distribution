@@ -200,6 +200,7 @@ def get_comment(request, comment_id=None, author_serial=None, post_serial=None, 
 
 @api_view(['POST'])
 def forward_comment(request, post_FQID=None):
+    print("in forward_comment")
     # Get token and authenticate
     token = request.COOKIES.get('jwt')
     if not token:
@@ -212,37 +213,32 @@ def forward_comment(request, post_FQID=None):
         user = get_object_or_404(Author, displayName=username)
 
         request_data = request.data
+        print("request_data: ", request_data)
+
+        # Get object author (post author) from request data
+        print("\nobject_author_id: ", request_data['object']['author'])
         object_author = get_object_or_404(Author, id=request_data['object']['author'])
+        print("object_author: ", object_author)
 
         # Check if author is on current host
-        if object_author.host == f"{request.scheme}://{request.get_host()}":
+        current_host = f"{request.scheme}://{request.get_host()}"
+        print("current host: ", current_host)
+        if object_author.host == current_host:
             return Response({"error": "Object author is on the current host server"}, status=400)
 
         # Find node author
+        print("\nobject_author.host: ", object_author.host)
         node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
+        print("found node_author: ", node_author)
         if not node_author:
             return Response({"error": "Node Author not found"}, status=404)
 
-        # Fix host URLs if needed
-        if hasattr(object_author, 'host') and not object_author.host.endswith('/api/'):
-            object_author.host = object_author.host.rstrip('/') + '/api/'
-
         # Create payload
+        print("in payload")
         payload = {
             "type": "comment",
             "summary": f"{user.displayName} commented on your post",
-            "object": {
-                "type": "comment",
-                "author": request_data['object']['author'],
-                "username": request_data['object']['username'],
-                "comment": request_data['object']['comment'],
-                "contentType": "text/markdown",
-                "published": request_data['object']['published'],
-                "id": request_data['object']['id'],
-                "uuid": request_data['object']['uuid'],
-                "post": request_data['object']['post'],
-                "likes": request_data['object']['likes']
-            },
+            "object": request_data['object'],  # Use the entire object from request
             "actor": {
                 "type": "author",
                 "id": user.id,
@@ -253,16 +249,26 @@ def forward_comment(request, post_FQID=None):
                 "page": user.page
             }
         }
+        print("payload: ", payload)
 
         # Prepare headers
         headers = {
             "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
             "Content-Type": "application/json",
-            "host": node_author.host.split('//')[1],
+            "host": node_author.host.split('//')[1].replace('/api', ''),  # Remove /api from host
         }
+        print("headers: ", headers)
+        print("username: ", node_author.displayName)
+        print("password: ", node_author.first_name)
+
+        # Construct inbox URL
+        inbox_url = object_author.id + '/inbox'
+        print("sending request...", inbox_url)
 
         # Send request
-        response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
+        response = requests.post(inbox_url, json=payload, headers=headers)
+        print("response returned with: ", response.status_code)
+        print("requestedURL was:", inbox_url)
 
         return Response({
             "object_author_id": object_author.id,
@@ -276,6 +282,7 @@ def forward_comment(request, post_FQID=None):
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
     except Exception as e:
+        print("Error in forward_comment:", str(e))  # Add error logging
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class CommentPagination(PageNumberPagination):
