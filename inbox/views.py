@@ -178,6 +178,7 @@ def inboxApi(request, object_author_serial):
 
             # Get the post instance using the post URL
             post_id = parsed_data['post']
+            print("post_id: ", post_id)
             post = get_object_or_404(Post, id=post_id)  # Retrieve the Post instance
             post_author_id = post.author.id
             print("post.id: ", post.id)
@@ -187,15 +188,17 @@ def inboxApi(request, object_author_serial):
             author = get_object_or_404(Author, id=author_id)
 
             # Check if the comment already exists based on UUID
-            comment_uuid = parsed_data['uuid']
-            if Comment.objects.filter(uuid=comment_uuid).exists():
+            comment_id = parsed_data['id']
+            print("comment_id: ", comment_id)
+            comment_uuid = parsed_data['id'].split('/')[-1]
+            if Comment.objects.filter(id=comment_id).exists():
                 return Response({"message": "Comment already exists"}, status=status.HTTP_200_OK)
 
             # forward the comment to the remote post_author's inbox
             post_author = Author.objects.get(id=post_author_id)
             Inbox(receiver=post_author, type='comment', FQIDorId=parsed_data['id'], received_at=timezone.now()).save()
 
-            comment = Comment(author=author, username=parsed_data['author']['displayName'], comment=parsed_data['comment'], published=parsed_data['published'], id=parsed_data['id'] , uuid=parsed_data['uuid'], post=post)
+            comment = Comment(author=author, username=parsed_data['author']['displayName'], comment=parsed_data['comment'], published=parsed_data['published'], id=parsed_data['id'], uuid=comment_uuid, post=post)
             print("\nComment: ", comment)
 
             host = request.get_host()
@@ -295,10 +298,12 @@ def inboxApi(request, object_author_serial):
             author_data = parsed_data.get('author')
             if not author_data:
                 return Response({"error": "Author data missing from post"}, status=status.HTTP_400_BAD_REQUEST)
-
+    
             try:
                 # Try to get or create the author
                 print("author_data: ", author_data)
+                if author_data['host'].endswith('/api/'):
+                        author_data['host'] = author_data['host'][:-5]
                 author, _ = Author.objects.get_or_create(
                     id=author_data.get('id'),
                     defaults={
