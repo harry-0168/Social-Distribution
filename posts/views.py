@@ -897,8 +897,8 @@ def api_view_Likes(request, post_id):
 @api_view(['GET'])
 def api_view_Likes_comments(request, author_serial, post_id, comment_id):
     print("Reached comment likes")
-    comment = get_object_or_404(Comment, uuid=comment_id)
-    post = get_object_or_404(Post, id=post_id)
+    comment = get_object_or_404(Comment, id=comment_id)
+    post = get_object_or_404(Post, uuid=post_id)
     author = comment.author
 
     
