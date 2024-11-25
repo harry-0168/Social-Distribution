@@ -494,7 +494,7 @@
                     const postUuid = postUrl.split('/').pop(); // Extract post UUID from URL
                     const decodedUuid = decodeURIComponent(uuid);
                     const viewLikesLink = document.createElement('a');
-                    viewLikesLink.href = `/api/authors/${decodedUuid}/posts/${postUuid}/comments/${comment.uuid}/likes`; // Build the URL dynamically
+                    viewLikesLink.href = `/api/authors/${decodedUuid}/posts/${postUuid}/comments/${comment.id}/likes`; // Build the URL dynamically
                     viewLikesLink.textContent = 'View Likes';
                     viewLikesLink.classList.add('viewLikes');
 
