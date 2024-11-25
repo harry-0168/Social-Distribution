@@ -133,45 +133,49 @@ def forward_comment(request, post_FQID=None):
     print("in forward_comment")
     request_data = request.data
     print("request_data: ", request_data)
-    print("\nobject_author_id: ",request_data['object']['author'])
-    object_author = get_object_or_404(Author, id=request_data['object']['author']) # the object we are commenting on (post object)
-    print("object_author: ", object_author)
+    print("\npost_author_id: ",request_data['post_author']['id'])
+    post_author = get_object_or_404(Author, id=request_data['post_author']['id'])
+    print("post_author: ", post_author)
 
-    print("\nactor_id: ",request_data['actor']['id'])
-    actor = get_object_or_404(Author, id=request_data['actor']['id'])    # the person making the comment
-    print("actor: ", actor)
+    print("\ncommentor_id: ",request_data['author']['id'])
+    commentor = get_object_or_404(Author, id=request_data['author']['id'])    
+    print("commentor: ", commentor)
 
-    # check if the object_author is on a remote node
+    # check if the post_author is on a remote node
     print("current host: ", f"{request.scheme}://{request.get_host()}")
-    if object_author.host == f"{request.scheme}://{request.get_host()}":
+    if post_author.host == f"{request.scheme}://{request.get_host()}":
         return Response({"error": "Object author is on the current host server"}, status = 400)
     else:
-        # find the node that the object_author belongs to
-        print("\nobject_author.host: ", (object_author.host))
-        node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
+        # find the node that the post_author belongs to
+        print("\npost_author.host: ", (post_author.host))
+        node_author = Author.objects.filter(host=post_author.host, isNode=True).first()
         print("found node_author: ", node_author)
         if not node_author:
             return Response({"error": "Node Author not found"}, status = 404)
-        # forward the comment to the object_author's host
+        # forward the comment to the post_author's host
         print("in payload")
         payload = {
             "type": "comment",
-            "summary": f"{actor.displayName} commented on your post",
-            "object": {
-                "type": "comment",
-                "author": request_data['object']['author'],
-                "username": request_data['object']['username'],
-                "comment": request_data['object']['comment'],
-                "contentType": "text/markdown",
-                "published": request_data['object']['published'],
-                "id": request_data['object']['id'],
-                "uuid": request_data['object']['uuid'],
-                "post": request['object']['post'],
-                "likes": request_data['object']['likes']
+            "author": {
+                "type": "author",
+                "id": request_data['author']['id'],
+                "page": request_data['author']['page'],
+                "host": request_data['author']['host'],
+                "displayName": request_data['author']['displayName'],
+                "github": request_data['author']['github'],
+                "profileImage": request_data['author']['profileImage']
             },
+            "type": "comment",
+            "comment": request_data['comment'],
+            "contentType": "text/markdown",
+            "published": request_data['published'],
+            "id": request_data['id'],
+            "uuid": request_data['uuid'],
+            "post": request['post'],
+            "likes": request_data['likes']
         }
         print("payload: ", payload)
-        print(node_author.displayName, node_author.first_name, object_author.id+'/inbox')
+        print(node_author.displayName, node_author.first_name, post_author.id+'/inbox')
         # using http basic auth to authenticate with the node server using the node_author's username and password
         headers = {
                 "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
@@ -182,15 +186,15 @@ def forward_comment(request, post_FQID=None):
         print("username: ", node_author.displayName)
         print("password: ", node_author.first_name)
         
-        print("sending request...", (object_author.id + '/inbox'))
-        requestURL = (object_author.id + '/inbox')
+        print("sending request...", (post_author.id + '/inbox'))
+        requestURL = (post_author.id + '/inbox')
         # Construct the remote node's inbox URL using the node_author's host
         response = requests.post(requestURL, json=payload, headers=headers)
         print("response returned with: ",response.status_code)
         print("requestedURL was:",requestURL)
 
         return Response({
-            "object_author_id": object_author.id,
+            "object_author_id": post_author.id,
             "response": {
                 "status_code": response.status_code,
                 "text": response.text,
