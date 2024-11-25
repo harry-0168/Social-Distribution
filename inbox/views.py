@@ -402,6 +402,8 @@ def forward_like_request(request):
                     "object": like.object
                 }
                 
+                print("======like payload", payload)
+                
                 node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
                 if not node_author:
                     return Response({"error": "Node author not found"}, status=404)
@@ -413,7 +415,7 @@ def forward_like_request(request):
                         "host": node_author.host.split('//')[1],
                     }
                 print(headers)
-                print("======like sending to:", object_author.id + '/inbox')
+                
                 
 
                 response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)

@@ -200,7 +200,7 @@ def get_comment(request, comment_id=None, author_serial=None, post_serial=None, 
 
 @api_view(['POST'])
 def forward_comment(request, post_FQID=None):
-    print("in forward_comment===================333=============================")
+    print("in forward_comment===================5555=============================")
     token = request.COOKIES.get('jwt')
     if not token:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -225,32 +225,27 @@ def forward_comment(request, post_FQID=None):
         if not node_author:
             return Response({"error": "Node Author not found"}, status=404)
 
-        # Extract post UUID from post_FQID
-        post_uuid = post_FQID.split('/posts/')[1]
-        print("post_uuid:", post_uuid)
+        # Extract just the post ID without the full URL
+        post_uuid = post_FQID.split('/posts/')[1].split('/viewPost')[0]
         
-        # Create payload matching inbox expectations
-        try:
-            payload = {
+        # Create payload matching inbox handler expectations
+        payload = {
+            "type": "comment",
+            "summary": f"{user.displayName} commented on your post",
+            "object": {
                 "type": "comment",
-                "summary": f"{user.displayName} commented on your post",
-                "object": {
-                    "type": "comment",
-                    "author": user.id,
-                    "username": user.displayName,
-                    "comment": request_data['object']['comment'],
-                    "contentType": "text/markdown",
-                    "published": request_data['object']['published'],
-                    "id": request_data['object']['id'],
-                    "uuid": request_data['object']['uuid'],
-                    "post": post_FQID,
-                    "likes": None
-                }
+                "author": user.id,  # Just the ID string that inbox uses to get Author object
+                "username": user.displayName,  # Required for Comment model
+                "comment": request_data['object']['comment'],
+                "contentType": "text/markdown",
+                "published": request_data['object']['published'],
+                "id": request_data['object']['id'],
+                "uuid": request_data['object']['uuid'],
+                "post": post_uuid,  # Just the post ID that matches Post.id in the database
+                "likes": None
             }
-            print("9. payload:", payload)
-        except Exception as e:
-            print("Error creating payload:", str(e))
-            raise
+        }
+        print("payload:", payload)
 
         # Prepare headers
         headers = {
