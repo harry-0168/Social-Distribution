@@ -66,8 +66,9 @@ def create_comment(request, post_uuid):
         return Response({"error": "Content is required"}, status=status.HTTP_400_BAD_REQUEST)
     
     comment = Comment(username=username, comment=content, post=post, author=user, type='comment')
-    comment.save()
-    
+    host = request.get_host()
+    comment.save(request_host=host)
+
     # Serialize the created comment
     comment_serializer = CommentSerializer(comment)
 

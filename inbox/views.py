@@ -197,7 +197,8 @@ def inboxApi(request, object_author_serial):
             comment = Comment(author=author, username=parsed_data['author']['displayName'], comment=parsed_data['comment'], published=parsed_data['published'], id=parsed_data['id'] , uuid=parsed_data['uuid'], post=post)
             print("\nComment: ", comment)
 
-            comment.save()
+            host = request.get_host()
+            comment.save(request_host=host)
             print("comment saved")
 
             post.comments.add(comment)
