@@ -20,7 +20,7 @@ class PostSerializer(serializers.ModelSerializer):
     likes = serializers.SerializerMethodField()
     class Meta:
         model = Post
-        fields = ['id','uuid','type','page', 'title', 'description', 'contentType', 'content', 'visibility', 'author', 'published', 'comments']
+        fields = ['id','uuid','type','page', 'title', 'description', 'contentType', 'content', 'visibility', 'author', 'published', 'comments', 'likes']
     
     def get_comments(self, obj):
         comments_queryset = obj.comments.all().order_by('-published')[:5] 
