@@ -214,63 +214,60 @@ def forward_comment(request, post_FQID=None):
         request_data = request.data
         print("request_data: ", request_data)
 
-        # Get post author from post_FQID instead of comment author
-        post_url_parts = post_FQID.split('/authors/')
-        if len(post_url_parts) > 1:
-            post_host = post_url_parts[0]
-            print("post_host: ", post_host)
-            
-            # Find node author based on post host
-            node_author = Author.objects.filter(host__contains=post_host, isNode=True).first()
-            print("found node_author: ", node_author)
-            if not node_author:
-                return Response({"error": "Node Author not found"}, status=404)
+        # Extract post host from post_FQID
+        post_host = post_FQID.split('/authors/')[0]
+        print("post_host: ", post_host)
+        
+        # Clean up post host URL
+        if post_host.endswith('/api'):
+            post_host = post_host[:-4]
+        
+        # Find node author based on post host
+        node_author = Author.objects.filter(host__contains=post_host, isNode=True).first()
+        print("found node_author: ", node_author)
+        if not node_author:
+            return Response({"error": "Node Author not found"}, status=404)
 
-            # Create payload
-            print("in payload")
-            payload = {
-                "type": "comment",
-                "summary": f"{user.displayName} commented on your post",
-                "object": request_data['object'],
-                "actor": {
-                    "type": "author",
-                    "id": user.id,
-                    "host": user.host,
-                    "displayName": user.displayName,
-                    "github": user.github,
-                    "profileImage": user.profileImage,
-                    "page": user.page
-                }
+        # Get post author from post_FQID
+        post_author_id = post_FQID.split('/posts/')[0]
+        object_author = get_object_or_404(Author, id=post_author_id)
+
+        # Create payload
+        payload = {
+            "type": "comment",
+            "summary": f"{user.displayName} commented on your post",
+            "object": request_data['object'],
+            "actor": {
+                "type": "author",
+                "id": user.id,
+                "host": user.host,
+                "displayName": user.displayName,
+                "github": user.github,
+                "profileImage": user.profileImage,
+                "page": user.page
             }
-            print("payload: ", payload)
+        }
 
-            # Prepare headers
-            headers = {
-                "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
-                "Content-Type": "application/json",
-                "host": node_author.host.split('//')[1].replace('/api', ''),
-            }
-            print("headers: ", headers)
+        # Prepare headers
+        headers = {
+            "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
+            "Content-Type": "application/json",
+            "host": node_author.host.split('//')[1].replace('/api', ''),
+        }
+        print("headers: ", headers)
 
-            # Construct inbox URL using post author's ID
-            post_author_path = post_FQID.split('/posts/')[0]
-            inbox_url = f"{post_author_path}/inbox"
-            print("sending request...", inbox_url)
+        # Send request to post author's inbox
+        response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
+        print("response returned with: ", response.status_code)
 
-            # Send request
-            response = requests.post(inbox_url, json=payload, headers=headers)
-            print("response returned with: ", response.status_code)
-            print("requestedURL was:", inbox_url)
-
-            return Response({
-                "response": {
-                    "status_code": response.status_code,
-                    "text": response.text,
-                },
-                "message": "comment forwarded to remote author",
-            }, status=200)
-        else:
-            return Response({"error": "Invalid post URL format"}, status=400)
+        return Response({
+            "object_author_id": object_author.id,
+            "response": {
+                "status_code": response.status_code,
+                "text": response.text,
+            },
+            "message": "comment forwarded to remote author",
+        }, status=200)
 
     except jwt.ExpiredSignatureError:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
