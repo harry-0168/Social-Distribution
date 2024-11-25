@@ -165,7 +165,6 @@ def forward_comment(request, post_FQID=None):
                 "github": request_data['author']['github'],
                 "profileImage": request_data['author']['profileImage']
             },
-            "type": "comment",
             "comment": request_data['comment'],
             "contentType": "text/markdown",
             "published": request_data['published'],
