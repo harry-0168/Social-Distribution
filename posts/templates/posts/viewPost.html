@@ -592,6 +592,7 @@
                                 commentAmountElement.innerText = (currentCount + 1) + ' comment(s)';
                                 
                                 post_author_id = "{{ post.author.id }}"
+                                post_id = "{{ post.id }}"
                                     
                                 // Now construct the inbox request payload
                                 const inboxRequest = {
@@ -610,7 +611,7 @@
                                     "published": comment.published,
                                     "id": comment.id,
                                     "uuid": comment.uuid,
-                                    "post": comment.post.id,
+                                    "post": post_id,
                                     "likes": comment.likes_collection,
                                     "post_author":{
                                         "id": post_author_id
