@@ -176,7 +176,7 @@ def inboxApi(request, object_author_serial):
             print("organizing comment in inbox")
 
             # Get the post instance using the post URL
-            post_id = parsed_data['object']['post']
+            post_id = parsed_data['post']
             post = get_object_or_404(Post, id=post_id)  # Retrieve the Post instance
             post_author_id = post.author.id
             print("post.id: ", post.id)
