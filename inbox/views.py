@@ -404,6 +404,8 @@ def forward_like_request(request):
                     "id": like.id,
                     "object": like.object
                 }
+                if object_author.host.endswith('/api/'):
+                    object_author.host = object_author.host.split('/api/')[0]
                 print("object_author.host: ", object_author.host)
                 node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
                 if not node_author:
