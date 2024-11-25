@@ -200,7 +200,7 @@ def get_comment(request, comment_id=None, author_serial=None, post_serial=None, 
 
 @api_view(['POST'])
 def forward_comment(request, post_FQID=None):
-    print("in forward_comment===================5555=============================")
+    print("in forward_comment===================666=============================")
     token = request.COOKIES.get('jwt')
     if not token:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -234,14 +234,14 @@ def forward_comment(request, post_FQID=None):
             "summary": f"{user.displayName} commented on your post",
             "object": {
                 "type": "comment",
-                "author": user.id,  # Just the ID string that inbox uses to get Author object
-                "username": user.displayName,  # Required for Comment model
+                "author": user.id,
+                "username": user.displayName,
                 "comment": request_data['object']['comment'],
                 "contentType": "text/markdown",
                 "published": request_data['object']['published'],
                 "id": request_data['object']['id'],
                 "uuid": request_data['object']['uuid'],
-                "post": post_uuid,  # Just the post ID that matches Post.id in the database
+                "post": f"{object_author.host}authors/{object_author.id}/posts/{post_uuid}",
                 "likes": None
             }
         }
