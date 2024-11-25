@@ -1014,9 +1014,13 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
                     #     )
                     recipient_uuid = recipient.id.split('/')[-1]
                     print("recipient id: ", recipient_uuid)
+                    print("serializer_data: ", serializer_data)
                     if isinstance(serializer_data, dict) and 'author' in serializer_data:
+                        print('first condition met')
                         if not serializer_data['author']['host'].endswith('/api/'):
+                            print('second condition met')
                             serializer_data['author']['host'] = serializer_data['author']['host'] + '/api/'
+                            print("serializer_data['author']['host']: ", serializer_data['author']['host'])
                     # Send to remote node using recipient's author_serial
                     response = requests.post(
                         f"{recipient.host}/api/authors/{recipient_uuid}/inbox",
