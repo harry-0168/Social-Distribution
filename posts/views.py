@@ -200,7 +200,7 @@ def get_comment(request, comment_id=None, author_serial=None, post_serial=None, 
 
 @api_view(['POST'])
 def forward_comment(request, post_FQID=None):
-    print("in forward_comment")
+    print("in forward_comment================================================")
     token = request.COOKIES.get('jwt')
     if not token:
         return Response({"error": "Unauthenticated"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -211,24 +211,25 @@ def forward_comment(request, post_FQID=None):
         username = payload['id']
         user = get_object_or_404(Author, displayName=username)
 
-        request_data = request.data
-        print("request_data: ", request_data)
-
         # Get post author from post_FQID
         post_author_id = post_FQID.split('/posts/')[0]
-        print("post_author_id: ", post_author_id)
-        
-        # Get the post author
         object_author = get_object_or_404(Author, id=post_author_id)
+        
         print("object_author: ", object_author)
         
-        # Find node author using object_author's host
+        # Find node author
         node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
-        print("found node_author: ", node_author)
+        print("node_author: ", node_author)
         if not node_author:
             return Response({"error": "Node Author not found"}, status=404)
 
-        # Create payload
+        # Ensure hosts end with /api/
+        if not user.host.endswith('/api/'):
+            user.host = user.host.rstrip('/') + '/api/'
+        if not object_author.host.endswith('/api/'):
+            object_author.host = object_author.host.rstrip('/') + '/api/'
+
+        # Create payload similar to forward_like_request
         payload = {
             "type": "comment",
             "summary": f"{user.displayName} commented on your post",
@@ -237,32 +238,29 @@ def forward_comment(request, post_FQID=None):
                 "author": {
                     "type": "author",
                     "id": user.id,
+                    "url": user.id,
                     "host": user.host,
                     "displayName": user.displayName,
-                    "github": user.github,
+                    "github": user.github if user.github else "",
                     "profileImage": user.profileImage
                 },
-                "comment": request_data['object']['comment'],
+                "comment": request.data['object']['comment'],
                 "contentType": "text/markdown",
-                "published": request_data['object']['published'],
-                "id": request_data['object']['id'],
+                "published": request.data['object']['published'],
+                "id": request.data['object']['id'],
                 "post": post_FQID
             }
         }
-        print("payload: ", payload)
 
-        # Prepare headers
+        # Prepare headers like in forward_like_request
         headers = {
             "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
             "Content-Type": "application/json",
             "host": node_author.host.split('//')[1].replace('/api', ''),
         }
-        print("headers: ", headers)
 
-        # Send request to post author's inbox
-        inbox_url = object_author.id + '/inbox'
-        print("sending request to:", inbox_url)
-        response = requests.post(inbox_url, json=payload, headers=headers)
+        # Send request
+        response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
         print("response returned with:", response.status_code)
         print("response content:", response.text)
 
@@ -273,12 +271,8 @@ def forward_comment(request, post_FQID=None):
             }, status=response.status_code)
 
         return Response({
-            "object_author_id": object_author.id,
-            "response": {
-                "status_code": response.status_code,
-                "text": response.text,
-            },
-            "message": "comment forwarded to remote author",
+            "message": "Comment forwarded to remote author",
+            "status": response.status_code
         }, status=200)
 
     except jwt.ExpiredSignatureError:
