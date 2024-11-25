@@ -318,11 +318,40 @@
             </div>
             <script>
                 document.addEventListener('DOMContentLoaded', () => {
-                    loadComments();
+
+                    const currentHost = window.location.origin;
+                    const post_host = "{{post.author.host}}"
+
+                    if (currentHost === post_host || (post_host === "http://localhost/api" && currentHost === "http://127.0.0.1:8000" )){  // object_author is on the current host server
+                        loadComments();
+                        console.log("load comments for the local post");
+                    } else {    // comment needs to be forwarded to remote node
+                        loadRemoteComments();
+                        console.log("loading comments for the remote post");
+                    }
                 });
 
                 function loadComments() {
                     const url = `/api/authors/${encodeURIComponent("{{ author.author_serial }}")}/posts/${encodeURIComponent("{{ post.uuid }}")}/comments`; 
+                    fetch(url)
+                        .then(response => response.json())
+                        .then(data => {
+                            const commentsContainer = document.querySelector('.carousel-container');
+                            commentsContainer.innerHTML = ''; // Clear existing comments
+                            data.src.forEach(comment => {
+                                const commentElement = createCommentElement(comment);
+                                commentsContainer.appendChild(commentElement);
+                            });
+                        })
+                        .catch(error => console.error('Error loading comments:', error));
+                }
+
+                function loadRemoteComments() {
+                    const currentHost = window.location.origin;
+                    const post_host = "{{post.author.host}}"
+
+                    const url = `${currentHost}/api/post/${"{{ post.id }}"}/comments`;
+                    console.log("retrieving remote comments from: ", url)
                     fetch(url)
                         .then(response => response.json())
                         .then(data => {
