@@ -224,7 +224,7 @@ def forward_comment(request, post_FQID=None):
             return Response({"error": "Node Author not found"}, status=404)
 
         # Fix host URLs if needed
-        if not object_author.host.endswith('/api/'):
+        if hasattr(object_author, 'host') and not object_author.host.endswith('/api/'):
             object_author.host = object_author.host.rstrip('/') + '/api/'
 
         # Create payload
@@ -233,24 +233,15 @@ def forward_comment(request, post_FQID=None):
             "summary": f"{user.displayName} commented on your post",
             "object": {
                 "type": "comment",
-                "author": request_data['object']['author'],
+                "author": request_data['object']['author'].replace('/api//api/', '/api/'),  # Fix double api
                 "username": request_data['object']['username'],
                 "comment": request_data['object']['comment'],
                 "contentType": "text/markdown",
                 "published": request_data['object']['published'],
                 "id": request_data['object']['id'],
                 "uuid": request_data['object']['uuid'],
-                "post": request_data['object']['post'],
+                "post": request_data['object']['post'].replace('/api//api/', '/api/'),  # Fix double api
                 "likes": request_data['object']['likes']
-            },
-            "actor": {
-                "type": "author",
-                "id": user.id,
-                "host": user.host,
-                "displayName": user.displayName,
-                "github": user.github,
-                "profileImage": user.profileImage,
-                "page": user.page
             }
         }
 
@@ -258,11 +249,14 @@ def forward_comment(request, post_FQID=None):
         headers = {
             "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
             "Content-Type": "application/json",
-            "host": node_author.host.split('//')[1],
+            "host": node_author.host.split('//')[1].replace('/api/', ''),  # Remove api from host
         }
 
+        # Fix inbox URL
+        inbox_url = object_author.id.replace('/api//api/', '/api/') + '/inbox'
+
         # Send request
-        response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
+        response = requests.post(inbox_url, json=payload, headers=headers)
 
         return Response({
             "object_author_id": object_author.id,
