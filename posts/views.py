@@ -214,23 +214,19 @@ def forward_comment(request, post_FQID=None):
         request_data = request.data
         print("request_data: ", request_data)
 
-        # Extract post host from post_FQID
-        post_host = post_FQID.split('/authors/')[0]
-        print("post_host: ", post_host)
+        # Get post author from post_FQID
+        post_author_id = post_FQID.split('/posts/')[0]
+        print("post_author_id: ", post_author_id)
         
-        # Clean up post host URL
-        if post_host.endswith('/api'):
-            post_host = post_host[:-4]
+        # Get the post author
+        object_author = get_object_or_404(Author, id=post_author_id)
+        print("object_author: ", object_author)
         
-        # Find node author based on post host
-        node_author = Author.objects.filter(host__contains=post_host, isNode=True).first()
+        # Find node author using object_author's host
+        node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
         print("found node_author: ", node_author)
         if not node_author:
             return Response({"error": "Node Author not found"}, status=404)
-
-        # Get post author from post_FQID
-        post_author_id = post_FQID.split('/posts/')[0]
-        object_author = get_object_or_404(Author, id=post_author_id)
 
         # Create payload
         payload = {
