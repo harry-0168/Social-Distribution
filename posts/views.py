@@ -539,6 +539,13 @@ def get_posts_create_post(request, author_serial):
             author=author,  # Use the author from the token
         )
         post.save()
+        if "/api//" in post.id:
+            # Get the existing post and delete it
+            old_id = post.id
+            new_id = old_id.replace("/api//", "/api/", 1)
+            # Update the ID in the database directly
+            Post.objects.filter(id=old_id).update(id=new_id)
+            post = Post.objects.get(id=new_id)
         print("author111: ", author)
         print("author_id111: ", post.author.id)
 
