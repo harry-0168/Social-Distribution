@@ -533,18 +533,18 @@
                     const postUrl = comment.post;
                     const postUuid = postUrl.split('/').pop(); // Extract post UUID from URL
                     const decodedUuid = decodeURIComponent(uuid);
-                    // const viewLikesLink = document.createElement('a');
-                    // viewLikesLink.href = `/api/authors/${decodedUuid}/posts/${postUuid}/comments/${comment.id}/likes`; // Build the URL dynamically
-                    // viewLikesLink.textContent = 'View Likes';
-                    // viewLikesLink.classList.add('viewLikes');
+                    const viewLikesLink = document.createElement('a');
+                    viewLikesLink.href = `/api/authors/${decodedUuid}/posts/${postUuid}/comments/${comment.id}/likes`; // Build the URL dynamically
+                    viewLikesLink.textContent = 'View Likes';
+                    viewLikesLink.classList.add('viewLikes');
 
                     // Append elements to the comment div
                     commentDiv.appendChild(img);
                     commentDiv.appendChild(h5);
                     commentDiv.appendChild(contentDiv);
-                    // commentDiv.appendChild(sameHostForm);
+                    commentDiv.appendChild(sameHostForm);
                     commentDiv.appendChild(differentHostForm);
-                    // commentDiv.appendChild(viewLikesLink);
+                    commentDiv.appendChild(viewLikesLink);
 
                     return commentDiv;
                 }
