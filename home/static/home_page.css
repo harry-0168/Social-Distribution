@@ -13,6 +13,17 @@ body {
     justify-content: space-between;
 }
 
+.headerUserInfo {
+    display: flex;
+    flex-direction: row;
+}
+
+.currentUser {
+    margin-left: 10px;
+    color: #a886ff;
+    font-size: x-larges;
+}
+
 .header .icons {
     display: flex;
     gap: 50px;
@@ -35,6 +46,11 @@ body {
     border-radius: 10px;
     margin-bottom: 20px;
     padding: 15px;
+    transition: box-shadow 0.3s ease-in-out;
+}
+
+.post:hover {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
 .post-header {
