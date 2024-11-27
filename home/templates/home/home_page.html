@@ -100,7 +100,7 @@
                 });
 
             function renderPostContent(post) {
-                if (post.contentType.startsWith('image/')) {
+                if (post.contentType.startsWith('image/') || post.contentType.startsWith('application/')) {
                     return `<img src="${post.content}" alt="Uploaded Image" style="max-width: 100%; height: auto;">`;
                 } else if (post.contentType === 'text/markdown') {
                     return `<div class="content markdown-content" data-content="${post.content}"></div>`;
