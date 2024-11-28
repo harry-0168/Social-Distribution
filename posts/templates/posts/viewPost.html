@@ -39,10 +39,10 @@
             <div class="userInfo">
                 {% if post.author.profileImage %}
                     <img src="{{ post.author.profileImage }}" 
-                    style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+                    style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;">
                 {% else %}
                     <img src="{% static 'avatar.png' %}" 
-                    style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+                    style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;">
                 {% endif %}                
                 <div class="username_DatePosted">
                     <a class="username" href="{% url 'author_profile' post.author.author_serial %}">{{ post.author.displayName }}</a> <!-- TODO: make the username clickable to go to userProfile-->
@@ -54,7 +54,7 @@
                     <form action="{% url 'delete_post' request.user.author_serial post.uuid %}" method="POST">
                         {% csrf_token %}
                         <input type="hidden" name="_method" value="DELETE"> <!--IMPORTANT: Walk around for delete method-->
-                        <button style="margin-top: 20px; background-color: #f7e8d4; border-color: #f7e8d4; border-style: none;" type="submit" class="delete-button">
+                        <button style="margin-top: 20px; background-color: #f8eac7; border-color: #f8eac7; border-style: none;" type="submit" class="delete-button">
                             <img style="width: 30px; height: 30px;" class="trash" src="{% static 'trash.png' %}">
                         </button>
                     </form>
@@ -66,7 +66,7 @@
                     {{ post.content }}
                 {% elif post.contentType == "text/markdown" %}
                     <div id="markdown-content-{{ post.uuid }}" class="markdown-content" data-content="{{ post.content }}"></div>
-                {% elif post.contentType == "image/png;base64" or post.contentType == "image/jpeg;base64" %}Z
+                {% elif post.contentType == "image/png;base64" or post.contentType == "image/jpeg;base64" %}
                     <img src="{{ post.content }}" alt="Post Image" class="postImage">
 
                 {% else %}
@@ -212,21 +212,18 @@
                         </button>
                     </form>
                     
-                
-                
-                
-                <h3>{{ post.likes_collection.count }} like(s)</h3>
+                <h3>{{ post.likes.count }} like(s)</h3>
                 <a type="submit" class="comment-button" href="#comment-input">
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
                 <h3 id="commentAmount">{{ post.comments.count }} comment(s)</h3>
                 {% if post.visibility != "UNLISTED" and post.visibility != "FRIENDS" %}
-                    <img id="share-image" src="/static/share.png" alt="Share">
+                    <img class="share-button" id="share-image" src="/static/share.png" alt="Share">
                     <h3>share</h3>
-                    <form id="repostForm" method="POST" style="display:inline;">
+                    <form id="repostForm" method="POST" >
                         {% csrf_token %}
                         <button type="button" onclick="showRepostOptions()" style="background: none; border: none; color: blue; cursor: pointer;">
-                            <h3>Repost</h3>
+                            <h3 class="repost-button">Repost</h3>
                         </button>
                     </form>
                     
@@ -271,6 +268,9 @@
 
                 
             </section>
+            <section class="viewLikesComments">
+                <a href="{% url 'api_likes' author_serial=post.author.author_serial post_id=post.uuid %}" class="viewLikes">view likes</a>
+            </section>
             <script>
                 document.addEventListener('DOMContentLoaded', function () {
                     const shareImage = document.getElementById('share-image');
@@ -302,11 +302,6 @@
                     });
                 });
             </script>
-            
-            <section class="viewLikesComments">
-                <a href="{% url 'api_likes' author_serial=post.author.author_serial post_id=post.uuid %}" class="viewLikes">view likes</a>
-                <a class="viewComments">view comments</a>
-            </section>
         </section>
     
         <section class="gridItemComments">
@@ -534,17 +529,18 @@
                     const postUuid = postUrl.split('/').pop(); // Extract post UUID from URL
                     const decodedUuid = decodeURIComponent(uuid);
                     const viewLikesLink = document.createElement('a');
-                    viewLikesLink.href = `/api/authors/${decodedUuid}/posts/${postUuid}/comments/${comment.id}/likes`; // Build the URL dynamically
-                    viewLikesLink.textContent = 'View Likes';
-                    viewLikesLink.classList.add('viewLikes');
+                    // viewLikesLink.href = `/api/authors/${decodedUuid}/posts/${postUuid}/comments/${comment.id}/likes`; // Build the URL dynamically
+                    // viewLikesLink.textContent = 'View Likes';
+                    // viewLikesLink.classList.add('viewLikes');
 
                     // Append elements to the comment div
                     commentDiv.appendChild(img);
+                    h5.appendChild(contentDiv)
                     commentDiv.appendChild(h5);
-                    commentDiv.appendChild(contentDiv);
-                    commentDiv.appendChild(sameHostForm);
-                    commentDiv.appendChild(differentHostForm);
-                    commentDiv.appendChild(viewLikesLink);
+                    // commentDiv.appendChild(contentDiv);
+                    // commentDiv.appendChild(sameHostForm);
+                    // commentDiv.appendChild(differentHostForm);
+                    // commentDiv.appendChild(viewLikesLink);
 
                     return commentDiv;
                 }

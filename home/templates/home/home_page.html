@@ -12,11 +12,14 @@
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'author_profile' request.user.author_serial %}">
+        <section class="headerUserInfo">
+            <a href="{% url 'author_profile' request.user.author_serial %}">
             
-            <img class="profile-pic" src="{{ request.user.profileImage }}">
-            
-        </a>
+                <img class="profile-pic" src="{{ request.user.profileImage }}">
+                
+            </a>
+            <p class="currentUser">{{ request.user.displayName }}</p>
+        </section>
         <form method="GET" action="{% url 'search_results' %}" class="search-form">
             <input type="text" name="q" placeholder="Search by display name..." class="search-bar">
             <button type="submit" class="search-button">Search</button>
@@ -27,8 +30,8 @@
             <a href="{% url 'inbox' %}"><img src="{% static 'inbox.png' %}"></a>
         </div>
     </div>
+    <div id="loadingIndicator" class="loading-spinner" style="display: none;">Loading posts...</div>
     <div class="post-container" id="post-container">
-        <p>Logged in as: {{ request.user.displayName }}</p>
     </div>
     <script>
         // Load posts dynamically using JavaScript
@@ -37,18 +40,26 @@
             const apiUrl = `/api/authors/${userId}/posts/`; // API URL
             const followingList = {{ following_list|safe }}; // Pass following_list from Django
             const defaultAvatarUrl = "{% static 'avatar.png' %}";
+            const loadingIndicator = document.getElementById('loadingIndicator');
 
+            // Show the loading spinner before fetching data
+            loadingIndicator.style.display = 'flex';
 
             fetch(apiUrl)
                 .then(response => response.json())
                 .then(data => {
+                    console.log("data: ", data);
                     const postContainer = document.getElementById('post-container');
 
                     data.src.forEach((post, index) => {
+                        console.log("\ncurrent post: ",  post);
                         const isFollowing = followingList[index]; // Match follow status by index
                         const profileImageUrl = post.author.profileImage 
                             ? `data:image/png;base64,${post.author.profileImage}` 
                             : defaultAvatarUrl;
+
+                        console.log(`Likes: ${post.likes.count}, Comments: ${post.comments.count}`);
+
 
                         const postElement = `
                             <a href="/post/${post.id}/viewPost/" style="text-decoration: none; color: inherit;">
@@ -72,12 +83,10 @@
                                     </div>
                                     <div class="post-footer">
                                         <div class="interactions">
-                                            <img class="icon" src="{% static 'like.png' %}">
-                                            <span class="interactions-text">Like</span>
-                                            <img class="icon" src="{% static 'comment.png' %}">
-                                            <span class="interactions-text">Comment</span>
-                                            <img class="icon" src="{% static 'share.png' %}">
-                                            <span class="interactions-text">Share</span>
+                                            <span class="interactions-text">${post.likes.count}</span>
+                                            <span class="interactions-text">Likes</span>
+                                            <span class="interactions-text">${post.comments.count}</span>
+                                            <span class="interactions-text">Comments</span>
                                         </div>
                                     </div>
                                 </div>
@@ -93,6 +102,9 @@
                             element.innerHTML = marked.parse(cleanedContent);
                         }
                     });
+
+                    // Hide the loading indicator once data is loaded
+                    loadingIndicator.style.display = 'none';
                 })
                 .catch(error => {
                     console.error('Error fetching posts:', error);
