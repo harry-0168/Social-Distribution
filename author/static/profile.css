@@ -565,35 +565,53 @@ body {
 }
 
 .author-details {
-    background-color: #f9f9f9; /* Light grey background */
-    padding: 20px; /* Padding around the content */
-    border-radius: 10px; /* Rounded corners */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Soft shadow */
-    max-width: 600px; /* Restrict width */
-    margin: 20px auto; /* Center the container */
-    font-family: Arial, sans-serif; /* Font for content */
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    margin: 40px auto;
+    border: 2px solid #3e305e;
 }
 
 .author-details h2 {
-    color: #333333; /* Dark grey for the heading */
-    font-size: 24px; /* Slightly larger heading font */
-    margin-bottom: 15px; /* Space below the heading */
+    color: #3e305e;
+    font-size: 1.8em;
+    margin-bottom: 25px;
+    text-align: center;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f8eac7;
+}
+
+.author-info {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
 .author-info p {
-    color: #555555; /* Medium grey for text */
-    font-size: 16px; /* Font size for paragraphs */
-    margin: 8px 0; /* Space between paragraphs */
+    font-size: 1.1em;
+    line-height: 1.6;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #f8eac7;
 }
 
 .author-info p strong {
-    color: #333333; /* Darker color for labels */
+    color: #3e305e;
+    margin-right: 10px;
+    font-weight: 500;
 }
 
 .author-info a {
-    color: #0066cc; /* Link color */
-    text-decoration: none; /* Remove underline */
-    transition: color 0.3s; /* Smooth color transition */
+    color: #3e305e;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.author-info a:hover {
+    color: #6d4f8d;
+    text-decoration: underline;
 }
 
 .feed-header {
@@ -634,4 +652,87 @@ body {
     font-size: 1.4em;  /* Increased from 16px to 1.2em */
     font-weight: 500;  /* Added medium font weight for better visibility */
     color: #3e305e;    /* Using your theme color */
+}
+
+/* Followers and Following Lists */
+.followers-container, .following-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centers the boxes horizontally */
+}
+
+.followers-container h2, .following-container h2 {
+    text-align: center;
+    color: #3e305e;
+    margin-bottom: 30px;
+}
+
+.followers-list, .following-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%; /* Takes full width of container */
+    align-items: center; /* Centers the boxes horizontally */
+}
+
+.follower-item, .following-item {
+    width: 500px; /* Fixed width for each box */
+    background-color: white;
+    border: 2px solid #3e305e;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+/* Make it responsive for smaller screens */
+@media (max-width: 600px) {
+    .follower-item, .following-item {
+        width: 90%; /* On smaller screens, use percentage width */
+    }
+}
+
+.follower-item:hover, .following-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.follower-info, .following-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.follower-details, .following-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.follower-name, .following-name {
+    color: #3e305e;
+    font-size: 1.2em;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.github-link {
+    color: #666;
+    text-decoration: none;
+    font-size: 0.9em;
+}
+
+.github-link:hover {
+    color: #3e305e;
+    text-decoration: underline;
+}
+
+.no-followers, .no-following {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 20px;
 }
