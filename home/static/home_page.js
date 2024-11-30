@@ -248,7 +248,10 @@ async function main(){
     const author = await getAuthorData();
 
     if (author) {
-        createGithubActivityPosts(author.id, author.github.split("/").pop());
+        if(author.github != 'None' && author.github != '' && author.github != null) {
+            createGithubActivityPosts(author.id, author.github.split("/").pop());
+        }
+        
     }
 }
 
