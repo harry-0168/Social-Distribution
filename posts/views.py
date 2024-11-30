@@ -695,11 +695,11 @@ def get_edit_delete_post(request, author_serial, post_id):
     if request.method == 'DELETE':
         # Ensure that only the author of the post or an admin can delete the post
         if post.author == request.user or request.user.is_superuser:
-            post.visibility = 'DELETED'  # Mark the post as 'DELETED'
-            post.save()
             # Notify remote nodes about post deletion if it was previously shared
             post_serializer = PostSerializer(post)
             send_post_to_remote_nodes(post, post_serializer.data, action_type='delete')
+            post.visibility = 'DELETED'  # Mark the post as 'DELETED'
+            post.save()
             return Response({"message": "Post deleted successfully"}, status=status.HTTP_200_OK)
         else:
             # If the user is not the author
@@ -983,6 +983,8 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
         ).select_related('receiver')
         for inbox_entry in previous_recipients:
             recipients.add(inbox_entry.receiver)
+    if action_type == 'delete':
+        serializer_data['visibility'] = 'DELETED'
     print("sending to previous recipients", recipients)
     # Send to each remote recipient's inbox
     nodes = Author.objects.filter(isNode=True)
