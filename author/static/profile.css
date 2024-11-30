@@ -1,6 +1,58 @@
 /* General Reset */
-* {
-    font-family: Arial, sans-serif;
+@import url('https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
+.ubuntu-light {
+    font-family: "Ubuntu", serif;
+    font-weight: 300;
+    font-style: normal;
+  }
+  
+  .ubuntu-regular {
+    font-family: "Ubuntu", serif;
+    font-weight: 400;
+    font-style: normal;
+  }
+  
+  .ubuntu-medium {
+    font-family: "Ubuntu", serif;
+    font-weight: 500;
+    font-style: normal;
+  }
+  
+  .ubuntu-bold {
+    font-family: "Ubuntu", serif;
+    font-weight: 700;
+    font-style: normal;
+  }
+  
+  .ubuntu-light-italic {
+    font-family: "Ubuntu", serif;
+    font-weight: 300;
+    font-style: italic;
+  }
+  
+  .ubuntu-regular-italic {
+    font-family: "Ubuntu", serif;
+    font-weight: 400;
+    font-style: italic;
+  }
+  
+  .ubuntu-medium-italic {
+    font-family: "Ubuntu", serif;
+    font-weight: 500;
+    font-style: italic;
+  }
+  
+  .ubuntu-bold-italic {
+    font-family: "Ubuntu", serif;
+    font-weight: 700;
+    font-style: italic;
+  }
+  
+*{
+    font-family: "Ubuntu", serif;
+    font-weight: 400;
+    font-style: normal;
+
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -81,6 +133,17 @@ body {
     width: 100%; /* Take full width to center text effectively */
 }
 
+.profile-area{
+    background: linear-gradient(45deg, #edbe6d, #f8eac7);
+    background-size: 400% 400%; /* Make the gradient background flow smoothly */
+    animation: retroBackground 5s ease infinite; /* Optional: Adds a moving effect */
+}
+@keyframes retroBackground {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
 .profile-area .profile-pic {
     width: 100px;
     height: 100px;
@@ -100,19 +163,39 @@ body {
     list-style: none;
     padding: 0;
 }
-
-.profile-area .profile-menu li {
-    margin: 15px 0;
+.profile-menu{
+    width: -webkit-fill-available;
 }
-
 .profile-area .profile-menu li a {
-    color: #3e305e;
+    color: #40325f;
     text-decoration: none;
     font-size: 1.2em;
 }
 
 .profile-area .profile-menu li a:hover {
     color: #6d4f8d;
+}
+.profile-menu li {
+    background-color: #f8eac7; /* existing background color */
+    margin: 15px 10px;
+    border: 2px solid #3e305e;
+    border-radius: 10px; /* Rounded corners for retro look */
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.5); /* Adds depth */
+    transition: all 0.3s ease; /* Smooth hover transition */
+}
+
+.profile-menu li:hover{
+    background-color: #e0c276;
+    border-color: #6c05fa; /* Darker purple border on hover */
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3); /* Smaller shadow on hover */
+    
+}
+.profile-menu li a{
+    color: #3e305e; /* existing text color */
+    text-decoration: none;
+    padding: 5px 46px;
+    display: block;
+    margin: 0px;
 }
 
 /* Main Content */
@@ -218,6 +301,7 @@ body {
     border: none; /* Remove default border */
     border-radius: 5px; /* Rounded corners */
     cursor: pointer;
+    width: -webkit-fill-available;
 }
 
 /* Post Content */
@@ -310,6 +394,28 @@ body {
 }
 
 /* General styles for list boxes - Modify existing */
+.follower-following-buttons {
+    background-color: #f8eac7; /* Match your existing theme */
+    padding: 5px 12px;
+    border: 2px solid #3e305e; /* Match your theme color */
+    border-radius: 10px; /* Rounded corners for retro look */
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.5); /* Adds depth */
+    transition: all 0.3s ease; /* Smooth hover transition */
+}
+
+.follower-following-buttons:hover {
+    background-color: #e0c276;
+    border-color: #6c05fa; /* Darker purple border on hover */
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3); /* Smaller shadow on hover */
+}
+
+.follow-info{
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 5px 5px;
+    padding: 5px 5px;
+}
 .following-list, .followers-list {
     display: flex;
     flex-direction: column;

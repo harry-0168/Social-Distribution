@@ -42,7 +42,7 @@
             {% else %}
                 <img class="profile-pic" src="{% static 'avatar.png' %}">
             {% endif %}          
-        <h2 class="profile-name">{{ author.displayName }}</h2>
+        <h2 class="profile-name ubuntu-bold" >{{ author.displayName }}</h2>
         
         <!-- Get all the information of the user and author -->
         <form method="POST" action="{% url 'follow-author' author.author_serial %}" class="follow-form"
@@ -68,14 +68,14 @@
         </form>
         <div class="follow-info">
             <!-- Clickable link for followers list - Changed to use author.id -->
-            <a href="{% url 'followers_list' author.id %}" class="followers">
+            <a href="{% url 'followers_list' author.id %}" class="followers follower-following-buttons">
                 <strong>{{ followers_count }}</strong> Followers
             </a>
 
             <span> | </span>
 
             <!-- Clickable link for following list - Changed to use author.id -->
-            <a href="{% url 'following_list' author.id %}" class="following">
+            <a href="{% url 'following_list' author.id %}" class="following follower-following-buttons">
                 <strong>{{ following_count }}</strong> Following
             </a>
         </div>
