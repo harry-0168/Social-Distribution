@@ -66,7 +66,7 @@
                     {{ post.content }}
                 {% elif post.contentType == "text/markdown" %}
                     <div id="markdown-content-{{ post.uuid }}" class="markdown-content" data-content="{{ post.content }}"></div>
-                {% elif post.contentType == "image/png;base64" or post.contentType == "image/jpeg;base64" %}
+                {% elif post.contentType == "image/png;base64" or post.contentType == "image/jpeg;base64" or post.contentType == "application/base64" %}
                     <img src="{{ post.content }}" alt="Post Image" class="postImage">
 
                 {% else %}
