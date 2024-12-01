@@ -76,7 +76,7 @@ def send_comment_to_remote_nodes(payload, comment, user):
             if object_author.host.endswith('/api/'):
                 object_author.host = object_author.host.split('/api/')[0]
 
-            if recipient.host == node.host and recipient.host != like.author.host:
+            if recipient.host == node.host and recipient.host != comment.author.host:
                 try:
                     # Prepare headers for the request
                     headers = {
