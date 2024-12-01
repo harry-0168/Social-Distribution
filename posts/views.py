@@ -507,12 +507,70 @@ def api_create_like(request, author_serial):
                 post.likes_collection.add_like(like)
                 like_serializer = LikeSerializer(like)
 
+                # If the user is liking their own post, notify their remote followers
+                if post.author == user:
+                    # Get all remote followers
+                    remote_followers = Following.objects.filter(
+                        author2=user,  # The user being followed
+                        status='accepted'
+                    ).exclude(
+                        author1__host=user.host  # Exclude followers from the same host
+                    )
+
+                    # Prepare the like notification payload
+                    like_payload = {
+                        "type": "like",
+                        "author": {
+                            "type": "author",
+                            "id": user.id,
+                            "host": user.host,
+                            "displayName": user.displayName,
+                            "page": user.page,
+                            "github": user.github,
+                            "profileImage": user.profileImage
+                        },
+                        "published": like.published.isoformat(),
+                        "id": like.id,
+                        "object": like.object
+                    }
+
+                    # Send the notification to each remote follower
+                    for follower in remote_followers:
+                        follower_author = follower.author1
+                        if follower_author.host.endswith('/api/'):
+                            follower_author.host = follower_author.host.split('/api/')[0]
+                        
+                        # Get the node author for authentication
+                        node_author = Author.objects.filter(
+                            host=follower_author.host, 
+                            isNode=True
+                        ).first()
+                        
+                        if node_author:
+                            headers = {
+                                "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
+                                "Content-Type": "application/json",
+                                "host": node_author.host.split('//')[1],
+                                "X-original-host": "https://social-distribution-crimson-464113e0f29c.herokuapp.com/api/"
+                            }
+                            
+                            # Send the notification to the follower's inbox
+                            try:
+                                response = requests.post(
+                                    follower_author.id + '/inbox', 
+                                    json=like_payload, 
+                                    headers=headers
+                                )
+                                print(f"Notification sent to {follower_author.displayName}: {response.status_code}")
+                            except Exception as e:
+                                print(f"Error sending notification to {follower_author.displayName}: {str(e)}")
+
                 # Returning JSON for Ajax or redirect
                 if request.accepts('application/json'):
                     return Response(like_serializer.data, status=status.HTTP_201_CREATED)
                 else:
-                    #return redirect('viewPost', id=post.uuid)
                     return redirect(request.META.get('HTTP_REFERER'))
+
             except Exception as e:
                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -545,7 +603,6 @@ def api_create_like(request, author_serial):
                 if request.accepts('application/json'):
                     return Response(like_serializer.data, status=status.HTTP_201_CREATED)
                 else:
-                    #return redirect('viewPost', id=post.uuid)
                     return redirect(request.META.get('HTTP_REFERER'))
            
                 #Inbox(receiver=author, type='like', FQIDorId=parsed_data['object']['id'], received_at=timezone.now()).save()
