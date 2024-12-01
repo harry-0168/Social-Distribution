@@ -550,24 +550,28 @@ def api_create_like(request, author_serial):
                             headers = {
                                 "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
                                 "Content-Type": "application/json",
-                                "host": node_author.host.split('//')[1],
+                                "host": node_author.host.split('//')[1].replace('/api', ''),
                                 "X-original-host": "https://social-distribution-crimson-464113e0f29c.herokuapp.com/api/"
                             }
                             
-                            # Construct the inbox URL properly
-                            inbox_url = f"{follower_author.host.rstrip('/')}/api/authors/{follower_author.author_serial}/inbox"
+                            # Construct the inbox URL properly using the full author ID
+                            if follower_author.id.startswith('http'):
+                                inbox_url = f"{follower_author.id}/inbox"
+                            else:
+                                inbox_url = f"{follower_author.host.rstrip('/')}/api/authors/{follower_author.author_serial}/inbox"
                             
-                            # Send the notification to the follower's inbox
                             try:
                                 response = requests.post(
-                                    inbox_url,  # Use the properly constructed URL
+                                    inbox_url,
                                     json=like_payload, 
                                     headers=headers
                                 )
                                 print(f"Notification sent to {follower_author.displayName}: {response.status_code}")
-                                print(f"Inbox URL used: {inbox_url}")  # Debug logging
+                                print(f"Inbox URL used: {inbox_url}")
                                 if response.status_code != 200:
-                                    print(f"Error response: {response.text}")  # Debug logging
+                                    print(f"Error response: {response.text}")
+                                    print(f"Author ID: {follower_author.id}")
+                                    print(f"Author host: {follower_author.host}")
                             except Exception as e:
                                 print(f"Error sending notification to {follower_author.displayName}: {str(e)}")
 
