@@ -149,7 +149,6 @@ def create_comment(request, post_uuid):
         "contentType": "text/markdown",
         "published": comment.published.isoformat(),
         "id": comment.id,
-        "uuid": comment.uuid,
         "post": post.id,
         "likes": {
             "type": "likes",
