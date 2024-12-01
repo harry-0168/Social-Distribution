@@ -554,14 +554,20 @@ def api_create_like(request, author_serial):
                                 "X-original-host": "https://social-distribution-crimson-464113e0f29c.herokuapp.com/api/"
                             }
                             
+                            # Construct the inbox URL properly
+                            inbox_url = f"{follower_author.host.rstrip('/')}/api/authors/{follower_author.author_serial}/inbox"
+                            
                             # Send the notification to the follower's inbox
                             try:
                                 response = requests.post(
-                                    follower_author.id + '/inbox', 
+                                    inbox_url,  # Use the properly constructed URL
                                     json=like_payload, 
                                     headers=headers
                                 )
                                 print(f"Notification sent to {follower_author.displayName}: {response.status_code}")
+                                print(f"Inbox URL used: {inbox_url}")  # Debug logging
+                                if response.status_code != 200:
+                                    print(f"Error response: {response.text}")  # Debug logging
                             except Exception as e:
                                 print(f"Error sending notification to {follower_author.displayName}: {str(e)}")
 
