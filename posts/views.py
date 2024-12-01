@@ -427,7 +427,7 @@ def api_create_like(request, author_serial):
                 
                 print("payload to send local like:",payload)
                 # Send the like to remote nodes
-                send_like_to_remote_nodes(like, payload)
+                send_like_to_remote_nodes(like, payload, user)
                 print("All likes sent successfully")
 
 
@@ -487,14 +487,14 @@ def api_create_like(request, author_serial):
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-def send_like_to_remote_nodes(like, payload):
+def send_like_to_remote_nodes(like, payload, user):
     """
     Send like notification to all relevant remote nodes.
     """
     recipients = set()
 
     # Determine the author of the liked object (post or comment)
-    object_author = like.object.author if hasattr(like.object, 'author') else None
+    object_author = user
 
     if not object_author:
         logging.error("Object author not found")
