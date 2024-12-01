@@ -45,6 +45,64 @@ class LikeViewSet(viewsets.ModelViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
 
+
+def send_comment_to_remote_nodes(payload, comment, user):
+    """
+    Send like notification to all relevant remote nodes.
+    """
+    recipients = set()
+
+    # Determine the author of the liked object (post or comment)
+    object_author = user
+
+    if not object_author:
+        logging.error("Object author not found")
+        return
+
+    # Get followers or other visibility-related recipients if needed
+    followers = Following.get_followers(object_author)
+    friends = Following.objects.filter(
+        author2=object_author,
+        status='accepted'
+    ).select_related('author1')
+
+    recipients.update([f.author1 for f in followers])
+    recipients.update([f.author1 for f in friends])
+
+    # Send to remote nodes
+    nodes = Author.objects.filter(isNode=True)
+    for recipient in recipients:
+        for node in nodes:
+            if object_author.host.endswith('/api/'):
+                object_author.host = object_author.host.split('/api/')[0]
+
+            if recipient.host == node.host and recipient.host != like.author.host:
+                try:
+                    # Prepare headers for the request
+                    headers = {
+                        "Authorization": f"Basic {base64.b64encode(f'{node.displayName}:{node.first_name}'.encode()).decode()}",
+                        "Content-Type": "application/json",
+                        "host": node.host.split('//')[1],
+                        "X-original-host": "https://social-distribution-crimson-464113e0f29c.herokuapp.com/api/"
+                    }
+
+                    recipient_uuid = recipient.id.split('/')[-1]
+                    print("Sending like to recipient:", recipient_uuid)
+
+                    # Send like payload to the recipient's inbox
+                    response = requests.post(
+                        f"{recipient.host}/api/authors/{recipient_uuid}/inbox",
+                        json=payload,
+                        headers=headers,
+                        timeout=10
+                    )
+                    response.raise_for_status()
+                except Exception as e:
+                    logging.error(f"Failed to send like to {recipient.host}: {str(e)}")
+                    if hasattr(e, 'response'):
+                        logging.error(f"Response content: {e.response.content}")
+                    continue
+                
 # API to create a comment
 @api_view(['POST'])
 def create_comment(request, post_uuid):
@@ -72,6 +130,39 @@ def create_comment(request, post_uuid):
 
     # Serialize the created comment
     comment_serializer = CommentSerializer(comment)
+    if hasattr(user, 'host') and not user.host.endswith('/api/'):
+        user.host = user.host.rstrip('/') + '/api/'
+    
+    # Prepare the payload for remote comment
+    payload = {
+        "type": "comment",
+        "author": {
+                        "type": "author",
+                        "id": user.id,
+                        "host": user.host,
+                        "displayName": user.displayName,
+                        "page": user.page,
+                        "github": user.github,
+                        "profileImage": user.profileImage,
+                    }, 
+        "comment": comment.comment,
+        "contentType": "text/markdown",
+        "published": comment.published.isoformat(),
+        "id": comment.id,
+        "uuid": comment.uuid,
+        "post": post.id,
+        "likes": {
+            "type": "likes",
+            "page": f"{request.scheme}://{request.get_host()}/posts/{post.uuid}/likes/",
+            "id": post.id,
+            "size": 50,
+            "count": 0,
+            "src": []
+        }
+    }
+    print("payload for sending local comment: ", payload)
+    send_comment_to_remote_nodes(payload, comment, user)
+    print("comments sent successfully")
 
     # Returning JSON for Ajax or redirect
     if request.accepts('application/json'):
