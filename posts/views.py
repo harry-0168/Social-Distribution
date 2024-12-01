@@ -997,7 +997,7 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
             print("post.author.host: ", post.author.host)
             
             
-            if recipient.host == node.host and recipient.host != post.author.host:
+            if recipient.host == node.host:
                 try:
                     # For edit actions, update existing inbox entry
                     if action_type == 'edit' or action_type == 'delete':
