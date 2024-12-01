@@ -146,6 +146,7 @@ def forward_comment(request, post_FQID=None):
     # check if the post_author is on a remote node
     print("current host: ", f"{request.scheme}://{request.get_host()}")
     if post_author.host == f"{request.scheme}://{request.get_host()}":
+        post = get_object_or_404(Post, id=post_FQID)
         
         
         recipients = set()
