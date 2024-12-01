@@ -146,7 +146,108 @@ def forward_comment(request, post_FQID=None):
     # check if the post_author is on a remote node
     print("current host: ", f"{request.scheme}://{request.get_host()}")
     if post_author.host == f"{request.scheme}://{request.get_host()}":
-        return Response({"error": "Object author is on the current host server"}, status = 400)
+        
+        
+        recipients = set()
+        # Get base recipients based on visibility
+        if post.visibility in ['PUBLIC', 'UNLISTED']:
+            followers = Following.get_followers(post.author)
+            friends = Following.objects.filter(
+                author2=post.author, 
+                status='accepted'
+            ).select_related('author1')
+            
+            recipients.update([f.author1 for f in followers])
+            if post.visibility == 'PUBLIC':
+                recipients.update([f.author1 for f in friends])
+                
+        elif post.visibility == 'FRIENDS':
+            friends = Following.objects.filter(
+                author2=post.author,
+                status='accepted'
+            ).select_related('author1')
+            recipients.update([f.author1 for f in friends])
+            
+        nodes = Author.objects.filter(isNode=True)
+        for recipient in recipients:
+            for node in nodes:
+                if post.author.host.endswith('/api/'):
+                    post.author.host = post.author.host.split('/api/')[0]
+                print("recipient.host: ", recipient.host)
+                print("node.host: ", node.host)
+                print("post.author.host: ", post.author.host)
+            
+            
+                if recipient.host == node.host and recipient.host != post.author.host:
+        
+        
+        
+                    # find the node that the post_author belongs to
+                    print("\npost_author.host: ", (post_author.host))
+                    
+                    print("found node_author: ", node_author)
+                    if not node_author:
+                        return Response({"error": "Node Author not found"}, status = 404)
+                    # forward the comment to the post_author's host
+                    print("in payload")
+                    payload = {
+                        "type": "comment",
+                        "author": {
+                            "type": "author",
+                            "id": request_data['author']['id'],
+                            "page": request_data['author']['page'],
+                            "host": request_data['author']['host'],
+                            "displayName": request_data['author']['displayName'],
+                            "github": request_data['author']['github'],
+                            "profileImage": request_data['author']['profileImage']
+                        },
+                        "comment": request_data['comment'],
+                        "contentType": "text/markdown",
+                        "published": request_data['published'],
+                        "id": request_data['id'],
+                        "uuid": request_data['uuid'],
+                        "post": request_data['post'],
+                        "likes": {
+                            "type": "likes",
+                            "page": request_data['likes']['page'],
+                            "id":   request_data['likes']['id'],
+                            "size": 50,
+                            "count": 0,
+                            "src": []   
+                        }
+                    }
+                    print("payload: ", payload)
+                    
+                    # using http basic auth to authenticate with the node server using the node_author's username and password
+                    headers = {
+                            "Authorization": f"Basic {base64.b64encode(f'{node.displayName}:{node.first_name}'.encode()).decode()}",
+                            "Content-Type": "application/json",
+                            "host": node.host.split('//')[1].replace('/api', ''),
+                        }
+                    print("headers: ",headers)
+                    print("username: ", node.displayName)
+                    print("password: ", node.first_name)
+                    
+                    print("sending request...", (recipient.host + '/inbox'))
+                    requestURL = (recipient.host + '/inbox')
+                    # Construct the remote node's inbox URL using the node_author's host
+                    response = requests.post(requestURL, json=payload, headers=headers)
+                    print("response was: ", response)
+                    print("response returned with code: ",response.status_code)
+                    print("requestedURL was:",requestURL)
+
+                    return Response({
+                        "object_author_id": post_author.id,
+                        "response": {
+                            "status_code": response.status_code,
+                            "text": response.text,
+                        },
+                        "message": "comment forwarded to remote author",
+                    }, status=200)
+        
+        
+        
+        
     else:
         # find the node that the post_author belongs to
         print("\npost_author.host: ", (post_author.host))
