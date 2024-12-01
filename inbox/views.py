@@ -408,7 +408,8 @@ def forward_like_request(request):
                 # Convert to string
                 published_as_string = like.published.isoformat()
 
-                
+                if hasattr(user, 'host') and not user.host.endswith('/api/'):
+                    user.host = user.host.rstrip('/') + '/api/'
                 payload = {
                     "type":"like",
                     "author":{
