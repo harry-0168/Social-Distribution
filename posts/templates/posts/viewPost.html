@@ -190,7 +190,7 @@
                 
                     
                     <!-- Forms -->
-                    <form id="sameHostForm" action="{% url 'forward_like_request' %}" method="POST" style="display: none;">
+                    <form id="sameHostForm" action="{% url 'api_create_like' post.author.author_serial %}" method="POST" style="display: none;">
                         {% csrf_token %}
                         
                         <input type="hidden" name="post_id" value="{{ post.uuid }}">
