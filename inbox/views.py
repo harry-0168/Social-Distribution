@@ -407,6 +407,10 @@ def forward_like_request(request):
                 # forward the follow request to the object_author's host
                 # Convert to string
                 published_as_string = like.published.isoformat()
+                
+                # Get all followers of the post author
+                followers = Following.objects.filter(author2=post.author, status='accepted')
+              
 
                 
                 payload = {
@@ -424,30 +428,51 @@ def forward_like_request(request):
                     "id": like.id,
                     "object": like.object
                 }
-                if object_author.host.endswith('/api/'):
-                    object_author.host = object_author.host.split('/api/')[0]
-                print("object_author.host: ", object_author.host)
-                node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
-                if not node_author:
-                    return Response({"error": "Node author not found"}, status=404)
-                print(node_author.displayName, node_author.first_name, object_author.id+'/inbox')
-                # using http basic auth to authenticate with the node server using the node_author's username and password
-                headers = {
-                        "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
-                        "Content-Type": "application/json",
-                        "host": node_author.host.split('//')[1],
-                        "X-original-host":  "https://social-distribution-crimson-464113e0f29c.herokuapp.com/api/"
-                    }
-                print(headers)
-                
+                # 1. Send to post owner if they're remote
+                if object_author.host != user.host:
+                    if object_author.host.endswith('/api/'):
+                        object_author.host = object_author.host.split('/api/')[0]
+                    node_author = Author.objects.filter(host=object_author.host, isNode=True).first()
+                    if node_author:
+                        headers = {
+                            "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
+                            "Content-Type": "application/json",
+                            "host": node_author.host.split('//')[1],
+                            "X-original-host": "https://social-distribution-crimson-464113e0f29c.herokuapp.com/api/"
+                        }
+                        response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
+                        print(f"Sent to post owner: {response.status_code}")
 
-                response = requests.post(object_author.id + '/inbox', json=payload, headers=headers)
-                print(response.status_code, response.text)
+                # 2. Send to all followers
+                for follower in followers:
+                    try:
+                        # Create local inbox entry for local followers
+                        if follower.author1.host == user.host:
+                            Inbox.objects.create(
+                                receiver=follower.author1,
+                                type='like',
+                                FQIDorId=like.id,
+                                received_at=timezone.now()
+                            )
+                        # Send to remote followers
+                        else:
+                            follower_host = follower.author1.host.rstrip('/api/')
+                            node_author = Author.objects.filter(host=follower_host, isNode=True).first()
+                            if node_author:
+                                headers = {
+                                    "Authorization": f"Basic {base64.b64encode(f'{node_author.displayName}:{node_author.first_name}'.encode()).decode()}",
+                                    "Content-Type": "application/json",
+                                    "host": node_author.host.split('//')[1],
+                                    "X-original-host": "https://social-distribution-crimson-464113e0f29c.herokuapp.com/api/"
+                                }
+                                response = requests.post(follower.author1.id + '/inbox', json=payload, headers=headers)
+                                print(f"Sent to follower {follower.author1.displayName}: {response.status_code}")
+                    except Exception as e:
+                        print(f"Failed to send to follower {follower.author1.displayName}: {str(e)}")
+                        continue
 
-                #return Response({"message": "Like request forwarded"}, status=200)
                 return redirect(request.META.get('HTTP_REFERER'))
 
-                
             except Exception as e:
                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
