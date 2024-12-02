@@ -3,41 +3,106 @@
  }
  
  
- html, body {
-    background-color: #f8eac7;
-    margin: 0;
-    padding: 0;
-    height: 100%;
- }
- 
- .header {
-   background-color: #3e305e;
-   padding: 5px;
+ body {
+   background-color: #f8eac7;
+   font-family: Arial, sans-serif;
+   margin: 0;
+   padding: 0;
+   animation: backgroundGlow 5s infinite alternate;
+}
+
+@keyframes backgroundGlow {
+   0% { background-color: #f8eac7; }
+   100% { background-color: #ffe4b2; }
+}
+
+.header {
+   background: linear-gradient(90deg, #3e305e, #5a00a3);
+   padding: 15px;
    display: flex;
    align-items: center;
    justify-content: space-between;
-   font-size: 1.2rem;
-   z-index: 1000; /* Ensures the container stays on top of other elements */
- }
- .headerUserInfo {
+   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+   border-bottom: 4px solid #a886ff;
+   border-radius: 0 0 15px 15px;
+}
+
+.headerUserInfo {
    display: flex;
    flex-direction: row;
 }
+
 .currentUser {
    margin-left: 10px;
    color: #a886ff;
-   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Added text-shadow */
+   font-size: x-large;
+   text-shadow: 1px 1px 2px #000000;
 }
- 
- .header .icons {
-    display: flex;
-    gap: 50px;
-    padding-right: 90px;
- }
- .header .icons img{
-   width: 2rem; 
-   height: 2rem;
+
+.header .icons-container {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+   background: #4F378A;
+   padding: 10px 20px;
+   border-radius: 15px;
+   border: 2px solid #a886ff;
+   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+   animation: fadeIn 1.5s ease;
 }
+
+.header .icons-container .button {
+   text-decoration: none;
+   color: white;
+   font-weight: bold;
+   padding: 10px 15px;
+   border-radius: 8px;
+   background: linear-gradient(90deg, #a886ff, #5a00a3);
+   transition: transform 0.2s, box-shadow 0.2s;
+   border: 2px solid #3e305e;
+}
+
+.header .icons-container .button:hover {
+   transform: scale(1.1);
+   box-shadow: 0 4px 15px rgba(168, 134, 255, 0.7);
+}
+
+.icon {
+   width: 25px;
+   height: 25px;
+}
+
+.search-form {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   padding: 10px;
+}
+
+.search-bar {
+   width: 300px;
+   padding: 8px;
+   font-size: 12px;
+   border: 1px solid #ccc;
+   border-radius: 4px 0 0 4px;
+}
+
+.search-button {
+   padding: 9px 16px;
+   font-size: 12px;
+   background-color: #5a00a3;
+   color: white;
+   border:none;
+   border-radius: 0 4px 4px 0;
+   cursor: pointer;
+   transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.search-button:hover {
+   background-color: #3f0069;
+}
+
+
  
  .gridContainer {
     display: grid;  /* enables the grid display */
@@ -110,7 +175,7 @@
  }
 .likesArea {
    position: fixed; /* Makes the container fixed in the viewport */
-   top: 10%; /* Distance from the top of the viewport */
+   top: 14%; /* Distance from the top of the viewport */
    left: 0px; /* Initial position off-screen */
    background-color: #F5DEAE;
    padding: 20px;
