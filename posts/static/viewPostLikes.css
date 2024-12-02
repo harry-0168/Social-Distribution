@@ -24,7 +24,7 @@
 .currentUser {
    margin-left: 10px;
    color: #a886ff;
-   font-size: x-larges;
+   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Added text-shadow */
 }
  
  .header .icons {
@@ -113,7 +113,7 @@
    background-color: #F5DEAE;
    padding: 20px;
    height: calc(100vh - 200px);
-   width: 45%;
+   width: 43%;
    display: flex;
    flex-direction: column;
    border-radius: 25px;
@@ -201,7 +201,8 @@
     justify-content: flex-start; /* Align items to the top */
     border-radius: 5px;
     margin-left: 40px;
-    margin-right: 40px;
+    margin-right: 20px;
+    width: 680px;
     /* height: 650px; */
  }
  .gridItemRight .postTitle{
