@@ -62,7 +62,7 @@
                 </div>
             </div>
             <span class="date">{{ request.created_at|date:"Y-m-d H:i:s" }}</span>
-            <img style="padding: 0px 20px;" src="{% static 'close.png' %}">
+            <!-- <img style="padding: 0px 20px;" src="{% static 'close.png' %}"> -->
         </div>
         {% endfor %}
 
@@ -78,7 +78,7 @@
                 </div>  -->
             </div>
             <span class="date">{{ comment.created_at|date:"Y-m-d H:i:s" }}</span>
-            <img style="padding: 0px 20px;" src="{% static 'close.png' %}" class="profileImage">
+            <!-- <img style="padding: 0px 20px;" src="{% static 'close.png' %}" class="profileImage"> -->
         </div>
         {% endfor %}
 
@@ -94,12 +94,12 @@
                 {% endif %}
                 </div>
                 <span class="date">{{ like.published|date:"Y-m-d H:i:s" }}</span>
-                <img style="padding: 0px 20px;" src="{% static 'close.png' %}" class="profileImage">
+                <!-- <img style="padding: 0px 20px;" src="{% static 'close.png' %}" class="profileImage"> -->
             </div>
         {% endfor %}
 
 
-        <h2>reposts</h2>
+
         {% for repost in reposts %}
         <div class="notification">
             <img src="{{ repost.profileImage }}" class="profileImage">

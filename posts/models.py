@@ -44,7 +44,7 @@ class Like(models.Model):
         """
         Ensure that only one of post or comment is set.
         """
-        host = kwargs.get('request_host', 'localhost')
+        host = kwargs.get('request_host', 'social-distribution-crimson-464113e0f29c.herokuapp.com')
         author_id = self.author.author_serial  # Ensure that author id is correctly set
         self.id = f"http://{host}/api/authors/{author_id}/liked/{self.uuid}"
         if self.post:
