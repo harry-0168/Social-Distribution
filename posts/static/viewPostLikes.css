@@ -11,11 +11,13 @@
  }
  
  .header {
-    background-color: #3e305e;
-    padding: 15px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+   background-color: #3e305e;
+   padding: 5px;
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   font-size: 1.2rem;
+   z-index: 1000; /* Ensures the container stays on top of other elements */
  }
  .headerUserInfo {
    display: flex;
