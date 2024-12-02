@@ -13,8 +13,8 @@
             width: 30px;
             height: 30px;
             transition: transform 0.3s ease, content 0.3s ease;
-            margin-left: 10px;
-            margin-top: 5px;
+            margin: 0px;
+            margin-left: 20px;
         }
         .delete-button:hover img.trash {
             transform: scale(1.1); /* Scale effect on hover */
@@ -25,15 +25,18 @@
 </head>
 <body>
     <div class="header">
-        <a href="{% url 'author_profile' request.user.author_serial %}"> <!-- Use the logged-in user's author ID -->
-            {% if request.user.profileImage %}
-                <img src="{{ request.user.profileImage }}" 
-                 style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
-            {% else %}
-                <img src="{% static 'avatar.png' %}" 
-                 style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
-            {% endif %}
-        </a>
+        <section class="headerUserInfo">
+            <a href="{% url 'author_profile' request.user.author_serial %}"> <!-- Use the logged-in user's author ID -->
+                {% if request.user.profileImage %}
+                    <img src="{{ request.user.profileImage }}" 
+                     style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+                {% else %}
+                    <img src="{% static 'avatar.png' %}" 
+                     style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+                {% endif %}
+            </a>
+            <p class="currentUser">{{ request.user.displayName }}</p>
+        </section>
         <div class="icons">
             <a href="{% url 'home_page' %}">
                 <img src="{% static 'home.png' %}">
@@ -119,17 +122,17 @@
                         <img class="heart" src="{% static 'heart.png' %}" alt="Like">
                     </button>
                 </form>
-                <h3>{{ post.likes_collection.count }} like(s)</h3>
+                <h3>{{ post.likes.count }} like(s)</h3>
                 <a type="submit" class="comment-button" href="{% url 'viewPost' fqid=post.id %}">
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
-                <h3>{{ post.comments.count }} comment(s)</h3>
+                <a class="viewComments" href="{% url 'viewPost' fqid=post.id %}">{{ post.comments.count }} comment(s)</a>
                 <img class="share-button" id="share-image" src="/static/share.png">
                 <h3>share</h3>
             </section>
-            <section class="viewLikesComments">
+            <!-- <section class="viewLikesComments">
                 <a class="viewComments" href="{% url 'viewPost' fqid=post.id %}">view comments</a>
-            </section>
+            </section> -->
         </section>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
@@ -160,6 +163,17 @@
                         alert('Post link copied to clipboard!');
                     }
                 });
+            });
+        </script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const likesArea = document.querySelector('.likesArea');
+
+                if (likesArea) {
+                setTimeout(() => {
+                likesArea.classList.add('active');
+                }, 0); // Optional slight delay for dramatic effect
+            }
             });
         </script>
     </section>
