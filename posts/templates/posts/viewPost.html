@@ -12,15 +12,18 @@
 <body>
 
     <div class="header">
-        <a href="{% url 'author_profile' request.user.author_serial %}"> <!-- Use the logged-in user's author ID -->
-            {% if request.user.profileImage %}
-                <img src="{{ request.user.profileImage }}" 
-                 style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
-            {% else %}
-                <img src="{% static 'avatar.png' %}" 
-                 style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
-            {% endif %}
-        </a>
+        <section class="headerUserInfo">
+            <a href="{% url 'author_profile' request.user.author_serial %}"> <!-- Use the logged-in user's author ID -->
+                {% if request.user.profileImage %}
+                    <img src="{{ request.user.profileImage }}" 
+                     style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+                {% else %}
+                    <img src="{% static 'avatar.png' %}" 
+                     style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; margin-left: 90px;">
+                {% endif %}
+            </a>
+            <p class="currentUser">{{ request.user.displayName }}</p>
+        </section>
         <div class="icons">
             <a href="{% url 'home_page' %}">
                 <img src="{% static 'home.png' %}">
@@ -212,7 +215,7 @@
                         </button>
                     </form>
                     
-                <h3>{{ post.likes.count }} like(s)</h3>
+                <a class="viewLikes" href="{% url 'api_likes' author_serial=post.author.author_serial post_id=post.uuid %}">{{ post.likes.count }} like(s)</a>
                 <a type="submit" class="comment-button" href="#comment-input">
                     <img class="commentBubble"src="/static/messageCircle.png">
                 </a>
@@ -268,9 +271,27 @@
 
                 
             </section>
-            <section class="viewLikesComments">
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    // const gridItemUser = document.querySelector('.gridItemUser');
+                    const gridItemComments = document.querySelector('.gridItemComments');
+
+                    // if (gridItemUser) {
+                    //     setTimeout(() => {
+                    //     gridItemUser.classList.add('active');
+                    //     }, 0); // Delay for a staggered effect (optional)
+                    // }
+
+                    if (gridItemComments) {
+                    setTimeout(() => {
+                    gridItemComments.classList.add('active');
+                    }, 0); // Optional slight delay for dramatic effect
+                }
+                });
+            </script>
+            <!-- <section class="viewLikesComments">
                 <a href="{% url 'api_likes' author_serial=post.author.author_serial post_id=post.uuid %}" class="viewLikes">view likes</a>
-            </section>
+            </section> -->
             <script>
                 document.addEventListener('DOMContentLoaded', function () {
                     const shareImage = document.getElementById('share-image');
@@ -303,7 +324,6 @@
                 });
             </script>
         </section>
-    
         <section class="gridItemComments">
             <h3 class="commentAreaTitle">Comments</h3>
             <div class="carousel">
@@ -313,6 +333,12 @@
             </div>
             <script>
                 document.addEventListener('DOMContentLoaded', () => {
+                // const gridItemComments = document.querySelector('.gridItemComments');
+                // if (gridItemComments) {
+                //     setTimeout(() => {
+                //     gridItemComments.classList.add('active');
+                //     }, 0); // Optional slight delay for dramatic effect
+                // }
 
                     // const currentHost = window.location.origin;
                     // const post_host = ""
@@ -387,6 +413,10 @@
                     const h5 = document.createElement('h5');
                     h5.classList.add('commentUsername');
                     h5.textContent = comment.author.displayName;
+
+                    const span = document.createElement('span')
+                    span.classList.add('commentDate')
+                    span.textContent = new Date(comment.published).toLocaleDateString();
 
                     const contentDiv = document.createElement('div');
                     contentDiv.classList.add('commentContent');
@@ -535,6 +565,7 @@
 
                     // Append elements to the comment div
                     commentDiv.appendChild(img);
+                    h5.appendChild(span);
                     h5.appendChild(contentDiv)
                     commentDiv.appendChild(h5);
                     // commentDiv.appendChild(contentDiv);
@@ -615,7 +646,9 @@
                                 newComment.innerHTML = `
                                     <img src="${comment.author.profileImage || '/static/avatar.png'}" class="profile-pic-small" alt="Profile Picture">
 
-                                    <h5 class="commentUsername">${comment.username}
+                                    <h5 class="commentUsername">
+                                        ${comment.username}
+                                        <span class="commentDate">${new Date(comment.published).toLocaleDateString()}</span>
                                         <div class="commentContent">${comment.comment}</div>
                                     </h5>
                                 `;

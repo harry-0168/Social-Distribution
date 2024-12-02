@@ -12,19 +12,32 @@
  
  .header {
    background-color: #3e305e;
-   padding: 15px;
+   padding: 5px;
    display: flex;
    align-items: center;
    justify-content: space-between;
+   font-size: 1.2rem;
+   z-index: 1000; /* Ensures the container stays on top of other elements */
 }
- 
+.headerUserInfo {
+   display: flex;
+   flex-direction: row;
+}
+.currentUser {
+   margin-left: 10px;
+   color: #a886ff;
+   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Added text-shadow */
+}
  
  .header .icons {
     display: flex;
     gap: 50px;
     padding-right: 90px;
  }
- 
+ .header .icons img{
+   width: 2rem; /* The image won't grow beyond its container */
+   height: 2rem; /* Maintain aspect ratio */
+}
  
  .gridContainer {
     display: grid;  /* enables the grid display */
@@ -38,32 +51,29 @@
  /* User Section */
  .gridItemUser{
     background-color: #f8eac7; /* #f8eac7 */
-    padding: 30px;
+    padding-left: 30px;
+    padding-right: 30px;
     font-size: 30px;
-    /*display: grid; /* enable flexbox */
-    /*grid-template-rows: 4fr;    /* One row */
-   /*grid-template-columns: 1fr;   /* one columns */
     display: flex;
     flex-direction: column;
     border-radius: 10px;
+    color: #000000;
  }
  .gridItemUser .userInfo{
     background-color: #f8eac7;
     display: flex;
     flex-direction: row;
     justify-content: left;
-    margin-bottom: 10px;
-   
+    margin-bottom: 2rem;
+    margin-top: 2rem;
  }
  .userInfo .delete-button {
     background-color: #f8eac7;
     border: #f8eac7;
-    margin: 10px;
+    margin-left: 20px;
  }
  .trash {
-    height: 30px;
     width: 30px;
-    margin: 10px;
     background-image: url("../../static/trash.png");
     background-size: cover;
     transition: transform 0.3s ease, background-image 0.3s ease;
@@ -99,7 +109,7 @@
     margin: 0;
     margin-left: 8px;
     font-weight: 100;
-    color: #9C9B9B;
+    color: #666;
  }
  .userInfo .followButton{
     height: 40px;
@@ -117,17 +127,36 @@
    width: 100%;
 }
  .gridItemUser .postTitle{
-    background-color: #f8eac7;
-    color:#000;
-    margin: 10px;
+   font-family: 'Arial', sans-serif; /* Clean and modern font */
+   font-size: 32px; /* Standout font size */
+   font-weight: bold; /* Strong emphasis */
+   color: #3e305e;
+   text-align: center;
+   margin-bottom: 1rem; /* Space between title and content */
+   margin-top: 0px;
+   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2); /* Soft text shadow */
+   padding: 10px; /* Add some padding */
+   background-color: #f5e3c6; /* Subtle background color to differentiate title */
+   border-radius: 10px; /* Rounded corners to match your overall theme */
+   display: inline-block; /* Keeps the title styled like a button */
+   border: 2px solid #bdbdbd; /* Thin purple border for better contrast */
+
  }
- .gridItemUser .postContent{
-    background-color: #f8eac7;
-    margin: 0;
-    margin-bottom: 10px;
-    padding: 10px;
-    font-size: 26px;
- }
+ .gridItemUser .postContent {
+   background-color: #F5DEAE;
+   margin: 0;
+   margin-bottom: 15px;
+   padding-left: 10px;
+   padding-right: 10px;
+   border-radius: 10px;
+   padding: 15px;
+   border: 1px solid #F5DEAE;
+   font-size: 18px;
+   line-height: 1.6;
+   color: #000000;
+   box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow effect */
+}
+
  .postContent img.postImage{
     width: 100%; /* Scale the image to fit the container */
     max-width: 500px; /* Set a max width for large images */
@@ -136,19 +165,29 @@
     margin: 0 auto; /* Center the image if needed */
  }
  .gridItemUser .likeCommentShare{
-    background-color: #f8eac7;
+    /* background-color: #f8eac7; */
     display: flex;
-    flex-direction: row;
     height: 40px;
+    background-color: #f5e3c6;
+    border-radius: 10px;
+    padding: 10px 15px;
+    border: 1px solid #d7c7a3;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #000000;
+    margin-bottom: 1rem;
  }
  .likeCommentShare img{
     height: 30px;
     width: 30px;
+    background-color: #f5e3c6;
  }
  .likeCommentShare img.commentBubble{
     height: 30px;
     width: 30px;
     margin: 10px;
+    background-color: #f5e3c6;
     transition: transform 0.3s ease, background-color 0.3s ease; /* Smooth transition */
  }
  .likeCommentShare img.commentBubble:hover {
@@ -159,10 +198,12 @@
     height: 30px;
     width: 30px;
     margin: 10px;
+    background-color: #f5e3c6;
     transition: transform 0.3s ease, background-color 0.3s ease; /* Smooth transition */
  }
  .likeCommentShare img.heart:hover {
     transform: scale(1.1); /* Slightly enlarges the icon on hover */
+    background-color: #f5e3c6;
     content: url("../../static/heartFilled.png"); /* Changes the image to the filled version */
  }
  .likeCommentShare img.share-button{
@@ -187,13 +228,13 @@
     color: #9C9B9B;
  }
  .like-button{
-    background-color: #f8eac7;
-    border-color: #f8eac7;
+    background-color: #f5e3c6;
+    border-color: #f5e3c6;
     border-style: none;
  }
  .comment-button {
-    background-color: #f8eac7;
-    border-color: #f8eac7;
+    background-color: #f5e3c6;
+    border-color: #f5e3c6;
     border-style: none;
  }
  
@@ -209,26 +250,32 @@
     font-size: 25px;
     margin: 10px;
  }
- .viewLikesComments .viewLikes{
+ .likeCommentShare .viewLikes{
     color:#4F378A;
     font-weight: 100;
-    font-size: 25px;
-    margin: 14px;
+    font-size: 20px;
     text-decoration: none;
  }
- .viewLikesComments .viewLikes:hover{
+ .likeCommentShare .viewLikes:hover{
     color:#a886ff;
     font-weight: 100;
-    font-size: 25px;
-    margin: 14px;
+    font-size: 20px;
     text-decoration: underline;
     text-decoration: none;
  }
  
- 
+ .commentContainer{
+   position: sticky; /* Makes it sticky */
+   top: 10px; /* Distance from the top of the viewport */
+   /* z-index: 10; Ensure it's above other elements */
+ }
+
  /* Comment Section */
  .gridItemComments {
-    background-color: #D9D9D9;
+    position: fixed; /* Makes the container fixed in the viewport */
+    top: 10%; /* Distance from the top of the viewport */
+    right: 10px; /* Distance from the right side of the viewport */
+    background-color: #F5DEAE;
     padding: 20px;
     font-size: 30px;
     display: flex;
@@ -236,11 +283,22 @@
     justify-content: flex-start; /* Align items to the top */
     align-items: center;
     text-align: center;
-    border-radius: 5px;
-    margin: 10px;
-    height: 650px
- }
+    border-radius: 25px;
+    margin-left: 10px;
+    margin-right: 10px;
+    margin-top: 2rem;
+    height: 650px;
+    transform: translateX(100%);
+    opacity: 1;
+    transition: transform 1.0s ease-in-out, opacity 1.5s ease-in-out;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1), 0 6px 20px rgba(0, 0, 0, 0.1); /* Added box-shadow */
+    z-index: 1000; /* Ensures the container stays on top of other elements */
+}
  
+ .gridItemComments.active {
+   transform: translateX(0);
+   opacity: 1;
+ }
  
  .carousel {
     height: calc(100% - 120px); /* Fill the height of the comments section */
@@ -255,11 +313,13 @@
  .carousel-container {
     display: flex;
     flex-direction: column; /* Stack comments vertically */
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
  }
  
  
  .comment {
-    background-color: #D9D9D9; /* Background color for comments */
+    background-color: #F5DEAE; /* Background color for comments */
     padding: 10px; /* Padding for comments */
     margin: 5px 0; /* Space between comments */
     border-radius: 5px; /* Rounded corners */
@@ -276,9 +336,14 @@
     font-weight: 100;
     text-align: left;
  }
+ .commentDate {
+   font-size: 0.9em; /* Slightly smaller font size for the date */
+   color: #666; /* Optional: subtle color for the date */
+   margin-left: 10px;
+}
  .commentContent{
     margin-left: 4px;
-    color: #9C9B9B;
+    color: #000000;
     text-align: left;
     width: fit-content;
     max-width: 500px;
@@ -301,8 +366,8 @@
     margin: 10px;
  }
  .commentInputTextbox {
-    background-color: #D9D9D9;
-    border-color: #D9D9D9;
+    background-color: #F5DEAE;
+    border-color: #F5DEAE;
     border-style: none;
     height: 30px;
     width: 200px;
@@ -329,7 +394,7 @@
     background-color: #8F72D9;
     border-color: #D9D9D9;
     border-style: none;
-    color: #4F378A;
+    color: #000000;
     padding: 8px;
     border-radius: 8px;
  }
