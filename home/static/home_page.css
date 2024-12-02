@@ -3,8 +3,6 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-image: radial-gradient(black 0.8px, transparent 0.5px);
-    background-size: 10px 10px;
     animation: backgroundGlow 5s infinite alternate;
 }
 
@@ -67,6 +65,36 @@ body {
 .icon {
     width: 25px;
     height: 25px;
+}
+
+.search-form {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+}
+
+.search-bar {
+    width: 300px;
+    padding: 8px;
+    font-size: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px 0 0 4px;
+}
+
+.search-button {
+    padding: 9px 16px;
+    font-size: 12px;
+    background-color: #5a00a3;
+    color: white;
+    border:none;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.search-button:hover {
+    background-color: #3f0069;
 }
 
 .loading-spinner {
@@ -228,36 +256,6 @@ body {
 
 .post-visibility {
     margin-left: 20px;
-}
-
-.search-form {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10px;
-}
-
-.search-bar {
-    width: 300px;
-    padding: 8px;
-    font-size: 12px;
-    border: 1px solid #ccc;
-    border-radius: 4px 0 0 4px;
-}
-
-.search-button {
-    padding: 9px 16px;
-    font-size: 12px;
-    background-color: #5a00a3;
-    color: white;
-    border:none;
-    border-radius: 0 4px 4px 0;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.search-button:hover {
-    background-color: #3f0069;
 }
 
 .profile-pic-small {
