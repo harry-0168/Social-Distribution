@@ -273,3 +273,9 @@ body {
     margin-right: 10px;
     margin-left: 90px;
 }
+
+.markdown-content {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
