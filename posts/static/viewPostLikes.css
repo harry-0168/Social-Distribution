@@ -13,7 +13,7 @@
 
 @keyframes backgroundGlow {
    0% { background-color: #f8eac7; }
-   100% { background-color: #ffe4b2; }
+   100% { background-color: #f8eac7; }
 }
 
 .header {

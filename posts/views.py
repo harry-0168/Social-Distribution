@@ -823,6 +823,7 @@ def view_edit_post(request, fqid):
 @authentication_classes([BasicAuthentication, SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def get_edit_delete_post(request, author_serial, post_id):
+    print("in edit post API")
     post = get_object_or_404(Post, uuid=post_id)
     try:
         # Make sure user who is not the author can't edit/delete the post
@@ -833,6 +834,7 @@ def get_edit_delete_post(request, author_serial, post_id):
     except Author.DoesNotExist:
         return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
     if request.method == 'GET':
+        print("in GET")
         if post.visibility == 'PUBLIC':
             serializer = PostSerializer(post)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -844,17 +846,28 @@ def get_edit_delete_post(request, author_serial, post_id):
             else:
                 return Response({"error": "Unauthorized to view friends-only post"}, status=status.HTTP_403_FORBIDDEN)
     if request.method == 'PUT':
+        print("in PUT")
         data = request.data.copy()  # Safely copy the data
         image = request.FILES.get('img')
+        print("data: ", data)
+        print("image: ", image)
 
         # Handle image upload
         if image:
+            print("in image upload")
             # Read and encode the image in base64
             image_data = image.read()
             encoded_image = base64.b64encode(image_data).decode('utf-8')
             # Set the encoded image as the content
             data['content'] = f"data:{image.content_type};base64,{encoded_image}"
+            serializer = PostSerializer(post, data=data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                # Send the updated post to remote nodes
+                send_post_to_remote_nodes(post, serializer.data, action_type='edit')
+            return Response(serializer.data, status=status.HTTP_200_OK)
         else:
+            print("returning original content")
             # Retain the original content if no new content is provided
             if not data.get('content'):
                 data['content'] = post.content
@@ -864,7 +877,7 @@ def get_edit_delete_post(request, author_serial, post_id):
                 # Send the updated post to remote nodes
                 send_post_to_remote_nodes(post, serializer.data, action_type='edit')
             return Response(serializer.data, status=status.HTTP_200_OK)
-
+        print("finished in PUT")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     if request.method == 'DELETE':
         # Ensure that only the author of the post or an admin can delete the post
