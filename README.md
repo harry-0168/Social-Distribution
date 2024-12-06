@@ -25,27 +25,22 @@ Khym Nad
 Sharon Wong
 
 ## Connections
-Credentials for Sharon's application  
-url: https://social-distribution-crimson-464113e0f29c.herokuapp.com/  
-username: heroku_local  
-password: pass  
-Credentials for Harveer's application  
-url: https://social1-c4a7f0052028.herokuapp.com/  
-username:   
-password:   
-Credentials for Haoze's application  
-url: https://social-distribution-haoze-6849a7ab5179.herokuapp.com/  
-username:   
-password: pass  
-Credentials for Dhruvil's application  
-url: https://social-distribution-dhruvil-7ee59df447bd.herokuapp.com/  
-username:   
-password: pass  
-Credentials for Yihui's application  
-url: https://crimson-404-9c6e916b7080.herokuapp.com/  
-username: heroku_local  
-password: pass  
-Credentials for Khym's application  
-url: https://cmput-404-project-crimson-ca3201dcadad.herokuapp.com/  
-username:   
+GOLD(fully connected):  
+https://gold-d9aafb476531.herokuapp.com  
+Username: gold-crimson  
+Password: JJaX8K0LtDx2JODz  
+
+NAVAJOWHITE(fully connected):  
+https://navajo-white-4845eeb9c06c.herokuapp.com  
+username: cool123  
+password: 123pass  
+
+PAPAYAWHIP(fully connected):  
+https://c404-project-7bb630f157d0.herokuapp.com  
+username: papaywhipcrimpson  
+password: 52230papaya  
+
+ROYALBLUE(fully connected):  
+https://michael-heroku-9aacc16677e5.herokuapp.com  
+username: crimson_royalblue  
 password: pass  
