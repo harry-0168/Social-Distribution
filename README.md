@@ -27,8 +27,8 @@ Sharon Wong
 ## Connections
 GOLD(fully connected):  
 https://gold-d9aafb476531.herokuapp.com  
-Username: gold-crimson  
-Password: JJaX8K0LtDx2JODz  
+username: gold-crimson  
+password: JJaX8K0LtDx2JODz  
 
 NAVAJOWHITE(fully connected):  
 https://navajo-white-4845eeb9c06c.herokuapp.com  
