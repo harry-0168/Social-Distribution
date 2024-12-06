@@ -8,7 +8,7 @@ See [the web page](https://uofa-cmput404.github.io/general/project.html) for a d
 
 Make a distributed social network!
 
-[Promotional Video](https://www.youtube.com/watch?v=SUNmKCo9FkE)  
+Check out the [Promotional Video](https://www.youtube.com/watch?v=SUNmKCo9FkE)!   
 
 ## Copyright
 
