@@ -93,8 +93,7 @@ def send_comment_to_remote_nodes(payload, comment, user):
                     response = requests.post(
                         f"{recipient.host}/api/authors/{recipient_uuid}/inbox",
                         json=payload,
-                        headers=headers,
-                        timeout=10
+                        headers=headers
                     )
                     response.raise_for_status()
                 except Exception as e:
@@ -624,8 +623,7 @@ def send_like_to_remote_nodes(like, payload, user):
                     response = requests.post(
                         f"{recipient.host}/api/authors/{recipient_uuid}/inbox",
                         json=payload,
-                        headers=headers,
-                        timeout=10
+                        headers=headers
                     )
                     response.raise_for_status()
                 except Exception as e:
@@ -1047,8 +1045,7 @@ def api_view_postLikes(request, author_serial, post_id):
             response = requests.get(
                 endpoint,
                 headers=headers,
-                auth=HTTPBasicAuth(author.displayName, author.password),
-                timeout=10
+                auth=HTTPBasicAuth(author.displayName, author.password)
             )
 
             response.raise_for_status()  # Raise an exception for any HTTP error responses
