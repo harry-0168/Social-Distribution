@@ -23,3 +23,24 @@ Dhruvil Patel
 Khym Nad
 
 Sharon Wong
+
+## Connections
+Crimson:  
+https://social-distribution-crimson-464113e0f29c.herokuapp.com  
+username: publicUser  
+password: pass  
+
+GOLD(fully connected):  
+https://gold-d9aafb476531.herokuapp.com  
+username: distrcrimson  
+password: 123456789  
+
+NAVAJOWHITE(fully connected):  
+https://navajo-white-4845eeb9c06c.herokuapp.com  
+username: crim3  
+password: appleipad  
+
+PAPAYAWHIP(fully connected):  
+https://c404-project-7bb630f157d0.herokuapp.com  
+username: papayawhip-crimson  
+password: pass  
