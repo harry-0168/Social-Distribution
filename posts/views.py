@@ -1220,7 +1220,7 @@ def send_post_to_remote_nodes(post, serializer_data, action_type='new'):
                             'host': node.host.split('//')[1],
                             'X-original-host':  "https://social-distribution-crimson-464113e0f29c.herokuapp.com/api/"
                         },
-                        timeout=10
+                        timeout=50
                     )
                     response.raise_for_status()
                     
