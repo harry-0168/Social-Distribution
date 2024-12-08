@@ -27,22 +27,27 @@ Khym Nad
 Sharon Wong
 
 ## Connections
+Crimson:  
+https://social-distribution-crimson-464113e0f29c.herokuapp.com  
+username: publicUser  
+password: pass  
+
 GOLD(fully connected):  
 https://gold-d9aafb476531.herokuapp.com  
-username: gold-crimson  
-password: JJaX8K0LtDx2JODz  
+username: distrcrimson  
+password: 123456789  
 
 NAVAJOWHITE(fully connected):  
 https://navajo-white-4845eeb9c06c.herokuapp.com  
-username: cool123  
-password: 123pass  
+username: crim3  
+password: appleipad  
 
 PAPAYAWHIP(fully connected):  
 https://c404-project-7bb630f157d0.herokuapp.com  
-username: papaywhipcrimpson  
-password: 52230papaya  
+username: papayawhip-crimson  
+password: pass  
 
 ROYALBLUE(fully connected):  
 https://michael-heroku-9aacc16677e5.herokuapp.com  
-username: crimson_royalblue  
-password: pass  
+username: crimson-demo@gmail.com  
+password: 1234  
