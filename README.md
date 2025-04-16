@@ -24,6 +24,9 @@ Khym Nad
 
 Sharon Wong
 
+## Wiki
+[Wiki](https://github.com/harry-0168/Social-Distribution/wiki)
+
 ## Connections
 Crimson:  
 https://social-distribution-crimson-464113e0f29c.herokuapp.com  
